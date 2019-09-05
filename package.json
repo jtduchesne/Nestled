@@ -1,0 +1,29 @@
+{
+  "name": "nestled",
+  "version": "0.0.0",
+  "description": "Javascript NES emulator",
+  "main": "src/main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prepublishOnly": "echo \"Not meant to be published as package...\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jtduchesne/Nestled.git"
+  },
+  "keywords": [
+    "Javascript",
+    "ES6",
+    "NES",
+    "Nintendo",
+    "8bit",
+    "8-bit",
+    "emulator"
+  ],
+  "author": "jtduchesne",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jtduchesne/Nestled/issues"
+  },
+  "homepage": "https://github.com/jtduchesne/Nestled#readme"
+}
