@@ -1,0 +1,4 @@
+{
+  "file": ["test/init.js"],
+  "ui": "bdd-lazy-var/global"
+}

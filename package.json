@@ -7,7 +7,7 @@
     "build": "rollup -c",
     "watch": "rollup -c -w",
     "start": "serve public",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "mocha \"test/**/*_test.js\"",
     "prepublishOnly": "echo \"Not meant to be published as package...\" && exit 1"
   },
   "repository": {
@@ -33,6 +33,9 @@
     "serve": "^11.3.0"
   },
   "devDependencies": {
+    "bdd-lazy-var": "^2.5.2",
+    "chai": "^4.2.0",
+    "mocha": "^6.2.0",
     "rollup": "^1.20.3",
     "rollup-plugin-cleanup": "^3.1.1",
     "rollup-plugin-commonjs": "^10.1.0",
