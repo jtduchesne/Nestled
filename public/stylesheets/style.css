@@ -1,0 +1,26 @@
+body {
+  padding: 50px;
+  font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+}
+a {
+  color: #00B7FF;
+}
+main {
+  text-align: center;
+}
+.container {
+  width: 300px;
+  padding: 10px;
+  margin-left: auto;
+  margin-right: auto;
+  border: 1px solid #ccc;
+}
+#screen {
+  background-color: #000;
+}
+input {
+  margin-top: 10px;
+  margin-bottom: 5px;
+  margin-left: auto;
+  margin-right: auto;
+}

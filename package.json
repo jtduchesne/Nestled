@@ -4,6 +4,7 @@
   "description": "Javascript NES emulator",
   "main": "src/main.js",
   "scripts": {
+    "start": "serve public",
     "test": "echo \"Error: no test specified\" && exit 1",
     "prepublishOnly": "echo \"Not meant to be published as package...\" && exit 1"
   },
@@ -25,5 +26,8 @@
   "bugs": {
     "url": "https://github.com/jtduchesne/Nestled/issues"
   },
-  "homepage": "https://github.com/jtduchesne/Nestled#readme"
+  "homepage": "https://github.com/jtduchesne/Nestled#readme",
+  "dependencies": {
+    "serve": "^11.3.0"
+  }
 }
