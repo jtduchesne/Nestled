@@ -15,3 +15,5 @@ npm install --save-dev rollup-plugin-cleanup
 npm install --save-dev mocha
 npm install --save-dev chai
 npm install --save-dev bdd-lazy-var
+
+npm install --save-dev eslint

@@ -1,0 +1,24 @@
+{
+    "env": {
+        "browser": true,
+        "commonjs": true,
+        "es6": true
+    },
+    "parserOptions": {
+        "ecmaVersion": 6,
+        "sourceType": "module"
+    },
+    "extends": "eslint:recommended",
+    "rules": {
+        "linebreak-style": ["error", "unix"],
+        "semi":            ["error", "always"],
+        "indent":          ["error", 4, {
+          "ignoreComments": true,
+          "VariableDeclarator": "first",
+          "ArrayExpression": "first",
+          "ObjectExpression": "first"
+        }],
+        "no-unused-vars": "warn",
+        "eqeqeq": ["warn", "smart"]
+    }
+}

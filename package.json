@@ -4,10 +4,11 @@
   "description": "Javascript NES emulator",
   "main": "src/main.js",
   "scripts": {
+    "lint": "eslint src/ || true",
+    "test": "mocha \"test/**/*_test.js\"",
     "build": "rollup -c",
     "watch": "rollup -c -w",
     "start": "serve public",
-    "test": "mocha \"test/**/*_test.js\"",
     "prepublishOnly": "echo \"Not meant to be published as package...\" && exit 1"
   },
   "repository": {
@@ -35,6 +36,7 @@
   "devDependencies": {
     "bdd-lazy-var": "^2.5.2",
     "chai": "^4.2.0",
+    "eslint": "^6.3.0",
     "mocha": "^6.2.0",
     "rollup": "^1.20.3",
     "rollup-plugin-cleanup": "^3.1.1",
