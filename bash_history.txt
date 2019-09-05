@@ -6,3 +6,8 @@ npm init
 npm install
 
 npm install serve
+
+npm install --save-dev rollup
+npm install --save-dev rollup-plugin-node-resolve
+npm install --save-dev rollup-plugin-commonjs
+npm install --save-dev rollup-plugin-cleanup
