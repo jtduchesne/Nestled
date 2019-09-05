@@ -1,0 +1,3 @@
+cd_with_history Nestled
+touch .gitignore
+git init .
