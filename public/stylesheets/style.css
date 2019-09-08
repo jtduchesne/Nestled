@@ -1,26 +1,13 @@
 body {
-  padding: 50px;
-  font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+    padding: 5px;
 }
-a {
-  color: #00B7FF;
-}
-main {
-  text-align: center;
-}
-.container {
-  width: 300px;
-  padding: 10px;
-  margin-left: auto;
-  margin-right: auto;
-  border: 1px solid #ccc;
+main.container {
+    width: 280px;
+    padding: 10px;
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+    z-index: 2;
 }
 #screen {
-  background-color: #000;
-}
-input {
-  margin-top: 10px;
-  margin-bottom: 5px;
-  margin-left: auto;
-  margin-right: auto;
+    background-color: #000;
+    z-index: 3;
 }

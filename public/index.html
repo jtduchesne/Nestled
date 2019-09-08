@@ -5,14 +5,21 @@
   <title>Nestled</title>
   <meta name='description' content="Javascript NES emulator">
    
+  <link rel="stylesheet" href="/stylesheets/groundwork-2.5.0.min.css">
   <link rel="stylesheet" href="/stylesheets/style.css">
 </head>
  
 <body>
-  <main>
-    <div class="container">
-      <canvas id="screen" width="256" height="240"></canvas>
-      <input type="file" id="file_select_button" name="nes_file" />
+  <main class="container bordered centered align-center">
+    <div class="row">
+      <div class="whole column">
+        <canvas id="screen" width="256" height="240"></canvas>
+      </div>
+    </div>
+    <div class="row">
+      <div class="whole column">
+        <input type="file" accept=".nes" id="file_select_button" name="nes_file" />
+      </div>
     </div>
   </main>
   
