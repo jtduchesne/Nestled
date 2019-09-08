@@ -6,8 +6,6 @@
   <meta name='description' content="Javascript NES emulator">
    
   <link rel="stylesheet" href="/stylesheets/style.css">
-  
-  <script type="module" src="/javascripts/nestled.js"></script>
 </head>
  
 <body>
@@ -19,6 +17,13 @@
   </main>
   
   <script nomodule src="/javascripts/nestled.cjs.js"></script>
+  <script type="module">
+      import * as Nestled from '/javascripts/nestled.js';
+      window.Nestled = Nestled;
+  </script>
+  
+  <script type="application/javascript" src="/javascripts/lib/modernizr-custom.min.js"></script>
+  <script type="application/javascript" src="/javascripts/lib/jquery-3.4.1.slim.min.js"></script>
 </body>
  
 </html>
