@@ -11,3 +11,14 @@ main.container {
     background-color: #000;
     z-index: 3;
 }
+#front_led        { margin-top: -0.6em; }
+#front_led.on     {  }
+#front_led.off    { filter: grayscale(100%); }
+#front_led.paused { filter: hue-rotate(60deg) brightness(120%); }
+
+button {
+    min-width: 68px;
+}
+.waiting {
+    opacity: 0;
+}

@@ -7,13 +7,36 @@
    
   <link rel="stylesheet" href="/stylesheets/groundwork-2.5.0.min.css">
   <link rel="stylesheet" href="/stylesheets/style.css">
+  
+  <script type="application/javascript">
+      function showButtons() {
+          document.getElementById('buttons_row').querySelectorAll("object, button").forEach((element, index) =>
+              setTimeout(() => {
+                  element.classList.remove("waiting");
+                  element.classList.add("bounceIn", "animated");
+              }, index * 50)
+          );
+      }
+  </script>
 </head>
  
 <body>
-  <main class="container bordered centered align-center">
+  <main class="row container bordered centered align-center">
     <div class="row">
       <div class="whole column">
         <canvas id="screen" width="256" height="240"></canvas>
+      </div>
+    </div>
+    <div id="buttons_row" class="equalize row gap-bottom">
+      <div class="one twelfth mobile relative">
+        <object class="absolute middle right off waiting" id="front_led" width="16" height="16" type="image/svg+xml" data="images/LED.svg" onload="showButtons()"></object>
+      </div>
+      <div class="seven twelfths mobile">
+        <button class="small waiting" id="power_button">Power</button>
+        <button class="small waiting" id="reset_button" disabled="disabled">Reset</button>
+      </div>
+      <div class="four twelfths mobile">
+        <button class="small waiting" id="pause_button" disabled="disabled">Pause</button>
       </div>
     </div>
     <div class="row">
@@ -23,14 +46,19 @@
     </div>
   </main>
   
+  <script type="application/javascript" src="/javascripts/lib/modernizr-custom.min.js"></script>
+  <script type="application/javascript" src="/javascripts/lib/jquery-3.4.1.slim.min.js"></script>
   <script nomodule src="/javascripts/nestled.cjs.js"></script>
   <script type="module">
       import * as Nestled from '/javascripts/nestled.js';
       window.Nestled = Nestled;
   </script>
   
-  <script type="application/javascript" src="/javascripts/lib/modernizr-custom.min.js"></script>
-  <script type="application/javascript" src="/javascripts/lib/jquery-3.4.1.slim.min.js"></script>
+  <script type="application/javascript">
+      $(function() {
+          
+      });
+  </script>
 </body>
  
 </html>
