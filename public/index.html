@@ -20,23 +20,26 @@
   </script>
 </head>
  
-<body>
-  <main class="row container bordered centered align-center">
+<body class="centered">
+  <main class="container bordered align-center">
     <div class="row">
       <div class="whole column">
         <canvas id="screen" width="256" height="240"></canvas>
+      </div>
+    </div>
+    <div class="row">
+      <div class="whole column">
+        <p id="status">&nbsp;</p>
       </div>
     </div>
     <div id="buttons_row" class="equalize row gap-bottom">
       <div class="one twelfth mobile relative">
         <object class="absolute middle right off waiting" id="front_led" width="16" height="16" type="image/svg+xml" data="images/LED.svg" onload="showButtons()"></object>
       </div>
-      <div class="seven twelfths mobile">
-        <button class="small waiting" id="power_button">Power</button>
+      <div class="eleven twelfths mobile">
+        <button class="small waiting gap-left" id="power_button">Power</button>
         <button class="small waiting" id="reset_button" disabled="disabled">Reset</button>
-      </div>
-      <div class="four twelfths mobile">
-        <button class="small waiting" id="pause_button" disabled="disabled">Pause</button>
+        <button class="small waiting gap-left" id="pause_button" disabled="disabled">Pause</button>
       </div>
     </div>
     <div class="row">
@@ -56,7 +59,41 @@
   
   <script type="application/javascript">
       $(function() {
+          const nes = new Nestled.NES;
           
+          const frontLED    = document.getElementById('front_led');
+          const powerButton = document.getElementById('power_button');
+          const resetButton = document.getElementById('reset_button');
+          const pauseButton = document.getElementById('pause_button');
+          
+          powerButton.addEventListener('click', () => nes.pressPower(), false);
+          resetButton.addEventListener('click', () => nes.pressReset(), false);
+          
+          //-------------------------------------------------------------------------------------------//
+          
+          const statusOutput = document.getElementById('status');
+          const fileInput = document.getElementById('file_select_button');
+          
+          function resetFileInput() { fileInput.value = ""; }
+          resetFileInput();
+          
+          const nesFile = new Nestled.NESFile({
+              onstatus: (e) => {
+                  let status = e.target.status;
+                  statusOutput.innerText = status;
+                  console.log("Nestled: " + status);
+              },
+              onunload: () => resetFileInput(),
+          });
+          
+          fileInput.addEventListener('change', (e) => {
+              nesFile.load(e.target.files[0])
+          }, false);
+          fileInput.addEventListener('click', () => {
+              if (nes.isPowered)
+                  nes.powerOff();
+              nesFile.unload();
+          }, false);
       });
   </script>
 </body>
