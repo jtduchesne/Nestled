@@ -83,7 +83,8 @@
                   statusOutput.innerText = status;
                   console.log("Nestled: " + status);
               },
-              onunload: () => resetFileInput(),
+              onload:   () => nes.insertCartridge(nesFile),
+              onunload: () => nes.removeCartridge(),
           });
           
           fileInput.addEventListener('change', (e) => {

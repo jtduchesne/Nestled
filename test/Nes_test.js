@@ -90,4 +90,93 @@ describe("NES", function() {
             its('frontLEDState', () => is.expected.to.equal("off"));
         });
     });
+    
+    //-------------------------------------------------------------------------------//
+    //- NESFile Fixture
+    def('validNESFile', () => Object.assign(new Nestled.NESFile, {
+        name: "Valid", isValid: true,
+        data: new Uint8Array([0x4E,0x45,0x53,0x1A, 0,0,0,0,0,0,0,0,0,0,0,0]).buffer
+    }));
+    def('invalidNESFile', () => Object.assign(new Nestled.NESFile, {
+        name: "Invalid", isValid: false
+    }));
+    //-------------------------------------------------------------------------------//
+    //- Cartridge Fixture
+    def('cartridge', () => new Nestled.Cartridge($validNESFile));
+    //-------------------------------------------------------------------------------//
+    
+    describe(".insertCartridge(argument)", function() {
+        def('action', () => $subject.insertCartridge($argument));
+        
+        context("when argument is an invalid -NESFile- object", function() {
+            def('argument', () => $invalidNESFile);
+            
+            it("sets #cartridge to -NoCartridge-", function() {
+                expect(() => $action).to.change($subject, 'cartridge');
+                expect($subject.cartridge).to.be.an.instanceof(Nestled.NoCartridge);
+            });
+            it("returns a -NoCartridge-", function() {
+                expect($action).to.be.an.instanceof(Nestled.NoCartridge);
+            });
+        });
+        
+        context("when argument is a valid -NESFile- object", function() {
+            def('argument', () => $validNESFile);
+            
+            it("sets #cartridge", function() {
+                expect(() => $action).to.change($subject, 'cartridge');
+            });
+            it("returns #cartridge", function() {
+                expect($action).to.equal($subject.cartridge);
+            });
+            it("triggers 'oninsertcartridge' event with itself as argument", function(done) {
+                $subject.oninsertcartridge = (e) => {
+                    expect(e.target).to.equal($subject);
+                    done();
+                };
+                $action;
+            });
+        });
+        
+        context("when argument is a -Cartridge- object", function() {
+            def('argument', () => $cartridge);
+            
+            it("sets #cartridge", function() {
+                expect(() => $action).to.change($subject, 'cartridge');
+                expect($subject.cartridge).to.equal($cartridge);
+            });
+            it("returns #cartridge", function() {
+                expect($action).to.equal($subject.cartridge);
+            });
+            it("triggers 'oninsertcartridge' event with itself as argument", function(done) {
+                $subject.oninsertcartridge = (e) => {
+                    expect(e.target).to.equal($subject);
+                    done();
+                };
+                $action;
+            });
+        });
+    });
+    
+    describe(".removeCartridge()", function() {
+        beforeEach(function() {
+            $subject.cartridge = $cartridge;
+        });
+        def('action', () => $subject.removeCartridge());
+        
+        it("sets #cartridge to -NoCartridge-", function() {
+            expect(() => $action).to.change($subject, 'cartridge');
+            expect($subject.cartridge).to.be.an.instanceof(Nestled.NoCartridge);
+        });
+        it("returns the removed cartridge", function() {
+            expect($action).to.equal($cartridge);
+        });
+        it("triggers 'onremovecartridge' event with itself as argument", function(done) {
+            $subject.onremovecartridge = (e) => {
+                expect(e.target).to.equal($subject);
+                done();
+            };
+            $action;
+        });
+    });
 });
