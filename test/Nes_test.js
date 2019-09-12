@@ -1,12 +1,6 @@
 describe("NES", function() {
     subject(() => new Nestled.NES);
     
-    it("has a power button",  function() { expect($subject).to.respondTo('pressPower'); });
-    it("has a reset button",  function() { expect($subject).to.respondTo('pressReset'); });
-    
-    it("can be turned on",  function() { expect($subject).to.respondTo('powerOn'); });
-    it("can be turned off", function() { expect($subject).to.respondTo('powerOff'); });
-    
     def('powerOn',  () => { $subject.isPowered = true; });
     def('powerOff', () => { $subject.isPowered = false; });
     
@@ -27,6 +21,14 @@ describe("NES", function() {
                 expect(() => $action).to.change($subject, 'frontLEDState');
                 expect($subject.frontLEDState).to.equal('on');
             });
+            
+            it("triggers 'onpower' event with itself as argument", function(done) {
+                $subject.onpower = (e) => {
+                    expect(e.target).to.equal($subject).and.have.property('isPowered', true);
+                    done();
+                };
+                $action;
+            });
         });
         context("when it is on", function() {
             beforeEach(function() { $powerOn; });
@@ -39,18 +41,31 @@ describe("NES", function() {
                 expect($subject.isPowered).to.be.false;
             });
             it("turns off the Front LED", function() {
-                debugger;
                 expect(() => $action).to.change($subject, 'frontLEDState');
                 expect($subject.frontLEDState).to.equal('off');
+            });
+            
+            it("triggers 'onpower' event with itself as argument", function(done) {
+                $subject.onpower = (e) => {
+                    expect(e.target).to.equal($subject).and.have.property('isPowered', false);
+                    done();
+                };
+                $action;
             });
         });
     });
     
-    // describe(".pressReset()", function() {
-    //     def('action', () => $subject.pressReset());
-    //
-    //     });
-    // });
+    describe(".pressReset()", function() {
+        def('action', () => $subject.pressReset());
+        
+        it("triggers 'onreset' event with itself as argument", function(done) {
+            $subject.onreset = (e) => {
+                expect(e.target).to.equal($subject);
+                done();
+            };
+            $action;
+        });
+    });
     
     //-------------------------------------------------------------------------------//
     
@@ -63,6 +78,14 @@ describe("NES", function() {
             expect(() => $action).to.change($subject, 'isPowered');
             expect($subject.isPowered).to.be.true;
         });
+        
+        it("triggers 'onpower' event with itself as argument", function(done) {
+            $subject.onpower = (e) => {
+                expect(e.target).to.equal($subject).and.have.property('isPowered', true);
+                done();
+            };
+            $action;
+        });
     });
     
     describe(".powerOff()", function() {
@@ -73,6 +96,14 @@ describe("NES", function() {
         it("sets #isPowered to -false-", function() {
             expect(() => $action).to.change($subject, 'isPowered');
             expect($subject.isPowered).to.be.false;
+        });
+        
+        it("triggers 'onpower' event with itself as argument", function(done) {
+            $subject.onpower = (e) => {
+                expect(e.target).to.equal($subject).and.have.property('isPowered', false);
+                done();
+            };
+            $action;
         });
     });
     

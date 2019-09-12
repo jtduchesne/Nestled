@@ -69,6 +69,15 @@
           powerButton.addEventListener('click', () => nes.pressPower(), false);
           resetButton.addEventListener('click', () => nes.pressReset(), false);
           
+          nes.onpower = (e) => {
+              frontLED.classList.remove("on", "off");
+              frontLED.classList.add(e.target.frontLEDState);
+              if (e.target.isPowered)
+                  resetButton.disabled = false;
+              else
+                  resetButton.setAttribute("disabled", "disabled");
+          };
+          
           //-------------------------------------------------------------------------------------------//
           
           const statusOutput = document.getElementById('status');

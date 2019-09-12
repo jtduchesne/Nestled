@@ -1,9 +1,12 @@
 import { Cartridge, NoCartridge } from './Cartridge.js';
 import NESFile from './NESFile.js';
+import CPU from './CPU.js';
 
 export class NES {
     constructor(opts) {
         if (opts) {
+            if (opts['onpower']) this.onpower = opts['onpower'];
+            if (opts['onreset']) this.onreset = opts['onreset'];
             if (opts['oninsertcartridge']) this.oninsertcartridge = opts['oninsertcartridge'];
             if (opts['onremovecartridge']) this.onremovecartridge = opts['onremovecartridge'];
         }
@@ -20,8 +23,22 @@ export class NES {
         this.isPowered = false;
     }
      
-    powerOn()  { this.isPowered = true; }
-    powerOff() { this.isPowered = false; }
+    powerOn()  {
+        if (!this.isPowered) {
+            this.isPowered = true;
+            this.cpu.powerOn();
+        
+            if (this.onpower) this.onpower({target: this});
+        }
+    }
+    powerOff() {
+        if (this.isPowered) {
+            this.isPowered = false;
+            this.cpu.powerOff();
+        
+            if (this.onpower) this.onpower({target: this});
+        }
+    }
      
     //== Buttons =====================================//
     pressPower() {
@@ -33,6 +50,9 @@ export class NES {
         return this.isPowered;
     }
     pressReset()  {
+        if (this.onreset) this.onreset({target: this});
+        
+        this.cpu.doRESET();
     }
      
     //== Front red LED ===============================//
