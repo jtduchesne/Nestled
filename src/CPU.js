@@ -145,6 +145,32 @@ export class CPU {
     set Overflow(value)  { (value ? (this.P |= 0x40) : this.P &= ~0x40); }
     set Negative(value)  { (value ? (this.P |= 0x80) : this.P &= ~0x80); }
     
+    //== Registers ==================================================//
+    get A() { return this._A; }
+    get X() { return this._X; }
+    get Y() { return this._Y; }
+    
+    set A(value) { this._A = this.ALU(value); }
+    set X(value) { this._X = this.ALU(value); }
+    set Y(value) { this._Y = this.ALU(value); }
+    
+    ALU(value) {
+        if (value > 0xFF) {
+            this.Carry = true;
+            while (value > 0xFF) value -= 0x100;
+        }
+        
+        this.Zero = (value === 0);
+        
+        if (value < 0) {
+            this.Negative = true;
+            while (value < 0) value += 0x100;
+        } else
+            this.Negative = (value >= 0x80);
+        
+        return value;
+    }
+    
     //== Addressing Modes ===========================================//
     
     //== OpCodes ====================================================//

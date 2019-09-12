@@ -321,4 +321,90 @@ describe("Cpu", function() {
     });
     
     //-------------------------------------------------------------------------------//
+    
+    context("Registers", function() {
+        describe("Accumulator", function() {
+            def('action', () => { $subject.A = $value; });
+            beforeEach(function() { $action; });
+            
+            context("when value > 0xFF", function() {
+                def('value', () => 0x199);
+                
+                its('Carry', () => is.expected.to.be.ok);
+                its('A', () => is.expected.to.equal(0x99));
+            });
+            context("when value > 0x80", function() {
+                def('value', () => 0xF6);
+                
+                its('Negative', () => is.expected.to.be.ok);
+            });
+            context("when value < 0", function() {
+                def('value', () => -10);
+                
+                its('Negative', () => is.expected.to.be.ok);
+                its('A', () => is.expected.to.equal(0xF6));
+            });
+            context("when value = 0", function() {
+                def('value', () => 0);
+                
+                its('Zero', () => is.expected.to.be.ok);
+            });
+        });
+        describe("Index X", function() {
+            def('action', () => { $subject.X = $value; });
+            beforeEach(function() { $action; });
+            
+            context("when value > 0xFF", function() {
+                def('value', () => 0x199);
+                
+                its('Carry', () => is.expected.to.be.ok);
+                its('X', () => is.expected.to.equal(0x99));
+            });
+            context("when value > 0x80", function() {
+                def('value', () => 0xF6);
+                
+                its('Negative', () => is.expected.to.be.ok);
+            });
+            context("when value < 0", function() {
+                def('value', () => -10);
+                
+                its('Negative', () => is.expected.to.be.ok);
+                its('X', () => is.expected.to.equal(0xF6));
+            });
+            context("when value = 0", function() {
+                def('value', () => 0);
+                
+                its('Zero', () => is.expected.to.be.ok);
+            });
+        });
+        describe("Index Y", function() {
+            def('action', () => { $subject.Y = $value; });
+            beforeEach(function() { $action; });
+            
+            context("when value > 0xFF", function() {
+                def('value', () => 0x199);
+                
+                its('Carry', () => is.expected.to.be.ok);
+                its('Y', () => is.expected.to.equal(0x99));
+            });
+            context("when value > 0x80", function() {
+                def('value', () => 0xF6);
+                
+                its('Negative', () => is.expected.to.be.ok);
+            });
+            context("when value < 0", function() {
+                def('value', () => -10);
+                
+                its('Negative', () => is.expected.to.be.ok);
+                its('Y', () => is.expected.to.equal(0xF6));
+            });
+            context("when value = 0", function() {
+                def('value', () => 0);
+                
+                its('Zero', () => is.expected.to.be.ok);
+            });
+        });
+    });
+    
+    //-------------------------------------------------------------------------------//
 });
