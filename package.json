@@ -6,6 +6,7 @@
   "scripts": {
     "lint": "eslint src/ || true",
     "test": "mocha \"test/**/*_test.js\"",
+    "debug": "mocha debug \"test/**/*_test.js\"",
     "build": "rollup -c",
     "watch": "rollup -c -w",
     "start": "serve public",
