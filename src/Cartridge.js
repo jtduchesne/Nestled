@@ -55,8 +55,8 @@ export class Cartridge {
                 this.horiMirroring = false;
                 this.vertMirroring = false;
             } else {
-                this.horiMirroring = !!(flags6 & 0x1);
-                this.vertMirroring =  !(flags6 & 0x1);
+                this.horiMirroring =  !(flags6 & 0x1);
+                this.vertMirroring = !!(flags6 & 0x1);
             }
             
             if (flags6 & 0x4) {
@@ -157,9 +157,9 @@ export class Cartridge {
     
     //== CIRAM A10 (Pin22) ==========================================//
     ciramA10(address) {
-        if (this.horiMirroring)
+        if (this.vertMirroring)
             return address & 0x400; //Connected to PPU A10
-        else if (this.vertMirroring)
+        else if (this.horiMirroring)
             return address & 0x800; //Connected to PPU A11
         else
             return 0;

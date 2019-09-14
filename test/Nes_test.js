@@ -1,8 +1,8 @@
 describe("NES", function() {
     subject(() => new Nestled.NES);
     
-    def('powerOn',  () => { $subject.isPowered = true; });
-    def('powerOff', () => { $subject.isPowered = false; });
+    def('powerOn',  () => { $subject.powerOn(); });
+    def('powerOff', () => { $subject.powerOff(); });
     
     describe(".pressPower()", function() {
         def('action', () => $subject.pressPower());
@@ -20,6 +20,15 @@ describe("NES", function() {
             it("turns on the Front LED", function() {
                 expect(() => $action).to.change($subject, 'frontLEDState');
                 expect($subject.frontLEDState).to.equal('on');
+            });
+            
+            it("turns on the CPU", function() {
+                expect(() => $action).to.change($subject.cpu, 'isPowered');
+                expect($subject.cpu.isPowered).to.be.true;
+            });
+            it("turns on the PPU", function() {
+                expect(() => $action).to.change($subject.ppu, 'isPowered');
+                expect($subject.ppu.isPowered).to.be.true;
             });
             
             it("triggers 'onpower' event with itself as argument", function(done) {
@@ -45,6 +54,15 @@ describe("NES", function() {
                 expect($subject.frontLEDState).to.equal('off');
             });
             
+            it("turns off the CPU", function() {
+                expect(() => $action).to.change($subject.cpu, 'isPowered');
+                expect($subject.cpu.isPowered).to.be.false;
+            });
+            it("turns off the PPU", function() {
+                expect(() => $action).to.change($subject.ppu, 'isPowered');
+                expect($subject.ppu.isPowered).to.be.false;
+            });
+            
             it("triggers 'onpower' event with itself as argument", function(done) {
                 $subject.onpower = (e) => {
                     expect(e.target).to.equal($subject).and.have.property('isPowered', false);
@@ -57,6 +75,15 @@ describe("NES", function() {
     
     describe(".pressReset()", function() {
         def('action', () => $subject.pressReset());
+        
+        it("calls cpu.doReset()", function(done) {
+            $subject.cpu.doReset = () => done();
+            $action;
+        });
+        it("calls ppu.doReset()", function(done) {
+            $subject.ppu.doReset = () => done();
+            $action;
+        });
         
         it("triggers 'onreset' event with itself as argument", function(done) {
             $subject.onreset = (e) => {

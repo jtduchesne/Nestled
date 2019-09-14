@@ -1,6 +1,7 @@
 import { Cartridge, NoCartridge } from './Cartridge.js';
 import NESFile from './NESFile.js';
 import CPU from './CPU.js';
+import PPU from './PPU.js';
 
 export class NES {
     constructor(opts) {
@@ -12,6 +13,7 @@ export class NES {
         }
         
         this.cpu = new CPU(this);
+        this.ppu = new PPU(this);
         
         if (opts && opts['cartridge'] || opts instanceof Cartridge)
             this.insertCartridge(opts['cartridge'] || opts);
@@ -26,7 +28,9 @@ export class NES {
     powerOn()  {
         if (!this.isPowered) {
             this.isPowered = true;
+            
             this.cpu.powerOn();
+            this.ppu.powerOn();
         
             if (this.onpower) this.onpower({target: this});
         }
@@ -34,7 +38,9 @@ export class NES {
     powerOff() {
         if (this.isPowered) {
             this.isPowered = false;
+            
             this.cpu.powerOff();
+            this.ppu.powerOff();
         
             if (this.onpower) this.onpower({target: this});
         }
@@ -52,7 +58,8 @@ export class NES {
     pressReset()  {
         if (this.onreset) this.onreset({target: this});
         
-        this.cpu.doRESET();
+        this.cpu.doReset();
+        this.ppu.doReset();
     }
      
     //== Front red LED ===============================//
@@ -69,6 +76,11 @@ export class NES {
             this.cartridge = inserted;
         
         if (!(this.cartridge instanceof NoCartridge)) {
+            if (this.cartridge.tvSystem === "NTSC")
+                this.ppu.ntsc = true;
+            else
+                this.ppu.ntsc = false;
+            
             if (this.oninsertcartridge) this.oninsertcartridge({target: this});
         }
         

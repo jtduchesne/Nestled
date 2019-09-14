@@ -1,7 +1,7 @@
 describe("Cartridge", function() {
     //----------------------------------------------------------------------------------------------------//
     //- NESFile Fixtures
-    def('filename', () => $name ? $name.replace(/[\W ]+/g, " ")+" (U)[!].nes" : "A Game Name (Unk)[b].nes")
+    def('filename', () => $name ? $name.replace(/[\W ]+/g, " ")+" (U)[!].nes" : "A Game Name (Unk)[b].nes");
     
     def(['numPRG','numCHR','flags6','flags7','trainerData','name']);
     def('PRGROMData', () => 0xA5); // b10100101
@@ -88,19 +88,19 @@ describe("Cartridge", function() {
             
             its('mapperNumber', () => is.expected.to.equal(0));
             
-            context("with vertical mirroring", function() {
-                def('flags6', () => 0x00);
-                
-                its('horiMirroring', () => is.expected.to.be.false);
-                its('vertMirroring', () => is.expected.to.be.true);
-            });
             context("with horizontal mirroring", function() {
-                def('flags6', () => 0x01);
+                def('flags6', () => 0x00);
                 
                 its('horiMirroring', () => is.expected.to.be.true);
                 its('vertMirroring', () => is.expected.to.be.false);
             });
-            context("with 4 screens mirroring", function() {
+            context("with vertical mirroring", function() {
+                def('flags6', () => 0x01);
+                
+                its('horiMirroring', () => is.expected.to.be.false);
+                its('vertMirroring', () => is.expected.to.be.true);
+            });
+            context("with 4 screens scrolling", function() {
                 def('flags6', () => 0x08);
                 
                 its('horiMirroring', () => is.expected.to.be.false);
@@ -120,9 +120,9 @@ describe("Cartridge", function() {
                 def('PRGROMData',  () => 0xC3);
                 
                 it("copies the trainer data to [0x7000-0x71FF]", function() {
-                    expect($subject.cpuRead(0x7000)).to.equal($trainerData)
-                    expect($subject.cpuRead(0x71FF)).to.equal($trainerData)
-                    expect($subject.cpuRead(0x7200)).not.to.equal($trainerData)
+                    expect($subject.cpuRead(0x7000)).to.equal($trainerData);
+                    expect($subject.cpuRead(0x71FF)).to.equal($trainerData);
+                    expect($subject.cpuRead(0x7200)).not.to.equal($trainerData);
                 });
                 it("does not affect PRGROM data", function() {
                     expect($subject.cpuRead(0x8000)).to.equal($PRGROMData);

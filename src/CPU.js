@@ -63,8 +63,6 @@ export class CPU {
     }
     
     powerOn() {
-        if (this.isPowered) this.powerOff();
-        
         this.cycle = 0;
         
         //Accumulator
@@ -113,7 +111,7 @@ export class CPU {
         this.PC = cart.cpuRead(0xFFFA) + cart.cpuRead(0xFFFB)*256;
         this.cycle += 7;
     }
-    doRESET() {
+    doReset() {
         this.SP = this.SP+3;
         this.Interrupt = true;
         let cart = this.bus.cartridge;
@@ -462,7 +460,7 @@ export class CPU {
     
     // Others
     NOP(fnFetchOperand) { fnFetchOperand(); }
-    KIL(fnFetchOperand) { this.doRESET(); } // eslint-disable-line no-unused-vars
+    KIL(fnFetchOperand) { this.doReset(); } // eslint-disable-line no-unused-vars
 }
  
 export default CPU;
