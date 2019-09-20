@@ -1,3 +1,5 @@
+import * as Colors from './Colors.js';
+
 export class PPU {
     constructor(nes) {
         this.bus = nes;
@@ -13,6 +15,10 @@ export class PPU {
         
         //Palettes
         this.palette = [new Uint8Array(4*4), new Uint8Array(4*4)];
+        
+        //Colors
+        this.pxlColors = Colors.pxlColor;
+        this.cssColors = Colors.cssColor;
         
         this.isPowered = false;
     }
