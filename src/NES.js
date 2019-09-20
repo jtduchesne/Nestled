@@ -2,18 +2,22 @@ import { Cartridge, NoCartridge } from './Cartridge.js';
 import NESFile from './NESFile.js';
 import CPU from './CPU.js';
 import PPU from './PPU.js';
+import MainLoop from './MainLoop.js';
 
 export class NES {
     constructor(opts) {
         if (opts) {
             if (opts['onpower']) this.onpower = opts['onpower'];
             if (opts['onreset']) this.onreset = opts['onreset'];
+            if (opts['onemulation']) this.onemulation = opts['onemulation'];
+            if (opts['onpause']) this.onpause = opts['onpause'];
             if (opts['oninsertcartridge']) this.oninsertcartridge = opts['oninsertcartridge'];
             if (opts['onremovecartridge']) this.onremovecartridge = opts['onremovecartridge'];
         }
         
         this.cpu = new CPU(this);
         this.ppu = new PPU(this);
+        this.mainLoop = new MainLoop(this);
         
         if (opts && opts['cartridge'] || opts instanceof Cartridge)
             this.insertCartridge(opts['cartridge'] || opts);
@@ -25,6 +29,7 @@ export class NES {
         this.isPowered = false;
     }
      
+    //== Power ==============================================================================//
     powerOn()  {
         if (!this.isPowered) {
             this.isPowered = true;
@@ -33,10 +38,14 @@ export class NES {
             this.ppu.powerOn();
         
             if (this.onpower) this.onpower({target: this});
+            
+            this.startEmulation();
         }
     }
     powerOff() {
         if (this.isPowered) {
+            this.stopEmulation();
+            
             this.isPowered = false;
             
             this.cpu.powerOff();
@@ -46,7 +55,45 @@ export class NES {
         }
     }
      
-    //== Buttons =====================================//
+    //== Emulation ==========================================================================//
+    startEmulation() {
+        if (!this.isRunning) {
+            this.mainLoop.start();
+            if (this.onemulation) this.onemulation({target: this});
+        }
+    }
+    stopEmulation() {
+        if (this.isRunning) {
+            this.mainLoop.stop();
+            if (this.onemulation) this.onemulation({target: this});
+        }
+    }
+    get isRunning() { return this.mainLoop.isRunning; }
+    
+    pauseEmulation() {
+        if (this.isRunning && !this.isPaused) {
+            this.mainLoop.pause();
+            if (this.onpause) this.onpause({target: this});
+        }
+    }
+    resumeEmulation() {
+        if (this.isPaused) {
+            this.mainLoop.start();
+            if (this.onpause) this.onpause({target: this});
+        }
+    }
+    get isPaused() { return this.mainLoop.isPaused; }
+    
+    pause() {
+        if (this.isPaused)
+            this.resumeEmulation();
+        else
+            this.pauseEmulation();
+        
+        return this.isPaused;
+    }
+    
+    //== Buttons ============================================================================//
     pressPower() {
         if (this.isPowered)
             this.powerOff();
@@ -62,9 +109,9 @@ export class NES {
         this.ppu.doReset();
     }
      
-    //== Front red LED ===============================//
+    //== Front red LED ======================================================================//
     // (Yes, it is a fully-fledged part of the NES !)
-    get frontLEDState() { return this.isPowered ? "on" : "off"; }
+    get frontLEDState() { return this.isPowered ? this.isPaused ? "paused" : "on" : "off"; }
     
     //== Cartridge ==========================================================================//
     insertCartridge(inserted) {

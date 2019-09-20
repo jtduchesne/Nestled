@@ -40,7 +40,8 @@ describe("Cpu", function() {
         it("sets P to 0x34", function()  { expect($subject.P).to.equal(0x34); });
         it("sets SP to 0xFD", function() { expect($subject.SP).to.equal(0xFD); });
         
-        its('cycle', () => is.expected.to.equal(0));
+        its('cycle',       () => is.expected.to.equal(0));
+        its('cycleOffset', () => is.expected.to.equal(0));
     });
     
     describe(".powerOff()", function() {

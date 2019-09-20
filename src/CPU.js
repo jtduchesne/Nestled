@@ -1,5 +1,3 @@
-const cyclesPerFrame = 21477272/12/60; //Hardcoded to NTSC for now...
-
 const cyclesLookup = [7,6,2,8,3,3,5,5,3,2,2,2,4,4,6,6, 2,5,2,8,4,4,6,6,2,4,2,7,4,4,7,7,
                       6,6,2,8,3,3,5,5,4,2,2,2,4,4,6,6, 2,5,2,8,4,4,6,6,2,4,2,7,4,4,7,7,
                       6,6,2,8,3,3,5,5,3,2,2,2,3,4,6,6, 2,5,2,8,4,4,6,6,2,4,2,7,4,4,7,7,
@@ -15,6 +13,9 @@ export function signByte(value) { return value>=0x80 ? value-0x100 : value; }
 export class CPU {
     constructor(nes) {
         this.bus = nes;
+        
+        this.cycle = 0;
+        this.cycleOffset = 0;
         
         this.ram   = new Uint8Array(0x800);
         this.stack = this.ram.subarray(0x100, 0x200);
@@ -64,6 +65,7 @@ export class CPU {
     
     powerOn() {
         this.cycle = 0;
+        this.cycleOffset = 0;
         
         //Accumulator
         this.A = 0;
@@ -85,11 +87,13 @@ export class CPU {
     }
     
     //== Main loop ==================================================//
-    doFrame() {
-        while(this.cycle < cyclesPerFrame)
+    doInstructions(limit = 0) {
+        limit += this.cycleOffset;
+        while (this.cycle <= limit) {
             this.doInstruction();
-        this.cycle -= cyclesPerFrame;
+        }
     }
+    
     doInstruction() {
         let pc = this.PC++;
         this.opcode  = this.read(pc);

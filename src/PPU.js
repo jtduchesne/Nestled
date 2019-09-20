@@ -40,10 +40,13 @@ export class PPU {
         this.data    = null; //$2007 Data Register
     }
     
-    //== Rendering ==================================================//
-    doFrame() {
+    doVBlank() {
         this.vblank = true;
+        this.renderingEnabled = false;
         if (this.nmiEnabled) this.bus.cpu.doNMI();
+    }
+    endVBlank() {
+        this.status = null;
     }
     
     //== Registers ==================================================//

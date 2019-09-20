@@ -4,11 +4,16 @@ describe("NES", function() {
     def('powerOn',  () => { $subject.powerOn(); });
     def('powerOff', () => { $subject.powerOff(); });
     
+    its('isPowered', () => is.expected.to.be.false);
+    its('isRunning', () => is.expected.to.be.false);
+    its('isPaused',  () => is.expected.to.be.false);
+    
     describe(".pressPower()", function() {
         def('action', () => $subject.pressPower());
         
         context("when it is off", function() {
             beforeEach(function() { $powerOff; });
+            afterEach(function() { $subject.stopEmulation(); });
             
             it("returns -true-", function() {
                 expect($action).to.be.true; });
@@ -41,6 +46,7 @@ describe("NES", function() {
         });
         context("when it is on", function() {
             beforeEach(function() { $powerOn; });
+            afterEach(function() { $subject.stopEmulation(); });
             
             it("returns -false-", function() {
                 expect($action).to.be.false; });
@@ -98,6 +104,7 @@ describe("NES", function() {
     
     describe(".powerOn()", function() {
         beforeEach(function() { $powerOff; });
+        afterEach(function() { $subject.stopEmulation(); });
         
         def('action', () => $subject.powerOn());
         
@@ -117,6 +124,7 @@ describe("NES", function() {
     
     describe(".powerOff()", function() {
         beforeEach(function() { $powerOn; });
+        afterEach(function() { $subject.stopEmulation(); });
         
         def('action', () => $subject.powerOff());
         
@@ -136,14 +144,155 @@ describe("NES", function() {
     
     //-------------------------------------------------------------------------------//
     
+    describe(".startEmulation()", function() {
+        def('action', () => $subject.startEmulation());
+        afterEach(function() { $subject.stopEmulation(); });
+        
+        context("if already running", function() {
+            beforeEach(function() { $subject.mainLoop.runningLoop = 1234; });
+            
+            it("does not change #isRunning", function() {
+                expect(() => $action).not.to.change($subject, 'isRunning');
+                expect($subject.isRunning).to.be.true;
+            });
+        });
+        context("if not running", function() {
+            beforeEach(function() { $subject.mainLoop.runningLoop = -1; });
+            
+            it("sets #isRunning to -true-", function() {
+                expect(() => $action).to.change($subject, 'isRunning');
+                expect($subject.isRunning).to.be.true;
+            });
+            
+            it("triggers 'onemulation' event with itself as argument", function(done) {
+                $subject.onemulation = (e) => {
+                    expect(e.target).to.equal($subject).and.have.property('isRunning', true);
+                    done();
+                };
+                $action;
+                $subject.onemulation = undefined; //Otherwise 'onemulation' is called also in the afterEach
+                                                  //hook, then calls done() and screws up Mocha...
+            });
+        });
+    });
+    
+    describe(".stopEmulation()", function() {
+        def('action', () => $subject.stopEmulation());
+        
+        context("if running", function() {
+            beforeEach(function() { $subject.mainLoop.runningLoop = 1234; });
+            
+            it("sets #isRunning to -false-", function() {
+                expect(() => $action).to.change($subject, 'isRunning');
+                expect($subject.isRunning).to.be.false;
+            });
+            
+            it("triggers 'onemulation' event with itself as argument", function(done) {
+                $subject.onemulation = (e) => {
+                    expect(e.target).to.equal($subject).and.have.property('isRunning', false);
+                    done();
+                };
+                $action;
+                $subject.onemulation = undefined;
+            });
+        context("if not running", function() {
+            beforeEach(function() { $subject.mainLoop.runningLoop = -1; });
+            
+            it("does not change #isRunning", function() {
+                expect(() => $action).not.to.change($subject, 'isRunning');
+                expect($subject.isRunning).to.be.false;
+            });
+        });
+        });
+    });
+    
+    describe(".pauseEmulation()", function() {
+        def('action', () => $subject.pauseEmulation());
+        
+        context("if running and not paused", function() {
+            beforeEach(function() { $subject.mainLoop.runningLoop = 1234; });
+            
+            it("sets #isPaused to -true-", function() {
+                expect(() => $action).to.change($subject, 'isPaused');
+                expect($subject.isPaused).to.be.true;
+            });
+            
+            it("triggers 'onpause' event with itself as argument", function(done) {
+                $subject.onpause = (e) => {
+                    expect(e.target).to.equal($subject).and.have.property('isPaused', true);
+                    done();
+                };
+                $action;
+            });
+        });
+        context("if already paused", function() {
+            beforeEach(function() { $subject.mainLoop.runningLoop = 0; });
+            
+            it("does not change #isPaused", function() {
+                expect(() => $action).not.to.change($subject, 'isPaused');
+                expect($subject.isPaused).to.be.true;
+            });
+        });
+        context("if not running", function() {
+            beforeEach(function() { $subject.mainLoop.runningLoop = -1; });
+            
+            it("does not change #isPaused", function() {
+                expect(() => $action).not.to.change($subject, 'isPaused');
+                expect($subject.isPaused).to.be.false;
+            });
+        });
+    });
+    
+    describe(".resumeEmulation()", function() {
+        def('action', () => $subject.resumeEmulation());
+        afterEach(function() { $subject.stopEmulation(); });
+        
+        context("if running and not paused", function() {
+            beforeEach(function() { $subject.mainLoop.runningLoop = 1234; });
+            
+            it("does not change #isPaused", function() {
+                expect(() => $action).not.to.change($subject, 'isPaused');
+                expect($subject.isPaused).to.be.false;
+            });
+        });
+        context("if running and paused", function() {
+            beforeEach(function() { $subject.mainLoop.runningLoop = 0; });
+            
+            it("sets #isPaused to -false-", function() {
+                expect(() => $action).to.change($subject, 'isPaused');
+                expect($subject.isPaused).to.be.false;
+            });
+            
+            it("triggers 'onpause' event with itself as argument", function(done) {
+                $subject.onpause = (e) => {
+                    expect(e.target).to.equal($subject).and.have.property('isPaused', false);
+                    done();
+                };
+                $action;
+            });
+        });
+        context("if not running", function() {
+            beforeEach(function() { $subject.mainLoop.runningLoop = -1; });
+            
+            it("does not change #isPaused", function() {
+                expect(() => $action).not.to.change($subject, 'isPaused');
+                expect($subject.isPaused).to.be.false;
+            });
+        });
+    });
+    
+    //-------------------------------------------------------------------------------//
+    
     describe("#frontLEDState", function() {
         context("when the NES is on", function() {
             beforeEach(function() { $powerOn; });
+            afterEach(function() { $subject.stopEmulation(); });
             
             its('frontLEDState', () => is.expected.to.equal("on"));
         });
         context("when the NES is off", function() {
             beforeEach(function() { $powerOff; });
+            afterEach(function() { $subject.stopEmulation(); });
             
             its('frontLEDState', () => is.expected.to.equal("off"));
         });

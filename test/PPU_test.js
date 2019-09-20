@@ -100,8 +100,8 @@ describe("Ppu", function() {
         });
     });
     
-    describe(".doFrame()", function() {
-        def('action', () => $subject.doFrame());
+    describe(".doVBlank()", function() {
+        def('action', () => $subject.doVBlank());
         
         it("sets #vblank", function() {
             expect(() => $action).to.change($subject, 'vblank');
@@ -117,6 +117,27 @@ describe("Ppu", function() {
                 $nes.cpu.doNMI = () => done();
                 $action;
             });
+        });
+    });
+    describe(".endVBlank()", function() {
+        def('action', () => $subject.endVBlank());
+        beforeEach(function() {
+            $subject.spriteOverflow = true;
+            $subject.sprite0Hit = true;
+            $subject.vblank = true;
+        });
+        
+        it("resets #spriteOverflow", function() {
+            expect(() => $action).to.change($subject, 'spriteOverflow');
+            expect($subject.spriteOverflow).to.be.false;
+        });
+        it("resets #sprite0Hit", function() {
+            expect(() => $action).to.change($subject, 'sprite0Hit');
+            expect($subject.sprite0Hit).to.be.false;
+        });
+        it("resets #vblank", function() {
+            expect(() => $action).to.change($subject, 'vblank');
+            expect($subject.vblank).to.be.false;
         });
     });
     
