@@ -195,14 +195,14 @@ describe("NES", function() {
                 $action;
                 $subject.onemulation = undefined;
             });
+        });
         context("if not running", function() {
             beforeEach(function() { $subject.mainLoop.runningLoop = -1; });
-            
+        
             it("does not change #isRunning", function() {
                 expect(() => $action).not.to.change($subject, 'isRunning');
                 expect($subject.isRunning).to.be.false;
             });
-        });
         });
     });
     

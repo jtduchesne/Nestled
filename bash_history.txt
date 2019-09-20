@@ -17,3 +17,5 @@ npm install --save-dev chai
 npm install --save-dev bdd-lazy-var
 
 npm install --save-dev eslint
+
+npm install --save-dev canvas

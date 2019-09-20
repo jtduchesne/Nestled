@@ -36,6 +36,7 @@
   },
   "devDependencies": {
     "bdd-lazy-var": "^2.5.2",
+    "canvas": "^2.6.1",
     "chai": "^4.2.0",
     "eslint": "^6.3.0",
     "mocha": "^6.2.0",

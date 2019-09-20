@@ -1,6 +1,12 @@
-global.window = undefined;
 global.expect = require('chai').expect;
 global.Nestled = require('../public/javascripts/nestled.cjs.js');
+
+global.window = undefined;
+global.document = {
+    createElement: (name) => {
+        if (name === 'canvas') return require('canvas').createCanvas();
+    }
+};
 
 global.File = class {
     constructor(name, content) {

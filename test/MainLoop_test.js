@@ -54,7 +54,7 @@ describe("MainLoop", function() {
             
                 it("calls .cancelPendingFrames()", function(done) {
                     $subject.cancelPendingFrames = () => done();
-                    $action
+                    $action;
                 });
             });
         });
