@@ -158,7 +158,7 @@ export class MainLoop {
             cpu.doInstructions(cyclesBeforeScanline + dot/3);
             //ppu.renderTile(dot, scanline);
             //ppu.fetchTile();
-            //ppu.incrementX();
+            ppu.incrementX();
             dot += 8;
         }
         //ppu.evaluateSprites(scanline);
@@ -166,7 +166,7 @@ export class MainLoop {
             cpu.doInstructions(cyclesBeforeScanline + dot/3);
             //ppu.renderTile(dot, scanline);
             //ppu.fetchTile();
-            //ppu.incrementX();
+            ppu.incrementX();
             dot += 8;
         }
         
@@ -174,8 +174,8 @@ export class MainLoop {
         cpu.doInstructions(cyclesBeforeScanline + dot/3);
         //ppu.renderTile(dot, scanline);
         //ppu.fetchNullTile();
-        //ppu.incrementY();
-        //ppu.resetX();
+        ppu.incrementY();
+        ppu.resetX();
         dot += 8;
         
         while (dot < 320) {
@@ -194,11 +194,11 @@ export class MainLoop {
         while (dot < 256) {
             cpu.doInstructions(cyclesBeforeScanline + dot/3);
             //ppu.fetchNullTile();
-            //ppu.incrementX();
+            ppu.incrementX();
             dot += 8;
         }
-        //ppu.incrementY();
-        //ppu.resetX();
+        ppu.incrementY();
+        ppu.resetX();
         while (dot < 279) {
             cpu.doInstructions(cyclesBeforeScanline + dot/3);
             //ppu.fetchNullSprite();
@@ -207,7 +207,7 @@ export class MainLoop {
         while (dot < 304) {
             cpu.doInstructions(cyclesBeforeScanline + dot/3);
             //ppu.fetchNullSprite();
-            //ppu.resetY();
+            ppu.resetY();
             dot += 8;
         }
         while (dot < 320) {
@@ -227,7 +227,7 @@ export class MainLoop {
             cpu.doInstructions(cyclesBeforeScanline + dot/3);
             // First 2 tiles of next frame's background:
             //ppu.fetchTile();
-            //ppu.incrementX();
+            ppu.incrementX();
             dot += 8;
         }
         //ppu.fetchNullNTs();

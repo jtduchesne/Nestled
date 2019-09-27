@@ -26,7 +26,7 @@ describe("Ppu", function() {
     });
     
     beforeEach("PowerOn", function() { $subject.powerOn(); });
-        
+    
     //-------------------------------------------------------------------------------//
     
     describe(".powerOn()", function() {
@@ -34,12 +34,10 @@ describe("Ppu", function() {
         
         its('isPowered', () => is.expected.to.be.true);
         
-        its('addToXScroll',     () => is.expected.to.equal(0));
-        its('addToYScroll',     () => is.expected.to.equal(0));
         its('addressIncrement', () => is.expected.to.equal(1));
         its('sprite8x16',       () => is.expected.to.be.false);
         its('nmiEnabled',       () => is.expected.to.be.false);
-    
+        
         its('grayscale',        () => is.expected.to.be.false);
         its('showLeftMostBkg',  () => is.expected.to.be.false);
         its('showLeftMostSpr',  () => is.expected.to.be.false);
@@ -48,9 +46,9 @@ describe("Ppu", function() {
         its('emphasizeRed',     () => is.expected.to.be.false);
         its('emphasizeGreen',   () => is.expected.to.be.false);
         its('emphasizeBlue',    () => is.expected.to.be.false);
-    
+        
         its('sprite0Hit',       () => is.expected.to.be.false);
-    
+        
         its('oamAddress',       () => is.expected.to.equal(0));
     });
     
@@ -66,8 +64,6 @@ describe("Ppu", function() {
         it("clears Control Register", function() {
             $subject.writeRegister(0x2000, 0xFF);
             $action;
-            expect($subject.addToXScroll).to.equal(0);
-            expect($subject.addToYScroll).to.equal(0);
             expect($subject.addressIncrement).to.equal(1);
             expect($subject.sprPatternTable).to.equal(0);
             expect($subject.bkgPatternTable).to.equal(0);
@@ -90,8 +86,7 @@ describe("Ppu", function() {
             $subject.writeRegister(0x2005, 0xFF);
             $action;
             expect($subject.writeToggle).to.be.false;
-            expect($subject.scrollX).to.equal(0);
-            expect($subject.scrollY).to.equal(0);
+            expect($subject.fineScrollX).to.equal(0);
         });
         it("clears the read buffer", function() {
             $subject.readBuffer = 0xFF;
@@ -354,22 +349,25 @@ describe("Ppu", function() {
             
             context("the first time", function() {
                 beforeEach(function() {
-                    $subject.writeRegister($address, 0xAD);
-                });
+                    $subject.writeRegister($address, 0xAD); // b10101|101
+                });                                         //  XXXXX|xxx
                 
-                it("sets scrollX", function() {
-                    expect($subject.scrollX).to.equal(0xAD);
+                it("sets fineScrollX", function() {
+                    expect($subject.fineScrollX).to.equal(0x5); // b0101
                 });
+                it("sets coarse X scroll in addressBuffer (bits0-4)", function() {
+                    expect($subject.addressBuffer).to.equal(0x0015); // b0000.0000.0001.0101
+                });                                                  //  _yyy.nnYY.YYYX.XXXX
             });
             context("the second time", function() {
                 beforeEach(function() {
                     $subject.writeRegister($address, 0x00);
-                    $subject.writeRegister($address, 0xAD);
-                });
+                    $subject.writeRegister($address, 0xAD); // b10101|101
+                });                                         //  YYYYY|yyy
                 
-                it("sets scrollY", function() {
-                    expect($subject.scrollY).to.equal(0xAD);
-                });
+                it("sets coarse Y (bits5-9) and fine Y (bitsC-E) scroll in addressBuffer", function() {
+                    expect($subject.addressBuffer).to.equal(0x52A0); // b0101.0010.1010.0000
+                });                                                  //  _yyy.nnYY.YYYX.XXXX
             });
         });
         
@@ -527,7 +525,7 @@ describe("Ppu", function() {
     });
     
     //-------------------------------------------------------------------------------//
-        
+    
     describe(".readPalette(address)", function() {
         beforeEach(function() {
             $subject.bkgPalette.set([0x3F,0x01,0x02,0x03,0x04,0x05,0x06,0x07,0x08]);
@@ -592,6 +590,119 @@ describe("Ppu", function() {
             $subject.writePalette(0x3F1C, 0x18);
             expect($subject.bkgPalette[0xC]).to.equal(0x18);
             expect($subject.sprPalette[0xC]).not.to.equal(0x18);
+        });
+    });
+    
+    //-------------------------------------------------------------------------------//
+    
+    describe(".incrementX()", function() {
+        beforeEach(function() { $subject.renderingEnabled = true; });
+        
+        it("increments #addressBus by 1 when ScrollX = 0", function() {
+            $subject.addressBus = 0x0000;                 // b0000.0000.0000.0000
+            $subject.incrementX();                        //   ---.-n--.---X.XXXX
+            expect($subject.addressBus).to.equal(0x0001); // b0000.0000.0000.0001
+        });
+        it("toggles bit10 when ScrollX = 31", function() {
+            $subject.addressBus = 0x001F;                 // b0000.0000.0001.1111
+            $subject.incrementX();                        //   ---.-n--.---X.XXXX
+            expect($subject.addressBus).to.equal(0x0400); // b0000.0100.0000.0000
+            
+            $subject.addressBus = 0x041F;                 // b0000.0100.0001.1111
+            $subject.incrementX();                        //   ---.-n--.---X.XXXX
+            expect($subject.addressBus).to.equal(0x0000); // b0000.0000.0000.0000
+        });
+        
+        it("does not change bits[5-9]", function() {
+            $subject.addressBus = 0x03FF;                 // b0000.0011.1111.1111
+            $subject.incrementX();                        //   ---.-n--.---X.XXXX
+            expect($subject.addressBus).to.equal(0x07E0); // b0000.0111.1110.0000
+            
+            $subject.addressBus = 0x07FF;                 // b0000.0111.1111.1111
+            $subject.incrementX();                        //   ---.-n--.---X.XXXX
+            expect($subject.addressBus).to.equal(0x03E0); // b0000.0011.1110.0000
+        });
+        it("does not change bits[11-14]", function() {
+            $subject.addressBus = 0x781F;                 // b0111.1000.0001.1111
+            $subject.incrementX();                        //   ---.-n--.---X.XXXX
+            expect($subject.addressBus).to.equal(0x7C00); // b0111.1100.0000.0000
+            
+            $subject.addressBus = 0x7C1F;                 // b0111.1100.0001.1111
+            $subject.incrementX();                        //   ---.-n--.---X.XXXX
+            expect($subject.addressBus).to.equal(0x7800); // b0111.1000.0000.0000
+        });
+    });
+    
+    describe(".incrementY()", function() {
+        beforeEach(function() { $subject.renderingEnabled = true; });
+        
+        it("increments #addressBus by 4096 when fineScrollY = 0", function() {
+            $subject.addressBus = 0x0000;                 // b0000.0000.0000.0000
+            $subject.incrementY();                        //   yyy.n-YY.YYY-.----
+            expect($subject.addressBus).to.equal(0x1000); // b0001.0000.0000.0000
+        });
+        it("increments #addressBus by 32 when fineScrollY = 7", function() {
+            $subject.addressBus = 0x7000;                 // b0111.0000.0000.0000
+            $subject.incrementY();                        //   yyy.n-YY.YYY-.----
+            expect($subject.addressBus).to.equal(0x0020); // b0000.0000.0010.0000
+        });
+        it("toggles bit11 when ScrollY = 29", function() {
+            $subject.addressBus = 0x73A0;                 // b0111.0011.1010.0000
+            $subject.incrementY();                        //   yyy.n-YY.YYY-.----
+            expect($subject.addressBus).to.equal(0x0800); // b0000.1000.0000.0000
+            
+            $subject.addressBus = 0x7BA0;                 // b0111.1011.1010.0000
+            $subject.incrementY();                        //   yyy.n-YY.YYY-.----
+            expect($subject.addressBus).to.equal(0x0000); // b0000.0000.0000.0000
+        });
+        it("does not toggle bit11 when ScrollY = 31", function() {
+            $subject.addressBus = 0x73E0;                 // b0111.0011.1110.0000
+            $subject.incrementY();                        //   yyy.n-YY.YYY-.----
+            expect($subject.addressBus).to.equal(0x0000); // b0000.0000.0000.0000
+        });
+        
+        it("does not change bits[0-4]", function() {
+            $subject.addressBus = 0x77BF;                 // b0111.0111.1011.1111
+            $subject.incrementY();                        //   yyy.n-YY.YYY-.----
+            expect($subject.addressBus).to.equal(0x0C1F); // b0000.1100.0001.1111
+            
+            $subject.addressBus = 0x7FBF;                 // b0111.1111.1011.1111
+            $subject.incrementY();                        //   yyy.n-YY.YYY-.----
+            expect($subject.addressBus).to.equal(0x041F); // b0000.0100.0001.1111
+        });
+    });
+    
+    describe(".resetX()", function() {
+        def('action', () => $subject.resetX());
+        beforeEach(function() {
+            $subject.renderingEnabled = true;
+            $subject.addressBuffer = 0xFFFF;
+            $subject.addressBus = 0x0000;
+        });
+        
+        it("sets ScrollX to its initial value in #addressBuffer", function() {
+            expect(() => $action).to.change($subject, 'addressBus');
+            expect($subject.addressBus).to.equal(0x041F);
+        });
+        it("does not change #addressBuffer", function() {
+            expect(() => $action).not.to.change($subject, 'addressBuffer');
+        });
+    });
+    
+    describe(".resetY()", function() {
+        def('action', () => $subject.resetY());
+        beforeEach(function() {
+            $subject.renderingEnabled = true;
+            $subject.addressBuffer = 0xFFFF;
+            $subject.addressBus = 0x0000;
+        });
+        
+        it("sets ScrollY to its initial value in #addressBuffer", function() {
+            expect(() => $action).to.change($subject, 'addressBus');
+            expect($subject.addressBus).to.equal(0x7BE0);
+        });
+        it("does not change #addressBuffer", function() {
+            expect(() => $action).not.to.change($subject, 'addressBuffer');
         });
     });
 });

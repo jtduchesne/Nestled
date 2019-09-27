@@ -53,22 +53,22 @@ export class PPU {
     }
     endVBlank() {
         this.status = null;
+        this.renderingEnabled = (this.showBackground || this.showSprites);
     }
     
     //== Registers ==================================================//
     //= 0x2000 Control =//
     set control(value) {
         if (value !== null) {
-            this.addToXScroll =     (value & 0x01) ? 256 : 0;
-            this.addToYScroll =     (value & 0x02) ? 240 : 0;
+            this.addressBuffer &= ~0x0C00; // b1111.0011.1111.1111
+            this.addressBuffer |= (value & 0x3)<<10;
+        
             this.addressIncrement = (value & 0x04) ? 32 : 1;
             this.sprPatternTable =  (value & 0x08) ? 0x1000 : 0x0000;
             this.bkgPatternTable =  (value & 0x10) ? 0x1000 : 0x0000;
             this.sprite8x16 =     !!(value & 0x20);
             this.nmiEnabled =     !!(value & 0x80);
         } else {
-            this.addToXScroll = 0;
-            this.addToYScroll = 0;
             this.addressIncrement = 1;     //[1,32]
             this.sprPatternTable = 0x0000; //[0x0000,0x1000]
             this.bkgPatternTable = 0x0000; //[0x0000,0x1000]
@@ -133,16 +133,25 @@ export class PPU {
     //= 0x2005 Scroll =//
     set scroll(value) {
         if (value !== null) {
-            let toggle = this.writeToggle;
-            if (toggle)
-                this.scrollY = value;
-            else
-                this.scrollX = value;
+            const toggle = this.writeToggle;
+            var addressBuffer = this.addressBuffer;
+            if (toggle) {
+                // Vertical scroll
+                addressBuffer &= 0x0C1F; // b0000.1100.0001.1111
+                addressBuffer |= ((value & 0x07) << 12);
+                addressBuffer |= ((value & 0xF8) << 2);
+            } else {
+                // Horizontal scroll
+                addressBuffer &= 0x7FE0; // b0111.1111.1110.0000
+                addressBuffer |= (value >>> 3);
+            
+                this.fineScrollX = value & 0x07;
+            }
+            this.addressBuffer = addressBuffer;
             this.writeToggle = !toggle;
         } else {
             this.writeToggle = false;
-            this.scrollX = 0x0;
-            this.scrollY = 0x0;
+            this.fineScrollX = 0x0;
         }
     }
     
@@ -244,6 +253,58 @@ export class PPU {
             this.palette[(address & 0x10) >>> 4][address & 0x0F] = data;
         else
             this.palette[0][address & 0x0F] = data;
+    }
+    
+    //== Scrolling ==================================================//
+    incrementX() {
+        if (!this.renderingEnabled) return;
+        
+        var addressBus = this.addressBus;
+        if ((addressBus & 0x001F) === 31) {
+            addressBus &= 0x7FE0; // b0111.1111.1110.0000
+            addressBus ^= 0x0400; // b0000.0100.0000.0000
+        } else {
+            addressBus++;
+        }
+        this.addressBus = addressBus;
+    }
+    incrementY() {
+        if (!this.renderingEnabled) return;
+        
+        var addressBus = this.addressBus;
+        if (addressBus < 0x7000) {
+            addressBus += 0x1000;
+        } else {
+            addressBus -= 0x7000; 
+
+            let coarseY = (addressBus & 0x03E0);
+            if (coarseY === 0x03A0) { // 29 << 5
+                addressBus &= 0x0C1F;
+                addressBus ^= 0x0800;
+            } else
+            if (coarseY === 0x03E0)   // 31 << 5
+                addressBus &= 0xFC1F;
+            else
+                addressBus += 0x0020;
+        }
+        this.addressBus = addressBus;
+    }
+    
+    resetX() {
+        if (!this.renderingEnabled) return;
+        
+        var addressBus = this.addressBus;            //  _yyy.nnYY.YYYX.XXXX
+        addressBus &= 0x7BE0;                        // b0111.1011.1110.0000
+        addressBus |= (this.addressBuffer & 0x041F); // b0000.0100.0001.1111
+        this.addressBus = addressBus;
+    }
+    resetY() {
+        if (!this.renderingEnabled) return;
+        
+        var addressBus = this.addressBus;            //  _yyy.nnYY.YYYX.XXXX
+        addressBus &= 0x041F;                        // b0000.0100.0001.1111
+        addressBus |= (this.addressBuffer & 0x7BE0); // b0111.1011.1110.0000
+        this.addressBus = addressBus;
     }
 }
 
