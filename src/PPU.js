@@ -140,6 +140,8 @@ export class PPU {
                 addressBuffer &= 0x0C1F; // b0000.1100.0001.1111
                 addressBuffer |= ((value & 0x07) << 12);
                 addressBuffer |= ((value & 0xF8) << 2);
+                
+                this.fineScrollY = value & 0x07;
             } else {
                 // Horizontal scroll
                 addressBuffer &= 0x7FE0; // b0111.1111.1110.0000
@@ -152,6 +154,7 @@ export class PPU {
         } else {
             this.writeToggle = false;
             this.fineScrollX = 0x0;
+            this.fineScrollY = 0x0;
         }
     }
     
@@ -274,6 +277,7 @@ export class PPU {
         var addressBus = this.addressBus;
         if (addressBus < 0x7000) {
             addressBus += 0x1000;
+            this.fineScrollY++;
         } else {
             addressBus -= 0x7000; 
 
@@ -286,6 +290,8 @@ export class PPU {
                 addressBus &= 0xFC1F;
             else
                 addressBus += 0x0020;
+            
+            this.fineScrollY = addressBus >>> 12;
         }
         this.addressBus = addressBus;
     }
@@ -305,6 +311,51 @@ export class PPU {
         addressBus &= 0x041F;                        // b0000.0100.0001.1111
         addressBus |= (this.addressBuffer & 0x7BE0); // b0111.1011.1110.0000
         this.addressBus = addressBus;
+        
+        this.fineScrollY = addressBus >>> 12;
+    }
+    
+    //== Background =================================================//
+    fetchNameTable(bus) {
+        let address = 0x2000 + (bus & 0x0FFF);
+        return this.read(address);
+    }
+    fetchAttributeTable(bus) {
+        let address = 0x23C0 | (bus & 0x0C00) | (bus>>>4 & 0x0038) | (bus>>>2 & 0x0007);
+        var offset = 0;
+        if (bus & 0x0002) offset += 2;
+        if (bus & 0x0040) offset += 4;
+        return (this.read(address) >>> offset) & 0x3;
+    }
+    fetchBkgPatternTable(patternIndex) {
+        let address = this.bkgPatternTable + patternIndex*16 + this.fineScrollY;
+        return this.read(address)*256 + this.read(address+8);
+    }
+    
+    fetchTile() {
+        if (!this.showBackground) return;
+
+        let addressBus = this.addressBus;
+        
+        let patternIndex = this.fetchNameTable(addressBus);
+        let paletteIndex = this.fetchAttributeTable(addressBus);
+        let pattern      = this.fetchBkgPatternTable(patternIndex);
+    }
+    
+    fetchNullTile() {
+        if (!this.showBackground) return;
+        
+        let addressBus = this.addressBus;
+        let patternIndex = this.fetchNameTable(addressBus);
+        this.fetchAttributeTable(addressBus);
+        this.fetchBkgPatternTable(patternIndex);
+    }
+    fetchNullNTs() {
+        if (!this.showBackground) return;
+        
+        let addressBus = this.addressBus;
+        this.fetchNameTable(addressBus);
+        this.fetchNameTable(addressBus);
     }
 }
 

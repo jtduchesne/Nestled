@@ -157,7 +157,7 @@ export class MainLoop {
         while (dot < 64) {
             cpu.doInstructions(cyclesBeforeScanline + dot/3);
             //ppu.renderTile(dot, scanline);
-            //ppu.fetchTile();
+            ppu.fetchTile();
             ppu.incrementX();
             dot += 8;
         }
@@ -165,7 +165,7 @@ export class MainLoop {
         while (dot < 248) {
             cpu.doInstructions(cyclesBeforeScanline + dot/3);
             //ppu.renderTile(dot, scanline);
-            //ppu.fetchTile();
+            ppu.fetchTile();
             ppu.incrementX();
             dot += 8;
         }
@@ -173,7 +173,7 @@ export class MainLoop {
         // HBlank
         cpu.doInstructions(cyclesBeforeScanline + dot/3);
         //ppu.renderTile(dot, scanline);
-        //ppu.fetchNullTile();
+        ppu.fetchNullTile();
         ppu.incrementY();
         ppu.resetX();
         dot += 8;
@@ -193,7 +193,7 @@ export class MainLoop {
         
         while (dot < 256) {
             cpu.doInstructions(cyclesBeforeScanline + dot/3);
-            //ppu.fetchNullTile();
+            ppu.fetchNullTile();
             ppu.incrementX();
             dot += 8;
         }
@@ -226,7 +226,7 @@ export class MainLoop {
         while (dot < 336) {
             cpu.doInstructions(cyclesBeforeScanline + dot/3);
             // First 2 tiles of next frame's background:
-            //ppu.fetchTile();
+            ppu.fetchTile();
             ppu.incrementX();
             dot += 8;
         }

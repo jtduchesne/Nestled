@@ -18,11 +18,15 @@ describe("Ppu", function() {
     def(['VRAM0Data','VRAM1Data']);
     def('PalData', () => 0x99); // b10011001
     def(['bkgPalData','sprPalData']);
+    def('CHRROMPattern1'); //If set, this pattern is set at the beginning of CHR-ROM
+    def('CHRROMPattern2'); //If set, this pattern is set at CHR-ROM[0x1000]
     beforeEach(function() {
         $subject.vramBank[0].fill($VRAM0Data || $VRAMData);
         $subject.vramBank[1].fill($VRAM1Data || $VRAMData);
         $subject.palette[0].fill($bkgPalData || $PalData);
         $subject.palette[1].fill($sprPalData || $PalData);
+        if ($CHRROMPattern1) $cartridge.CHRBank[0].set($CHRROMPattern1, 0x0000);
+        if ($CHRROMPattern2) $cartridge.CHRBank[0].set($CHRROMPattern2, 0x1000);
     });
     
     beforeEach("PowerOn", function() { $subject.powerOn(); });
@@ -87,6 +91,7 @@ describe("Ppu", function() {
             $action;
             expect($subject.writeToggle).to.be.false;
             expect($subject.fineScrollX).to.equal(0);
+            expect($subject.fineScrollY).to.equal(0);
         });
         it("clears the read buffer", function() {
             $subject.readBuffer = 0xFF;
@@ -365,6 +370,9 @@ describe("Ppu", function() {
                     $subject.writeRegister($address, 0xAD); // b10101|101
                 });                                         //  YYYYY|yyy
                 
+                it("sets fineScrollY", function() {
+                    expect($subject.fineScrollY).to.equal(0x5); // b0101
+                });
                 it("sets coarse Y (bits5-9) and fine Y (bitsC-E) scroll in addressBuffer", function() {
                     expect($subject.addressBuffer).to.equal(0x52A0); // b0101.0010.1010.0000
                 });                                                  //  _yyy.nnYY.YYYX.XXXX
@@ -703,6 +711,212 @@ describe("Ppu", function() {
         });
         it("does not change #addressBuffer", function() {
             expect(() => $action).not.to.change($subject, 'addressBuffer');
+        });
+    });
+    
+    //-------------------------------------------------------------------------------//
+    
+    describe(".fetchNameTable(bus)", function() {
+        def('action', () => $subject.fetchNameTable(0xFFFF));
+        
+        context("when cartridge.ciramEnabled() returns -false-", function() {
+            beforeEach(function() { $nes.cartridge.ciramEnabled = () => false; });
+            
+            it("reads from Cartridge", function() {
+                expect($action).to.equal($CHRROMData);
+            });
+            it("calls cartridge.ppuRead() with a modified address (0x2xxx)", function(done) {
+                $nes.cartridge.ppuRead = (address) => {
+                    expect(address).to.equal(0x2FFF);
+                    done();
+                };
+                $action;
+            });
+        });
+        context("when cartridge.ciramEnabled() returns -true-", function() {
+            beforeEach(function() { $nes.cartridge.ciramEnabled = () => true; });
+            
+            it("reads from VRAM", function() {
+                expect($action).to.equal($VRAMData);
+            });
+            it("calls .read() with a modified address (0x2xxx)", function(done) {
+                $subject.read = (address) => {
+                    expect(address).to.equal(0x2FFF);
+                    done();
+                };
+                $action;
+            });
+            
+            context("when mirroring is horizontal", function() {
+                beforeEach(function() { $nes.cartridge.horiMirroring = true; });
+                def('VRAM0Data', () => 0x11);
+                def('VRAM1Data', () => 0x22);
+                
+                it("reads from VRAM[0] when A10 is not set", function() {
+                    expect($subject.fetchNameTable(0x0000)).to.equal($VRAM0Data);
+                    expect($subject.fetchNameTable(0x0400)).to.equal($VRAM0Data);
+                });
+                it("reads from VRAM[1] when A10 is set", function() {
+                    expect($subject.fetchNameTable(0x0800)).to.equal($VRAM1Data);
+                    expect($subject.fetchNameTable(0x0C00)).to.equal($VRAM1Data);
+                });
+            });
+            context("when mirroring is vertical", function() {
+                beforeEach(function() { $nes.cartridge.vertMirroring = true; });
+                def('VRAM0Data', () => 0x33);
+                def('VRAM1Data', () => 0x44);
+                
+                it("reads from VRAM[0] when A11 is not set", function() {
+                    expect($subject.fetchNameTable(0x0000)).to.equal($VRAM0Data);
+                    expect($subject.fetchNameTable(0x0800)).to.equal($VRAM0Data);
+                });
+                it("reads from VRAM[1] when A11 is set", function() {
+                    expect($subject.fetchNameTable(0x0400)).to.equal($VRAM1Data);
+                    expect($subject.fetchNameTable(0x0C00)).to.equal($VRAM1Data);
+                });
+            });
+        });
+    });
+    
+    describe(".fetchAttributeTable(bus)", function() {
+        def('action', () => $subject.fetchAttributeTable(0xFFFF));
+        def('VRAMData', () => 0xE4); // b11-10-01-00 => 3-2-1-0
+        
+        context("when cartridge.ciramEnabled() returns -false-", function() {
+            beforeEach(function() { $nes.cartridge.ciramEnabled = () => false; });
+            
+            it("calls cartridge.ppuRead() with a modified address", function(done) {
+                $nes.cartridge.ppuRead = (address) => {
+                    expect(address).to.equal(0x2FFF);
+                    done();
+                };
+                $action;
+            });
+        });
+        context("when cartridge.ciramEnabled() returns -true-", function() {
+            beforeEach(function() { $nes.cartridge.ciramEnabled = () => true; });
+            
+            it("calls .read() with a modified address", function(done) {
+                $subject.read = (address) => {
+                    expect(address).to.equal(0x2FFF);
+                    done();
+                };
+                $action;
+            });
+            it("returns a 2bit palette index according to position of tile", function() {
+                expect($subject.fetchAttributeTable(0x0000)).to.equal(0);
+                expect($subject.fetchAttributeTable(0x0002)).to.equal(1);
+                expect($subject.fetchAttributeTable(0x0040)).to.equal(2);
+                expect($subject.fetchAttributeTable(0x0042)).to.equal(3);
+            });
+            
+            context("when mirroring is horizontal", function() {
+                beforeEach(function() { $nes.cartridge.horiMirroring = true; });
+                def('VRAM0Data', () => 0x00);
+                def('VRAM1Data', () => 0xFF);
+                
+                it("reads from VRAM[0] when A10 is not set", function() {
+                    expect($subject.fetchAttributeTable(0x0000)).to.equal(0);
+                    expect($subject.fetchAttributeTable(0x0400)).to.equal(0);
+                });
+                it("reads from VRAM[1] when A10 is set", function() {
+                    expect($subject.fetchAttributeTable(0x0800)).to.equal(3);
+                    expect($subject.fetchAttributeTable(0x0C00)).to.equal(3);
+                });
+            });
+            context("when mirroring is vertical", function() {
+                beforeEach(function() { $nes.cartridge.vertMirroring = true; });
+                def('VRAM0Data', () => 0x00);
+                def('VRAM1Data', () => 0xFF);
+                
+                it("reads from VRAM[0] when A11 is not set", function() {
+                    expect($subject.fetchAttributeTable(0x0000)).to.equal(0);
+                    expect($subject.fetchAttributeTable(0x0800)).to.equal(0);
+                });
+                it("reads from VRAM[1] when A11 is set", function() {
+                    expect($subject.fetchAttributeTable(0x0400)).to.equal(3);
+                    expect($subject.fetchAttributeTable(0x0C00)).to.equal(3);
+                });
+            });
+        });
+    });
+    
+    describe(".fetchBkgPatternTable(patternIndex)", function() {
+        def('action', () => $subject.fetchBkgPatternTable(0));
+        def('CHRROMPattern1', () => [ 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15,16,
+                                     17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32]);
+        def('CHRROMPattern2', () => [33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48]);
+        
+        it("reads twice from the cartridge", function(done) {
+            var count = 0;
+            $nes.cartridge.ppuRead = () => { if (++count === 2) done(); };
+            $action;
+        });
+        it("builds a word from 2 bytes at 8 bytes distance", function() {
+            expect($action).to.equal(0x0109);
+        });
+        
+        it("reads according to #bkgPatternTable", function() {
+            $subject.bkgPatternTable = 0x0000;
+            expect($subject.fetchBkgPatternTable(0)).to.equal(0x0109);
+            $subject.bkgPatternTable = 0x1000;
+            expect($subject.fetchBkgPatternTable(0)).to.equal(0x2129);
+        });
+        it("reads according to patternIndex", function() {
+            expect($subject.fetchBkgPatternTable(0)).to.equal(0x0109);
+            expect($subject.fetchBkgPatternTable(1)).to.equal(0x1119);
+        });
+        it("reads according to #fineScrollY", function() {
+            $subject.fineScrollY = 0x0;
+            expect($subject.fetchBkgPatternTable(0)).to.equal(0x0109);
+            $subject.fineScrollY = 0x1;
+            expect($subject.fetchBkgPatternTable(0)).to.equal(0x020A);
+        });
+    });
+    
+    describe(".fetchTile()", function() {
+        def('action', () => $subject.fetchTile());
+        beforeEach(function() { $subject.showBackground = true; });
+        
+        it("calls .fetchNameTable()", function(done) {
+            $subject.fetchNameTable = () => done();
+            $action;
+        });
+        it("calls .fetchAttributeTable()", function(done) {
+            $subject.fetchAttributeTable = () => done();
+            $action;
+        });
+        it("calls .fetchBkgPatternTable()", function(done) {
+            $subject.fetchBkgPatternTable = () => done();
+            $action;
+        });
+    });
+    
+    describe(".fetchNullTile()", function() {
+        def('action', () => $subject.fetchNullTile());
+        beforeEach(function() { $subject.showBackground = true; });
+        
+        it("calls .fetchNameTable()", function(done) {
+            $subject.fetchNameTable = () => done();
+            $action;
+        });
+        it("calls .fetchAttributeTable()", function(done) {
+            $subject.fetchAttributeTable = () => done();
+            $action;
+        });
+        it("calls .fetchBkgPatternTable()", function(done) {
+            $subject.fetchBkgPatternTable = () => done();
+            $action;
+        });
+    });
+    describe(".fetchNullNTs()", function() {
+        def('action', () => $subject.fetchNullNTs());
+        beforeEach(function() { $subject.showBackground = true; });
+        
+        it("calls .fetchNameTable() twice", function(done) {
+            var count = 0;
+            $subject.fetchNameTable = () => { if (++count === 2) done(); };
+            $action;
         });
     });
 });
