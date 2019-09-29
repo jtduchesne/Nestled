@@ -84,4 +84,22 @@ describe("Buffer", function() {
             });
         });
     });
+    
+    describe(".clear()", function() {
+        def('action', () => $subject.clear());
+        beforeEach(function() { $subject.dirty = true; });
+        
+        it("resets #dirty", function() {
+            expect(() => $action).to.change($subject, 'dirty');
+            expect($subject.dirty).to.be.false;
+        });
+        it("sets the entire buffer to -0-", function() {
+            let buffer = new Uint32Array($subject.imageData.data.buffer);
+            buffer.set($data);
+            
+            expect(() => $action).to.change(buffer, '0');
+            expect(buffer[0]).to.equal(0);
+            expect(buffer[buffer.length-1]).to.equal(0);
+        });
+    });
 });

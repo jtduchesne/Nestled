@@ -7,6 +7,8 @@ import MainLoop from './MainLoop.js';
 export class NES {
     constructor(opts) {
         if (opts) {
+            if (opts['screen']) this.screen = opts['screen'];
+            
             if (opts['onpower']) this.onpower = opts['onpower'];
             if (opts['onreset']) this.onreset = opts['onreset'];
             if (opts['onemulation']) this.onemulation = opts['onemulation'];
@@ -147,6 +149,20 @@ export class NES {
         if (cart && (typeof cart.blowInto === 'function'))
             cart.blowInto(Math.floor(Math.random() * 3) + 1);
         return this.insertCartridge(cart);
+    }
+    
+    //== Video ==============================================================================//
+    get screen() {
+        return this.outputCanvas; }
+    set screen(value) {
+        if (value && value.nodeName === 'CANVAS') {
+            this.outputCanvas = value;
+            this.outputContext = value.getContext('2d', {alpha: false});
+            this.outputContext.imageSmoothingEnabled = false;
+        } else {
+            this.outputCanvas  = null;
+            this.outputContext = null;
+        }
     }
 }
 export default NES;

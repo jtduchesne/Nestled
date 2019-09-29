@@ -48,15 +48,6 @@ describe("MainLoop", function() {
                 expect(() => $action).to.change($subject, 'runningLoop');
                 expect($subject.runningLoop).to.not.equal(0).and.not.equal(-1);
             });
-            
-            context("if there are pending frames", function() {
-                beforeEach(function() { $subject.delta = 20.0; });
-            
-                it("calls .cancelPendingFrames()", function(done) {
-                    $subject.cancelPendingFrames = () => done();
-                    $action;
-                });
-            });
         });
     });
     
@@ -242,6 +233,10 @@ describe("MainLoop", function() {
                 expect(() => $action).not.to.change($subject, 'frame');
             });
             
+            it("calls .cancelPendingFrames()", function(done) {
+                $subject.cancelPendingFrames = () => done();
+                $action;
+            });
             it("calls nes.pauseEmulation()", function(done) {
                 $nes.pauseEmulation = () => done();
                 $action;

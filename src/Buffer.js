@@ -31,6 +31,12 @@ export class Buffer {
         }
         return this.canvas;
     }
+    
+    clear() {
+        this.imageData.data.fill(0);
+        this.context.putImageData(this.imageData, 0, 0);
+        this.dirty = false;
+    }
 }
 
 export default Buffer;

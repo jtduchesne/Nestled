@@ -100,6 +100,12 @@ describe("Cpu", function() {
                 expect($subject.read(0x0000)).to.equal($RAMData);
                 expect($subject.read(0x1FFF)).to.equal($RAMData);
             });
+            it("reads from PPU's registers when address is between [0x2000-4000]", function(done) {
+                var count = 0;
+                $nes.ppu.readRegister = () => { if (++count === 2) done(); };
+                $subject.read(0x2000);
+                $subject.read(0x3FFF);
+            });
             it("reads from PRG-RAM when address is between [0x6000-7FFF]", function() {
                 expect($subject.read(0x6000)).to.equal($PRGRAMData);
                 expect($subject.read(0x7FFF)).to.equal($PRGRAMData);
@@ -121,6 +127,12 @@ describe("Cpu", function() {
             it("writes to RAM when address is between [0x0000, 0x07FF]", function() {
                 $subject.write(0x0000, 0xFF);
                 expect($subject.ram[0]).to.equal(0xFF); });
+            it("writes to PPU's registers when address is between [0x2000-4000]", function(done) {
+                var count = 0;
+                $nes.ppu.writeRegister = () => { if (++count === 2) done(); };
+                $subject.write(0x2000);
+                $subject.write(0x3FFF);
+            });
             it("writes to PRG-RAM when address is between [0x6000, 0x7FFF]", function() {
                 $subject.write(0x6000, 0xFF);
                 expect($nes.cartridge.PRGRAM[0]).to.equal(0xFF); });

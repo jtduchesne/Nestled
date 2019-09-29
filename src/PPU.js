@@ -1,4 +1,8 @@
+import Buffer from './Buffer.js';
 import * as Colors from './Colors.js';
+
+//                      0x0000, 0x8000,   0x0080, 0x8080
+const bitplaneLookup = {0: 0,   32768: 1, 128: 2, 32896: 3};
 
 export class PPU {
     constructor(nes) {
@@ -19,6 +23,13 @@ export class PPU {
         //Colors
         this.pxlColors = Colors.pxlColor;
         this.cssColors = Colors.cssColor;
+        
+        this.pixelsBuffer = new Uint32Array(16);
+        
+        //Layers
+        this.spritesBehind  = new Buffer(256, 240);
+        this.background     = new Buffer(256, 240);
+        this.spritesInFront = new Buffer(256, 240);
         
         this.isPowered = false;
     }
@@ -88,6 +99,8 @@ export class PPU {
             this.emphasizeRed    = !!(value & (this.ntsc ? 0x20 : 0x40));
             this.emphasizeGreen  = !!(value & (this.ntsc ? 0x40 : 0x20));
             this.emphasizeBlue   = !!(value & 0x80);
+            
+            this.renderingEnabled = !!(value & 0x18);
         } else {
             this.grayscale       = false;
             this.showLeftMostBkg = false;
@@ -97,6 +110,8 @@ export class PPU {
             this.emphasizeRed    = false;
             this.emphasizeGreen  = false;
             this.emphasizeBlue   = false;
+            
+            this.renderingEnabled = false;
         }
     }
         
@@ -225,14 +240,14 @@ export class PPU {
     }
     
     read(address) {
-        var cartridge = this.bus.cartridge;
+        let cartridge = this.bus.cartridge;
         if (cartridge.ciramEnabled(address))
             return this.vramBank[cartridge.ciramA10(address) ? 1 : 0][address & 0x3FF];
         else
             return cartridge.ppuRead(address);
     }
     write(address, data) {
-        var cartridge = this.bus.cartridge;
+        let cartridge = this.bus.cartridge;
         if (cartridge.ciramEnabled(address))
             this.vramBank[cartridge.ciramA10(address) ? 1 : 0][address & 0x3FF] = data;
         else
@@ -340,6 +355,17 @@ export class PPU {
         let patternIndex = this.fetchNameTable(addressBus);
         let paletteIndex = this.fetchAttributeTable(addressBus);
         let pattern      = this.fetchBkgPatternTable(patternIndex);
+        
+        let pixels = this.getPatternPixels(pattern, this.bkgPalette, paletteIndex);
+        this.pixelsBuffer.copyWithin(0, 8);
+        this.pixelsBuffer.set(pixels, 8);
+    }
+    renderTile(dot, scanline) {
+        if (!this.showBackground) return;
+        
+        let offset = this.fineScrollX;
+        let pixels = this.pixelsBuffer.subarray(offset, offset+8);
+        this.background.setPixels(dot, scanline, pixels);
     }
     
     fetchNullTile() {
@@ -356,6 +382,52 @@ export class PPU {
         let addressBus = this.addressBus;
         this.fetchNameTable(addressBus);
         this.fetchNameTable(addressBus);
+    }
+    
+    //== Pixels Rendering ===========================================//
+    getPatternPixels(pattern, palette, paletteIndex) {
+        let colors = this.pxlColors;
+        let paletteOffset = paletteIndex * 4;
+        
+        let pixels = new Uint32Array(8);
+        for (var offset = 0; offset < 8; offset++) {
+            let colorIndex = bitplaneLookup[(pattern << offset) & 0x8080];
+            pixels[offset] = colorIndex ? colors[palette[paletteOffset + colorIndex]] : 0x00000000;
+        }
+        return pixels;
+    }
+    //== Output =====================================================//
+    printFrame() {
+        let canvas = this.bus.outputCanvas;
+        if (canvas) {
+            let context = this.bus.outputContext;
+            let width   = canvas.width;
+            let height  = canvas.height;
+        
+            // Backdrop
+            context.fillStyle = this.cssColors[this.backdrop];
+            context.fillRect(0, 0, width, height);
+        
+            // Sprites behind background
+            //context.drawImage(this.spritesBehind.frame, 0, 0, 256, 240, 0, 0, width, height);
+            //this.spritesBehind.clear();
+            
+            // Background
+            context.drawImage(this.background.frame, 0, 0, 256, 240, 0, 0, width, height);
+            this.background.clear();
+            
+            // Sprites in front of background
+            //context.drawImage(this.spritesInFront.frame, 0, 0, 256, 240, 0, 0, width, height);
+            //this.spritesInFront.clear();
+        }
+    }
+    clearFrame() {
+        if (this.canvas) {
+            let canvas = this.bus.outputCanvas;
+            let context = this.bus.outputContext;
+            context.fillStyle = this.cssColors[this.backdrop];
+            context.fillRect(0, 0, canvas.width, canvas.height);
+        }
     }
 }
 

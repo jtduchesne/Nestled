@@ -135,10 +135,10 @@ export class CPU {
         if (address < 0x2000) {
             return this.ram[address & 0x7FF];
         } else if (address < 0x4018) {
-            if (address < 0x4000)        { /* return this.ppu.read(address); */ }
-            else if (address === 0x4016) { /* return this.joypad[0].read(); */ }
-            else if (address === 0x4017) { /* return this.joypad[1].read(); */ }
-            else                         { /* return this.apu.read(); */ }
+            if (address < 0x4000)        { return this.bus.ppu.readRegister(address); }
+            else if (address === 0x4016) { return 0; /* this.joypad[0].read(); */ }
+            else if (address === 0x4017) { return 0; /* this.joypad[1].read(); */ }
+            else                         { return 0; /* this.apu.read(); */ }
         } else {
             return this.bus.cartridge.cpuRead(address);
         }
@@ -147,7 +147,7 @@ export class CPU {
         if (address < 0x2000) {
             this.ram[address & 0x7FF] = data;
         } else if (address < 0x4018) {
-            if (address < 0x4000)        { /* this.ppu.write(address,data); */ }
+            if (address < 0x4000)        { this.bus.ppu.writeRegister(address,data); }
             else if (address === 0x4014) { /* this.ppu.dma(data); */}
             else if (address === 0x4016) { /* (Joypads strobe); */ }
             else                         { /* this.apu.write(address,data); */ }
@@ -378,13 +378,17 @@ export class CPU {
     }
     
     ASL(fnFetchOperand) { //Arithmetic Shift Left
+        let operand;
         if (this.opcode === 0x0A) { //Opcode $0A is implied
-            this.A = fnFetchOperand(this.A) * 2;
+            operand = fnFetchOperand(this.A);
+            this.A = operand * 2;
         } else {
             let address = fnFetchOperand();
-            this.write(address, this.ALU(this.read(address) * 2));
+            operand = this.read(address);
+            this.write(address, this.ALU(operand * 2));
             this.PC++;
         }
+        this.Carry = (operand & 0x80);
     }
     LSR(fnFetchOperand) { //Logical Shift Right
         let operand;
@@ -397,29 +401,33 @@ export class CPU {
             this.write(address, this.ALU(operand >>> 1));
             this.PC++;
         }
-        this.Carry = (operand & 0x1);
+        this.Carry = (operand & 0x01);
     }
     ROL(fnFetchOperand) { //Rotate Left
+        let operand;
         if (this.opcode === 0x2A) { //Opcode $2A is implied
-            this.A = fnFetchOperand(this.A) * 2 + this.Carry;
+            operand = fnFetchOperand(this.A);
+            this.A = operand * 2 + this.Carry;
         } else {
             let address = fnFetchOperand();
-            this.write(address, this.ALU(this.read(address) * 2 + this.Carry));
+            operand = this.read(address);
+            this.write(address, this.ALU(operand * 2 + this.Carry));
             this.PC++;
         }
+        this.Carry = (operand & 0x80);
     }
     ROR(fnFetchOperand) { //Rotate Right
         let operand;
         if (this.opcode === 0x6A) { //Opcode $6A is implied
-            operand = fnFetchOperand(this.A + this.Carry*256);
-            this.A = operand >>> 1;
+            operand = fnFetchOperand(this.A);
+            this.A = (operand >>> 1) + this.Carry*128;
         } else {
             let address = fnFetchOperand();
-            operand = this.read(address) + this.Carry*256;
-            this.write(address, this.ALU(operand >>> 1));
+            operand = this.read(address);
+            this.write(address, this.ALU((operand >>> 1) + this.Carry*128));
             this.PC++;
         }
-        this.Carry = (operand & 0x1);
+        this.Carry = (operand & 0x01);
     }
     
     INC(fnFetchOperand) { //Increment memory

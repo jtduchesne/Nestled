@@ -33,8 +33,6 @@ export class MainLoop {
         if (this.frame === 0) {
             this.reset();
             this.initialize();
-        } else {
-            this.cancelPendingFrames();
         }
         
         if (window)
@@ -58,6 +56,7 @@ export class MainLoop {
         else
             clearTimeout(this.runningLoop);
         this.lastFrameTime = 0.0;
+        
         this.runningLoop = 0;
     }
     
@@ -74,7 +73,7 @@ export class MainLoop {
         
         cpu.cycleOffset = 0;
         
-        //ppu.clearFrame();
+        ppu.clearFrame();
         
         cpu.doInstructions(2279); // 1.275ms after boot
         ppu.vblank = true;
@@ -97,6 +96,7 @@ export class MainLoop {
         let delta = lastFrameTime ? this.delta + (timestamp - lastFrameTime) : this.delta;
         
         if (delta > 2000) {
+            this.cancelPendingFrames();
             this.bus.pauseEmulation();
         } else {
             if (delta >= frameTime) {
@@ -136,7 +136,7 @@ export class MainLoop {
         
         cpu.doInstructions(cyclesBeforeVBlankStart);
         
-        //ppu.printFrame();
+        ppu.printFrame();
         
         // VBlank
         ppu.doVBlank();
@@ -156,7 +156,7 @@ export class MainLoop {
         //ppu.clearSecondaryOAM();
         while (dot < 64) {
             cpu.doInstructions(cyclesBeforeScanline + dot/3);
-            //ppu.renderTile(dot, scanline);
+            ppu.renderTile(dot, scanline);
             ppu.fetchTile();
             ppu.incrementX();
             dot += 8;
@@ -164,7 +164,7 @@ export class MainLoop {
         //ppu.evaluateSprites(scanline);
         while (dot < 248) {
             cpu.doInstructions(cyclesBeforeScanline + dot/3);
-            //ppu.renderTile(dot, scanline);
+            ppu.renderTile(dot, scanline);
             ppu.fetchTile();
             ppu.incrementX();
             dot += 8;
@@ -172,7 +172,7 @@ export class MainLoop {
         
         // HBlank
         cpu.doInstructions(cyclesBeforeScanline + dot/3);
-        //ppu.renderTile(dot, scanline);
+        ppu.renderTile(dot, scanline);
         ppu.fetchNullTile();
         ppu.incrementY();
         ppu.resetX();
@@ -230,7 +230,7 @@ export class MainLoop {
             ppu.incrementX();
             dot += 8;
         }
-        //ppu.fetchNullNTs();
+        ppu.fetchNullNTs();
     }
     
     cancelFrame(cpu, ppu) {

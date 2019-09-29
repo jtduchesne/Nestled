@@ -51,6 +51,8 @@ describe("Ppu", function() {
         its('emphasizeGreen',   () => is.expected.to.be.false);
         its('emphasizeBlue',    () => is.expected.to.be.false);
         
+        its('renderingEnabled', () => is.expected.to.be.false);
+        
         its('sprite0Hit',       () => is.expected.to.be.false);
         
         its('oamAddress',       () => is.expected.to.equal(0));
@@ -85,6 +87,8 @@ describe("Ppu", function() {
             expect($subject.emphasizeRed).to.be.false;
             expect($subject.emphasizeGreen).to.be.false;
             expect($subject.emphasizeBlue).to.be.false;
+            
+            expect($subject.renderingEnabled).to.be.false;
         });
         it("clears Scroll Register", function() {
             $subject.writeRegister(0x2005, 0xFF);
@@ -102,10 +106,15 @@ describe("Ppu", function() {
     
     describe(".doVBlank()", function() {
         def('action', () => $subject.doVBlank());
+        beforeEach(function() { $subject.renderingEnabled = true; });
         
         it("sets #vblank", function() {
             expect(() => $action).to.change($subject, 'vblank');
             expect($subject.vblank).to.be.true;
+        });
+        it("disables rendering", function() {
+            expect(() => $action).to.change($subject, 'renderingEnabled');
+            expect($subject.renderingEnabled).to.be.false;
         });
         
         context("when #nmiEnabled=true", function() {
@@ -122,6 +131,7 @@ describe("Ppu", function() {
     describe(".endVBlank()", function() {
         def('action', () => $subject.endVBlank());
         beforeEach(function() {
+            $subject.renderingEnabled = false;
             $subject.spriteOverflow = true;
             $subject.sprite0Hit = true;
             $subject.vblank = true;
@@ -138,6 +148,40 @@ describe("Ppu", function() {
         it("resets #vblank", function() {
             expect(() => $action).to.change($subject, 'vblank');
             expect($subject.vblank).to.be.false;
+        });
+        
+        context("if neither #showBackground nor #showSprites were set", function() {
+            beforeEach(function() {
+                $subject.showBackground = false;
+                $subject.showSprites = false;
+            });
+            
+            it("keeps rendering disabled", function() {
+                expect(() => $action).not.to.change($subject, 'renderingEnabled');
+                expect($subject.renderingEnabled).to.be.false;
+            });
+        });
+        context("if #showBackground was set", function() {
+            beforeEach(function() {
+                $subject.showBackground = true;
+                $subject.showSprites = false;
+            });
+            
+            it("reenables rendering", function() {
+                expect(() => $action).to.change($subject, 'renderingEnabled');
+                expect($subject.renderingEnabled).to.be.true;
+            });
+        });
+        context("if #showSprites was set", function() {
+            beforeEach(function() {
+                $subject.showBackground = false;
+                $subject.showSprites = true;
+            });
+            
+            it("reenables rendering", function() {
+                expect(() => $action).to.change($subject, 'renderingEnabled');
+                expect($subject.renderingEnabled).to.be.true;
+            });
         });
     });
     
@@ -309,6 +353,8 @@ describe("Ppu", function() {
                 its('emphasizeRed',    () => is.expected.to.be.false);
                 its('emphasizeGreen',  () => is.expected.to.be.false);
                 its('emphasizeBlue',   () => is.expected.to.be.false);
+                
+                its('renderingEnabled', () => is.expected.to.be.false);
             });
             context("and data is 0xFF", function() {
                 def('data', () => 0xFF);
@@ -323,6 +369,8 @@ describe("Ppu", function() {
                 its('emphasizeRed',    () => is.expected.to.be.true);
                 its('emphasizeGreen',  () => is.expected.to.be.true);
                 its('emphasizeBlue',   () => is.expected.to.be.true);
+                
+                its('renderingEnabled', () => is.expected.to.be.true);
             });
         });
         

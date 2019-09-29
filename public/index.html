@@ -59,7 +59,9 @@
   
   <script type="application/javascript">
       $(function() {
-          const nes = new Nestled.NES;
+          const screenOutput = document.getElementById('screen');
+          
+          const nes = new Nestled.NES({screen: screenOutput});
           
           const frontLED    = document.getElementById('front_led');
           const powerButton = document.getElementById('power_button');
