@@ -1,8 +1,8 @@
 {
   "name": "nestled",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Javascript NES emulator",
-  "main": "src/main.js",
+  "private": true,
   "scripts": {
     "lint": "eslint src/ || true",
     "test": "mocha \"test/**/*_test.js\"",
