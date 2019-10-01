@@ -15,7 +15,10 @@ export class PPU {
         this.vramBank = [this.vram.subarray(0x000, 0x400), this.vram.subarray(0x400, 0x800)];
         
         //Object Attribute Memory
-        this.oam = new Uint8Array(64*4);
+        this.oamPrimary   = new Uint8Array(64*4);
+        this.oamSecondary = new Uint8Array(8*4);
+        this.oamAddress = 0; //For accessing primary OAM through $2004 and DMA
+        this.oamIndex   = 0; //For internal access to secondary OAM
         
         //Palettes
         this.palette = [new Uint8Array(4*4), new Uint8Array(4*4)];
@@ -41,7 +44,7 @@ export class PPU {
         this.mask       = null; //$2001 Mask
         this.status     = null; //$2002 Status
         this.OAMAddress = null; //$2003 OAM address
-        this.oam.fill(0);       //$2004 OAM data
+        this.oamPrimary.fill(0);//$2004 OAM data
         this.scroll     = null; //$2005 Scroll
         this.address    = null; //$2006 Address
         this.data       = null; //$2007 Data
@@ -128,6 +131,7 @@ export class PPU {
     set status(value) {
         this.spriteOverflow = false;
         this.sprite0Hit = false;
+        this.sprite0 = false;
         this.vblank = false;
     }
     
@@ -138,10 +142,10 @@ export class PPU {
     
     //= 0x2004 OAM data =//
     get OAMData() {
-        return this.oam[this.oamAddress];
+        return this.oamPrimary[this.oamAddress];
     }
     set OAMData(value) {
-        this.oam[this.oamAddress++] = value;
+        this.oamPrimary[this.oamAddress++] = value;
         if (this.oamAddress > 0xFF) this.oamAddress = 0x00;
     }
     
@@ -382,6 +386,47 @@ export class PPU {
         let addressBus = this.addressBus;
         this.fetchNameTable(addressBus);
         this.fetchNameTable(addressBus);
+    }
+    
+    //== Sprites ====================================================//
+    clearSecondaryOAM() {
+        this.oamSecondary.fill(0xFF);
+        this.oamIndex = 0;
+    }
+    evaluateSprites(scanline) {
+        let spritesList = this.oamPrimary;
+        let sprites     = this.oamSecondary;
+        
+        let height = this.sprite8x16 ? 16 : 8;
+        
+        while (this.oamAddress < 256) {
+            let y = spritesList[this.oamAddress];
+            
+            let top = Math.max(0, y + height);
+            let bottom = y;
+            
+            if (this.oamIndex === 32) {
+                this.oamAddress++; //This causes the 'Sprite overflow bug'
+                this.oamIndex++;
+            } else {
+                if (this.oamIndex < 32)
+                    sprites[this.oamIndex] = y;
+                if (scanline >= bottom && scanline < top) {
+                    if (this.oamIndex < 32) {
+                        if (this.oamAddress === 0)
+                            this.sprite0 = true;
+                        for (var i=1; i<4; i++)
+                            sprites[this.oamIndex+i] = spritesList[this.oamAddress+i];
+                        this.oamIndex += 4;
+                    } else {
+                        this.spriteOverflow = true;
+                        break;
+                    }
+                }
+                this.oamAddress += 4;
+            }
+        }
+        this.oamIndex = 0;
     }
     
     //== Pixels Rendering ===========================================//

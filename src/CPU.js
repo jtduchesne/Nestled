@@ -148,7 +148,16 @@ export class CPU {
             this.ram[address & 0x7FF] = data;
         } else if (address < 0x4018) {
             if (address < 0x4000)        { this.bus.ppu.writeRegister(address,data); }
-            else if (address === 0x4014) { /* this.ppu.dma(data); */}
+            else if (address === 0x4014) { //PPU DMA Access
+                var dmaAddress = data * 256;
+                let ppu = this.bus.ppu;
+                
+                for(var count = 0; count < 256; count++)
+                    ppu.OAMData = this.read(dmaAddress++);
+                
+                if (this.cycle & 1) this.cycle += 513;
+                else this.cycle += 514;
+            }
             else if (address === 0x4016) { /* (Joypads strobe); */ }
             else                         { /* this.apu.write(address,data); */ }
         } else {

@@ -153,7 +153,7 @@ export class MainLoop {
         let cyclesBeforeScanline = scanline*cyclesPerScanline;
         var dot = 0;
         
-        //ppu.clearSecondaryOAM();
+        ppu.clearSecondaryOAM();
         while (dot < 64) {
             cpu.doInstructions(cyclesBeforeScanline + dot/3);
             ppu.renderTile(dot, scanline);
@@ -161,7 +161,7 @@ export class MainLoop {
             ppu.incrementX();
             dot += 8;
         }
-        //ppu.evaluateSprites(scanline);
+        ppu.evaluateSprites(scanline);
         while (dot < 248) {
             cpu.doInstructions(cyclesBeforeScanline + dot/3);
             ppu.renderTile(dot, scanline);

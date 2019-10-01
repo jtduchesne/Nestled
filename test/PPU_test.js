@@ -242,11 +242,11 @@ describe("Ppu", function() {
             def('address', () => 0x2004);
             
             beforeEach(function() {
-                $subject.oam[0] = 0x50;
+                $subject.oamPrimary[0] = 0x50;
                 $subject.oamAddress = 0x00;
             });
             
-            it("returns the value of oam[oamAddress]", function() {
+            it("returns the value of oamPrimary[oamAddress]", function() {
                 expect($action).to.equal(0x50); });
             it("does not increment oamAddress", function() {
                 expect(() => $action).not.to.change($subject, 'oamAddress');
@@ -391,9 +391,9 @@ describe("Ppu", function() {
             def('oamAddress', () => 0x80);
             beforeEach(function() { $subject.oamAddress = $oamAddress; });
             
-            it("writes data to oam[oamAddress]", function() {
-                expect(() => $action).to.change($subject.oam, $oamAddress);
-                expect($subject.oam[$oamAddress]).to.equal($data);
+            it("writes data to oamPrimary[oamAddress]", function() {
+                expect(() => $action).to.change($subject.oamPrimary, $oamAddress);
+                expect($subject.oamPrimary[$oamAddress]).to.equal($data);
             });
         });
         
@@ -965,6 +965,178 @@ describe("Ppu", function() {
             var count = 0;
             $subject.fetchNameTable = () => { if (++count === 2) done(); };
             $action;
+        });
+    });
+    
+    //-------------------------------------------------------------------------------//
+    
+    describe(".clearSecondaryOAM()", function() {
+        def('action', () => $subject.clearSecondaryOAM());
+        
+        it("fills #oamSecondary with 0xFF", function() {
+            expect(() => $action).to.change($subject.oamSecondary, '0');
+            expect($subject.oamSecondary[0]).to.equal(0xFF);
+            expect($subject.oamSecondary[31]).to.equal(0xFF);
+        });
+        it("resets #oamIndex", function() {
+            $subject.oamIndex = 0xFF;
+            expect(() => $action).to.change($subject, 'oamIndex');
+            expect($subject.oamIndex).to.equal(0);
+        });
+    });
+    
+    describe(".evaluateSprites(scanline)", function() {
+        def('action', () => $subject.evaluateSprites($scanline));
+        def('scanline', () => 2);
+        
+        def('y', () => 1);
+        def('patternIndex', () => 0xAA);
+        def('attributes',   () => 0xBB);
+        def('x', () => 0xCC);
+        beforeEach(function() {
+            $subject.oamPrimary.fill(0xFF);
+            $subject.oamSecondary.fill(0xFF);
+            for (var i=0; i<$count; i++)
+                $subject.oamPrimary.set([$y,$patternIndex,$attributes,$x], i*4);
+        });
+        
+        context("with a Sprite at (10,10)", function() {
+            def('count', () => 1);
+            def('y', () => 10);
+            def('x', () => 10);
+            
+            context("of size 8x8", function() {
+                beforeEach(function() { $subject.sprite8x16 = false; });
+                
+                it("is not detected at scanline [9]", function() {
+                    $subject.evaluateSprites(9);
+                    expect($subject.oamSecondary[0]).to.equal(0xFF);
+                });
+                it("is detected between scanlines [10-17]", function() {
+                    $subject.evaluateSprites(10);
+                    expect($subject.oamSecondary[0]).not.to.equal(0xFF);
+                    $subject.evaluateSprites(17);
+                    expect($subject.oamSecondary[0]).not.to.equal(0xFF);
+                });
+                it("is not detected at scanline [18]", function() {
+                    $subject.evaluateSprites(18);
+                    expect($subject.oamSecondary[0]).to.equal(0xFF);
+                });
+            });
+            context("of size 8x16", function() {
+                beforeEach(function() { $subject.sprite8x16 = true; });
+                
+                it("is not detected at scanline [9]", function() {
+                    $subject.evaluateSprites(9);
+                    expect($subject.oamSecondary[0]).to.equal(0xFF);
+                });
+                it("is detected between scanlines [10-25]", function() {
+                    $subject.evaluateSprites(10);
+                    expect($subject.oamSecondary[0]).not.to.equal(0xFF);
+                    $subject.evaluateSprites(25);
+                    expect($subject.oamSecondary[0]).not.to.equal(0xFF);
+                });
+                it("is not detected at scanline [26]", function() {
+                    $subject.evaluateSprites(26);
+                    expect($subject.oamSecondary[0]).to.equal(0xFF);
+                });
+            });
+        });
+                
+        context("when no sprites are in range", function() {
+            def('count', () => 0);
+            
+            it("nothing is transfered to secondary OAM", function() {
+                expect(() => $action).not.to.change($subject.oamSecondary, '0');
+                //oamSecondary[0] not tested by purpose
+                expect($subject.oamSecondary[1]).to.equal(0xFF);
+                expect($subject.oamSecondary[2]).to.equal(0xFF);
+                expect($subject.oamSecondary[3]).to.equal(0xFF);
+            });
+            it("does not set #spriteOverflow", function() {
+                expect(() => $action).not.to.change($subject, 'spriteOverflow');
+                expect($subject.spriteOverflow).to.be.false;
+            });
+            it("does not set #sprite0", function() {
+                expect(() => $action).not.to.change($subject, 'sprite0');
+                expect($subject.sprite0).to.be.false;
+            });
+        });
+        context("when a sprite is in range", function() {
+            def('count', () => 1);
+            
+            it("is transfered to secondary OAM", function() {
+                expect(() => $action).to.change($subject.oamSecondary, '0');
+                expect($subject.oamSecondary[0]).to.equal($y);
+                expect($subject.oamSecondary[1]).to.equal($patternIndex);
+                expect($subject.oamSecondary[2]).to.equal($attributes);
+                expect($subject.oamSecondary[3]).to.equal($x);
+            });
+            it("does not transfer anything else", function() {
+                expect(() => $action).not.to.change($subject.oamSecondary, '5');
+                //oamSecondary[4] not tested by purpose
+                expect($subject.oamSecondary[5]).to.equal(0xFF);
+                expect($subject.oamSecondary[6]).to.equal(0xFF);
+                expect($subject.oamSecondary[7]).to.equal(0xFF);
+            });
+            it("does not set #spriteOverflow", function() {
+                expect(() => $action).not.to.change($subject, 'spriteOverflow');
+                expect($subject.spriteOverflow).to.be.false;
+            });
+            
+            context("if this is the first Sprite", function() {
+                it("sets #sprite0", function() {
+                    expect(() => $action).to.change($subject, 'sprite0');
+                    expect($subject.sprite0).to.be.true;
+                });
+            });
+            context("if this is not the first Sprite", function() {
+                def('count', () => 2);
+                beforeEach(function() { $subject.oamPrimary[0] = 0xFF; });
+
+                it("does not set #sprite0", function() {
+                    expect(() => $action).not.to.change($subject, 'sprite0');
+                    expect($subject.sprite0).to.be.false;
+                });
+            });
+        });
+        context("when 8 sprites are in range", function() {
+            def('count', () => 8);
+            
+            it("is transfered to secondary OAM", function() {
+                expect(() => $action).to.change($subject.oamSecondary, '28');
+                expect($subject.oamSecondary[28]).to.equal($y);
+                expect($subject.oamSecondary[29]).to.equal($patternIndex);
+                expect($subject.oamSecondary[30]).to.equal($attributes);
+                expect($subject.oamSecondary[31]).to.equal($x);
+            });
+            it("does not set #spriteOverflow", function() {
+                expect(() => $action).not.to.change($subject, 'spriteOverflow');
+                expect($subject.spriteOverflow).to.be.false;
+            });
+        });
+        context("when a 9th sprite is in range", function() {
+            def('count', () => 9);
+            beforeEach(function() {
+                $subject.oamPrimary.set([2,2,0xAB,0xCD], 8*4);
+            });
+            
+            it("does NOT replace 8th sprite in secondary OAM", function() {
+                expect(() => $action).to.change($subject.oamSecondary, '28');
+                expect($subject.oamSecondary[28]).to.equal($y);
+                expect($subject.oamSecondary[29]).to.equal($patternIndex);
+                expect($subject.oamSecondary[30]).to.equal($attributes);
+                expect($subject.oamSecondary[31]).to.equal($x);
+            });
+            it("sets #spriteOverflow", function() {
+                expect(() => $action).to.change($subject, 'spriteOverflow');
+                expect($subject.spriteOverflow).to.be.true;
+            });
+        });
+        
+        it("resets #oamIndex afterward", function() {
+            expect(() => $action).not.to.change($subject, 'oamIndex');
+            expect($subject.oamIndex).to.equal(0);
         });
     });
 });
