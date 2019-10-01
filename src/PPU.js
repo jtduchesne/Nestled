@@ -27,12 +27,14 @@ export class PPU {
         this.pxlColors = Colors.pxlColor;
         this.cssColors = Colors.cssColor;
         
-        this.pixelsBuffer = new Uint32Array(16);
+        this.bkgPixelsBuffer = new Uint32Array(16);
+        this.sprPixelsBuffer = new Uint32Array(8);
         
         //Layers
-        this.spritesBehind  = new Buffer(256, 240);
-        this.background     = new Buffer(256, 240);
-        this.spritesInFront = new Buffer(256, 240);
+        this.spritesBehind  = new Buffer(264, 256);
+        this.spritesInFront = new Buffer(264, 256);
+        this.background = new Buffer(264, 256);
+        this.sprites    = this.spritesInFront;
         
         this.isPowered = false;
     }
@@ -346,8 +348,8 @@ export class PPU {
         if (bus & 0x0040) offset += 4;
         return (this.read(address) >>> offset) & 0x3;
     }
-    fetchBkgPatternTable(patternIndex) {
-        let address = this.bkgPatternTable + patternIndex*16 + this.fineScrollY;
+    fetchBkgPatternTable(patternIndex, row) {
+        let address = this.bkgPatternTable + patternIndex*16 + row;
         return this.read(address)*256 + this.read(address+8);
     }
     
@@ -358,18 +360,11 @@ export class PPU {
         
         let patternIndex = this.fetchNameTable(addressBus);
         let paletteIndex = this.fetchAttributeTable(addressBus);
-        let pattern      = this.fetchBkgPatternTable(patternIndex);
+        let pattern      = this.fetchBkgPatternTable(patternIndex, this.fineScrollY);
         
         let pixels = this.getPatternPixels(pattern, this.bkgPalette, paletteIndex);
-        this.pixelsBuffer.copyWithin(0, 8);
-        this.pixelsBuffer.set(pixels, 8);
-    }
-    renderTile(dot, scanline) {
-        if (!this.showBackground) return;
-        
-        let offset = this.fineScrollX;
-        let pixels = this.pixelsBuffer.subarray(offset, offset+8);
-        this.background.setPixels(dot, scanline, pixels);
+        this.bkgPixelsBuffer.copyWithin(0, 8);
+        this.bkgPixelsBuffer.set(pixels, 8);
     }
     
     fetchNullTile() {
@@ -386,6 +381,14 @@ export class PPU {
         let addressBus = this.addressBus;
         this.fetchNameTable(addressBus);
         this.fetchNameTable(addressBus);
+    }
+    
+    renderTile(dot, scanline) {
+        if (!this.showBackground) return;
+        
+        let offset = this.fineScrollX;
+        let pixels = this.bkgPixelsBuffer.subarray(offset, offset+8);
+        this.background.setPixels(dot, scanline, pixels);
     }
     
     //== Sprites ====================================================//
@@ -429,6 +432,84 @@ export class PPU {
         this.oamIndex = 0;
     }
     
+    fetchSprPatternTable(patternIndex, row) {
+        var offset = this.sprPatternTable;
+        if (this.sprite8x16) {
+            offset = (patternIndex & 0x1) << 12;
+            patternIndex &= 0xFE;
+        }
+        let address = offset + patternIndex*16 + row;
+        return this.read(address)*256 + this.read(address+8);
+    }
+    
+    fetchSprite(scanline) {
+        if (!this.showSprites) return;
+        
+        let addressBus = this.addressBus;     //
+        this.fetchNameTable(addressBus);      // Garbage fetch
+        this.fetchAttributeTable(addressBus); //
+        
+        this.oamAddress = 0x00;
+        
+        let sprites = this.oamSecondary;
+        
+        if (this.sprite0)
+            this.sprite0 = this.sprite0 && !this.oamIndex;
+        
+        let y = sprites[this.oamIndex++];
+        var row = scanline - y;
+        
+        let patternIndex = sprites[this.oamIndex++];
+        let attributes   = sprites[this.oamIndex++];
+        
+        let vertFlip = attributes & 0x80;
+        if (vertFlip)
+            row = (this.sprite8x16 ? 16 : 8) - row - 1;
+        if (row >= 8) {
+            row -= 8;
+            patternIndex++;
+        }
+        
+        let pattern = this.fetchSprPatternTable(patternIndex, row);
+        
+        if (y < 240) {
+            let paletteIndex = attributes & 0x03;
+            this.sprPixelsBuffer = this.getPatternPixels(pattern, this.sprPalette, paletteIndex);
+            
+            let horiFlip = attributes & 0x40;
+            if (horiFlip) this.sprPixelsBuffer.reverse();
+            
+            let isBehind = attributes & 0x20;
+            if (isBehind)
+                this.sprites = this.spritesBehind;
+            else
+                this.sprites = this.spritesInFront;
+        }
+    }
+        
+    fetchNullSprite() {
+        if (!this.showSprites) return;
+        
+        let addressBus = this.addressBus;
+        this.fetchNameTable(addressBus);
+        this.fetchAttributeTable(addressBus);
+        
+        this.fetchSprPatternTable(this.sprPatternTable, 0xFF, 3);
+    }
+    
+    renderSprite(scanline) {
+        if (!this.showSprites) return;
+        
+        let x = this.oamSecondary[this.oamIndex++];
+        let pixels = this.sprPixelsBuffer;
+        
+        if (this.sprite0) {
+            if (this.background.getPixels(x, scanline).some((e,i) => (e & pixels[i])))
+                this.sprite0Hit = true;
+        }
+        this.sprites.setPixels(x, scanline, pixels);
+    }
+    
     //== Pixels Rendering ===========================================//
     getPatternPixels(pattern, palette, paletteIndex) {
         let colors = this.pxlColors;
@@ -454,16 +535,16 @@ export class PPU {
             context.fillRect(0, 0, width, height);
         
             // Sprites behind background
-            //context.drawImage(this.spritesBehind.frame, 0, 0, 256, 240, 0, 0, width, height);
-            //this.spritesBehind.clear();
+            context.drawImage(this.spritesBehind.frame, 0, 0, 256, 240, 0, 0, width, height);
+            this.spritesBehind.clear();
             
             // Background
             context.drawImage(this.background.frame, 0, 0, 256, 240, 0, 0, width, height);
             this.background.clear();
             
             // Sprites in front of background
-            //context.drawImage(this.spritesInFront.frame, 0, 0, 256, 240, 0, 0, width, height);
-            //this.spritesInFront.clear();
+            context.drawImage(this.spritesInFront.frame, 0, 0, 256, 240, 0, 0, width, height);
+            this.spritesInFront.clear();
         }
     }
     clearFrame() {

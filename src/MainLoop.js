@@ -180,7 +180,8 @@ export class MainLoop {
         
         while (dot < 320) {
             cpu.doInstructions(cyclesBeforeScanline + dot/3);
-            //ppu.renderSprite(scanline);
+            ppu.fetchSprite(scanline);
+            ppu.renderSprite(scanline);
             dot += 8;
         }
         
@@ -201,18 +202,18 @@ export class MainLoop {
         ppu.resetX();
         while (dot < 279) {
             cpu.doInstructions(cyclesBeforeScanline + dot/3);
-            //ppu.fetchNullSprite();
+            ppu.fetchNullSprite();
             dot += 8;
         }
         while (dot < 304) {
             cpu.doInstructions(cyclesBeforeScanline + dot/3);
-            //ppu.fetchNullSprite();
+            ppu.fetchNullSprite();
             ppu.resetY();
             dot += 8;
         }
         while (dot < 320) {
             cpu.doInstructions(cyclesBeforeScanline + dot/3);
-            //ppu.fetchNullSprite();
+            ppu.fetchNullSprite();
             dot += 8;
         }
         

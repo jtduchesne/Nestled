@@ -16,7 +16,7 @@ describe("Ppu", function() {
     
     def('VRAMData', () => 0xC3); // b11000011
     def(['VRAM0Data','VRAM1Data']);
-    def('PalData', () => 0x99); // b10011001
+    def('PalData', () => 0x33); // b00110011
     def(['bkgPalData','sprPalData']);
     def('CHRROMPattern1'); //If set, this pattern is set at the beginning of CHR-ROM
     def('CHRROMPattern2'); //If set, this pattern is set at CHR-ROM[0x1000]
@@ -889,8 +889,8 @@ describe("Ppu", function() {
         });
     });
     
-    describe(".fetchBkgPatternTable(patternIndex)", function() {
-        def('action', () => $subject.fetchBkgPatternTable(0));
+    describe(".fetchBkgPatternTable(patternIndex, row)", function() {
+        def('action', () => $subject.fetchBkgPatternTable(0, 0));
         def('CHRROMPattern1', () => [ 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15,16,
                                      17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32]);
         def('CHRROMPattern2', () => [33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48]);
@@ -906,19 +906,17 @@ describe("Ppu", function() {
         
         it("reads according to #bkgPatternTable", function() {
             $subject.bkgPatternTable = 0x0000;
-            expect($subject.fetchBkgPatternTable(0)).to.equal(0x0109);
+            expect($subject.fetchBkgPatternTable(0, 0)).to.equal(0x0109);
             $subject.bkgPatternTable = 0x1000;
-            expect($subject.fetchBkgPatternTable(0)).to.equal(0x2129);
+            expect($subject.fetchBkgPatternTable(0, 0)).to.equal(0x2129);
         });
         it("reads according to patternIndex", function() {
-            expect($subject.fetchBkgPatternTable(0)).to.equal(0x0109);
-            expect($subject.fetchBkgPatternTable(1)).to.equal(0x1119);
+            expect($subject.fetchBkgPatternTable(0, 0)).to.equal(0x0109);
+            expect($subject.fetchBkgPatternTable(1, 0)).to.equal(0x1119);
         });
-        it("reads according to #fineScrollY", function() {
-            $subject.fineScrollY = 0x0;
-            expect($subject.fetchBkgPatternTable(0)).to.equal(0x0109);
-            $subject.fineScrollY = 0x1;
-            expect($subject.fetchBkgPatternTable(0)).to.equal(0x020A);
+        it("reads according to row", function() {
+            expect($subject.fetchBkgPatternTable(0, 0)).to.equal(0x0109);
+            expect($subject.fetchBkgPatternTable(0, 1)).to.equal(0x020A);
         });
     });
     
@@ -1137,6 +1135,192 @@ describe("Ppu", function() {
         it("resets #oamIndex afterward", function() {
             expect(() => $action).not.to.change($subject, 'oamIndex');
             expect($subject.oamIndex).to.equal(0);
+        });
+    });
+    
+    describe(".fetchSprPatternTable(patternIndex, row)", function() {
+        def('action', () => $subject.fetchSprPatternTable(0, 0));
+        def('CHRROMPattern1', () => [ 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15,16,
+                                     17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32]);
+        def('CHRROMPattern2', () => [33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48]);
+        
+        it("reads twice from the cartridge", function(done) {
+            var count = 0;
+            $nes.cartridge.ppuRead = () => { if (++count === 2) done(); };
+            $action;
+        });
+        it("builds a word from 2 bytes at 8 bytes distance", function() {
+            expect($action).to.equal(0x0109);
+        });
+        
+        it("reads according to #sprPatternTable", function() {
+            $subject.sprPatternTable = 0x0000;
+            expect($subject.fetchSprPatternTable(0, 0)).to.equal(0x0109);
+            $subject.sprPatternTable = 0x1000;
+            expect($subject.fetchSprPatternTable(0, 0)).to.equal(0x2129);
+        });
+        it("reads according to #sprite8x16", function() {
+            $subject.sprite8x16 = true;
+            expect($subject.fetchSprPatternTable(0, 0)).to.equal(0x0109);
+            expect($subject.fetchSprPatternTable(1, 0)).to.equal(0x2129);
+        });
+        it("reads according to patternIndex", function() {
+            expect($subject.fetchBkgPatternTable(0, 0)).to.equal(0x0109);
+            expect($subject.fetchBkgPatternTable(1, 0)).to.equal(0x1119);
+        });
+        it("reads according to row", function() {
+            expect($subject.fetchBkgPatternTable(0, 0)).to.equal(0x0109);
+            expect($subject.fetchBkgPatternTable(0, 1)).to.equal(0x020A);
+        });
+    });
+    
+    describe(".fetchSprite(scanline)", function() {
+        def('action', () => $subject.fetchSprite(1));
+        beforeEach(function() {
+            $subject.showSprites = true;
+            $subject.oamSecondary.set([$y,$patternIndex,$attributes,$x], 0);
+        });
+        
+        def('y', () => 1);
+        def('patternIndex', () => 1);
+        def('attributes',   () => 0);
+        def('x', () => 1);
+        
+        it("calls .fetchNameTable()", function(done) {
+            $subject.fetchNameTable = () => done();
+            $action;
+        });
+        it("calls .fetchAttributeTable()", function(done) {
+            $subject.fetchAttributeTable = () => done();
+            $action;
+        });
+        
+        it("resets #oamAddress", function() {
+            $subject.oamAddress = 0xFF;
+            expect(() => $action).to.change($subject, 'oamAddress');
+            expect($subject.oamAddress).to.equal(0);
+        });
+        
+        context("if this is the first sprite of Secondary OAM", function() {
+            beforeEach(function() { $subject.oamIndex = 0; });
+            
+            it("does not change #sprite0 if set", function() {
+                $subject.sprite0 = true;
+                expect(() => $action).not.to.change($subject, 'sprite0');
+                expect($subject.sprite0).to.be.true;
+            });
+            it("does not change #sprite0 if not set", function() {
+                $subject.sprite0 = false;
+                expect(() => $action).not.to.change($subject, 'sprite0');
+                expect($subject.sprite0).to.be.false;
+            });
+        });
+        context("if this is not the first sprite of Secondary OAM", function() {
+            beforeEach(function() { $subject.oamIndex = 4; });
+            
+            it("unsets #sprite0", function() {
+                $subject.sprite0 = true;
+                expect(() => $action).to.change($subject, 'sprite0');
+                expect($subject.sprite0).to.be.false;
+            });
+            it("keeps #sprite0 not set", function() {
+                $subject.sprite0 = false;
+                expect(() => $action).not.to.change($subject, 'sprite0');
+                expect($subject.sprite0).to.be.false;
+            });
+        });
+        
+        context("if 'Vertical Flip' attribute is set", function() {
+            def('attributes', () => 0x80);
+            
+            it("calls .fetchSprPatternTable(pIndex,row) with row=7", function(done) {
+                $subject.fetchSprPatternTable = (pIndex,row) => {
+                    expect(pIndex).to.equal($patternIndex);
+                    expect(row).to.equal(7);
+                    done();
+                };
+                $action;
+            });
+            it("increases patternIndex by 1 if #sprite8x16", function(done) {
+                $subject.sprite8x16 = true;
+                $subject.fetchSprPatternTable = (pIndex,row) => {
+                    expect(pIndex).to.equal($patternIndex + 1);
+                    expect(row).to.equal(7);
+                    done();
+                };
+                $action;
+            });
+        });
+        context("if 'Vertical Flip' attribute is not set", function() {
+            def('attributes', () => ~0x80);
+            
+            it("calls .fetchSprPatternTable(pIndex,row) with row=0", function(done) {
+                $subject.fetchSprPatternTable = (pIndex,row) => {
+                    expect(pIndex).to.equal($patternIndex);
+                    expect(row).to.equal(0);
+                    done();
+                };
+                $action;
+            });
+        });
+        
+        context("if 'Horizontal Flip' attribute is set", function() {
+            def('attributes', () => 0x40);
+            
+            it("sets #sprPixelsBuffer with reversed pixels", function() {
+                expect(() => $action).to.change($subject, 'sprPixelsBuffer');
+                var firstResult = $subject.sprPixelsBuffer;
+                
+                $subject.oamSecondary.set([$y,$patternIndex,~0x40,$x], 0);
+                $subject.fetchSprite(1);
+                var secondResult = $subject.sprPixelsBuffer;
+                
+                expect(firstResult).to.eql(secondResult.reverse());
+            });
+        });
+        context("if 'Horizontal Flip' attribute is not set", function() {
+            def('attributes', () => ~0x40);
+            
+            it("sets #sprPixelsBuffer", function() {
+                expect(() => $action).to.change($subject, 'sprPixelsBuffer');
+            });
+        });
+        
+        context("if 'Is Behind' attribute is set", function() {
+            def('attributes', () => 0x20);
+            beforeEach(function() { $subject.sprites = null; });
+            
+            it("sets #sprites to reference #spritesBehind layer", function() {
+                expect(() => $action).to.change($subject, 'sprites');
+                expect($subject.sprites).to.equal($subject.spritesBehind);
+            });
+        });
+        context("if 'Is Behind' attribute is not set", function() {
+            def('attributes', () => ~0x20);
+            beforeEach(function() { $subject.sprites = null; });
+            
+            it("sets #sprites to reference #spritesInFront layer", function() {
+                expect(() => $action).to.change($subject, 'sprites');
+                expect($subject.sprites).to.equal($subject.spritesInFront);
+            });
+        });
+    });
+    
+    describe(".fetchNullSprite()", function() {
+        def('action', () => $subject.fetchNullSprite());
+        beforeEach(function() { $subject.showSprites = true; });
+        
+        it("calls .fetchNameTable()", function(done) {
+            $subject.fetchNameTable = () => done();
+            $action;
+        });
+        it("calls .fetchAttributeTable()", function(done) {
+            $subject.fetchAttributeTable = () => done();
+            $action;
+        });
+        it("calls .fetchSprPatternTable()", function(done) {
+            $subject.fetchSprPatternTable = () => done();
+            $action;
         });
     });
 });
