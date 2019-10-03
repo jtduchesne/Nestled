@@ -23,8 +23,13 @@ export class MainLoop {
         this.frame = 0;
         this.dropped = 0;
         
+        this.fps = 60;
+        this.frameTime = 0.0;
+        this.performance = 1.0;
+        
         this.delta = 0.0;
         this.lastFrameTime = 0.0;
+        this.framesThisSecond = 0;
     }
     
     //=======================================================================================//
@@ -88,7 +93,7 @@ export class MainLoop {
         this.doPreFetch(cpu, ppu, 261);
     }
     
-    loop(timestamp, onlyOnce) {
+    loop(timestamp) {
         let cpu = this.bus.cpu;
         let ppu = this.bus.ppu;
         
@@ -99,17 +104,48 @@ export class MainLoop {
             this.cancelPendingFrames();
             this.bus.pauseEmulation();
         } else {
+            var dropped = false;
+            let onfps = this.bus.onfps;
             if (delta >= frameTime) {
-                while ((delta -= frameTime) >= frameTime)
+                while ((delta -= frameTime) >= frameTime) {
+                    dropped = true;
                     this.cancelFrame(cpu, ppu);
+                    this.fps--;
+                    this.frameTime += frameTime;
+                }
                 this.doFrame(cpu, ppu);
+                this.framesThisSecond++;
             }
-            if (onlyOnce)
-                this.runningLoop = 0;
-            else if (window)
+            
+            if (window) {
+                this.frameTime += (window.performance.now() - timestamp);
                 this.runningLoop = window.requestAnimationFrame(this.loop.bind(this));
-            else
-                this.runningLoop = setTimeout(this.loop.bind(this, Date.now()), frameTime);
+            } else {
+                let timestampArray = global.process.hrtime();
+                let timestampNow = Math.round(timestampArray[0]*1e3 + timestampArray[1]/1e6);
+                this.frameTime += (timestampNow - timestamp);
+                this.runningLoop = 0;
+            }
+            
+            if (this.framesThisSecond >= 60) {
+                this.performance = 1000 / this.frameTime;
+                
+                let ontime = this.bus.ontime;
+                if (ontime) ontime({target: this});
+                
+                if (onfps && this.fps !== 60) {
+                    this.fps = 60;
+                    onfps({target: this});
+                }
+                
+                this.frameTime = 0.0;
+                this.framesThisSecond = 0;
+            } else {
+                this.performance = (1000*this.framesThisSecond / 60) / this.frameTime;
+                
+                if (onfps && dropped)
+                    onfps({target: this});
+            }
         }
         
         this.delta = delta;

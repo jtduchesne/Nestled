@@ -12,11 +12,18 @@ describe("MainLoop", function() {
         def('action', () => $subject.start());
         afterEach(function() { $subject.stop(); });
         
-        beforeEach(function() { $subject.dropped = 1; });
+        beforeEach(function() {
+            $subject.dropped = 1;
+            $subject.fps = 59;
+        });
         
         it("resets #dropped", function() {
             expect(() => $action).to.change($subject, 'dropped');
             expect($subject.dropped).to.equal(0);
+        });
+        it("resets #fps to 60", function() {
+            expect(() => $action).to.change($subject, 'fps');
+            expect($subject.fps).to.equal(60);
         });
         
         context("when #frame = 0", function() {
@@ -56,6 +63,7 @@ describe("MainLoop", function() {
         beforeEach(function() {
             $subject.frame = 100;
             $subject.dropped = 1;
+            $subject.fps = 59;
             $subject.runningLoop = 1234;
         });
         
@@ -65,6 +73,11 @@ describe("MainLoop", function() {
         });
         it("does not reset #dropped", function() {
             expect(() => $action).not.to.change($subject, 'dropped');
+            expect($subject.dropped).to.equal(1);
+        });
+        it("does not reset #fps", function() {
+            expect(() => $action).not.to.change($subject, 'fps');
+            expect($subject.fps).to.equal(59);
         });
         
         it("sets #runningLoop to -1", function() {
@@ -78,15 +91,22 @@ describe("MainLoop", function() {
         beforeEach(function() {
             $subject.frame = 100;
             $subject.dropped = 1;
+            $subject.fps = 59;
             $subject.lastFrameTime = 1234.5;
             $subject.runningLoop = 1234;
         });
         
         it("does not change #frame", function() {
             expect(() => $action).not.to.change($subject, 'frame');
+            expect($subject.frame).to.equal(100);
         });
         it("does not change #dropped", function() {
             expect(() => $action).not.to.change($subject, 'dropped');
+            expect($subject.dropped).to.equal(1);
+        });
+        it("does not change #fps", function() {
+            expect(() => $action).not.to.change($subject, 'fps');
+            expect($subject.fps).to.equal(59);
         });
         
         it("resets #lastFrameTime", function() {
@@ -149,10 +169,11 @@ describe("MainLoop", function() {
     describe(".loop()", function() {
         def('timestampArray', () => process.hrtime());
         def('timestamp',      () => Math.round($timestampArray[0]*1e3 + $timestampArray[1]/1e6));
-        def('action', () => $subject.loop($timestamp, true));
+        def('action', () => $subject.loop($timestamp));
         
         it("sets #lastFrameTime", function() {
             expect(() => $action).to.change($subject, 'lastFrameTime');
+            expect($subject.lastFrameTime).to.equal($timestamp);
         });
         
         context("if #lastFrameTime = 0.0", function() {
@@ -180,10 +201,6 @@ describe("MainLoop", function() {
                 expect(() => $action).to.change($subject, 'delta');
                 expect($subject.delta).to.be.lessThan(3);
             });
-            it("does 1 frame", function() {
-                expect(() => $action).to.change($subject, 'frame');
-                expect($subject.frame).to.be.equal(2);
-            });
             it("sets cpu#cycleOffset according to current frame", function() {
                 expect(() => $action).to.change($nes.cpu, 'cycleOffset');
                 expect($nes.cpu.cycleOffset).to.equal(29780.5);
@@ -192,6 +209,25 @@ describe("MainLoop", function() {
             it("calls .doFrame()", function(done) {
                 $subject.doFrame = () => done();
                 $action;
+            });
+            
+            it("increases #frame", function() {
+                expect(() => $action).to.increase($subject, 'frame');
+            });
+            it("does not change #dropped", function() {
+                expect(() => $action).not.to.change($subject, 'dropped');
+            });
+            it("does not change #fps", function() {
+                expect(() => $action).not.to.change($subject, 'fps');
+                expect($subject.fps).to.be.equal(60);
+            });
+            it("changes #frameTime", function() {
+                expect(() => $action).to.change($subject, 'frameTime');
+                expect($subject.frameTime).to.be.lessThan(1000/60);
+            });
+            it("changes #performance", function() {
+                expect(() => $action).to.change($subject, 'performance');
+                expect($subject.performance).to.be.greaterThan(1);
             });
         });
         context("if #lastFrameTime is 1/30sec ago", function() {
@@ -203,10 +239,6 @@ describe("MainLoop", function() {
             it("resets #delta", function() {
                 expect(() => $action).to.change($subject, 'delta');
                 expect($subject.delta).to.be.lessThan(3);
-            });
-            it("skips 1 frame and then does 1", function() {
-                expect(() => $action).to.change($subject, 'frame');
-                expect($subject.frame).to.be.equal(3);
             });
             it("sets cpu#cycleOffset according to current frame", function() {
                 expect(() => $action).to.change($nes.cpu, 'cycleOffset');
@@ -221,6 +253,34 @@ describe("MainLoop", function() {
                 $subject.doFrame = () => done();
                 $action;
             });
+            
+            it("increases #frame by 2", function() {
+                expect(() => $action).to.increase($subject, 'frame').by(2);
+            });
+            it("increases #dropped", function() {
+                expect(() => $action).to.increase($subject, 'dropped').by(1);
+            });
+            
+            it("sets #fps to 59", function() {
+                expect(() => $action).to.change($subject, 'fps');
+                expect($subject.fps).to.be.equal(59);
+            });
+            it("triggers 'onfps' event with itself as argument", function(done) {
+                $nes.onfps = (e) => {
+                    expect(e.target).to.equal($subject).and.have.property('fps', 59);
+                    done();
+                };
+                $action;
+            });
+            
+            it("increases #frameTime", function() {
+                expect(() => $action).to.increase($subject, 'frameTime');
+                expect($subject.frameTime).to.be.greaterThan(1000/60);
+            });
+            it("decreases #performance", function() {
+                expect(() => $action).to.decrease($subject, 'performance');
+                expect($subject.performance).to.be.lessThan(1);
+            });
         });
         context("if #lastFrameTime is >2sec ago", function() {
             beforeEach(function() { $subject.lastFrameTime = $timestamp - 2016.7; });
@@ -228,9 +288,6 @@ describe("MainLoop", function() {
             it("does not reset #delta", function() {
                 expect(() => $action).to.change($subject, 'delta');
                 expect($subject.delta).to.be.greaterThan(2000);
-            });
-            it("does not do the frame", function() {
-                expect(() => $action).not.to.change($subject, 'frame');
             });
             
             it("calls .cancelPendingFrames()", function(done) {
@@ -240,6 +297,25 @@ describe("MainLoop", function() {
             it("calls nes.pauseEmulation()", function(done) {
                 $nes.pauseEmulation = () => done();
                 $action;
+            });
+            
+            it("does NOT change #frame", function() {
+                expect(() => $action).not.to.change($subject, 'frame');
+            });
+            it("does NOT change #dropped", function() {
+                expect(() => $action).not.to.change($subject, 'dropped');
+            });
+            it("does NOT change #fps", function() {
+                expect(() => $action).not.to.change($subject, 'fps');
+                expect($subject.fps).to.equal(60);
+            });
+            it("does NOT change #frameTime", function() {
+                expect(() => $action).not.to.change($subject, 'frameTime');
+                expect($subject.frameTime).to.equal(0);
+            });
+            it("does NOT change #performance", function() {
+                expect(() => $action).not.to.change($subject, 'performance');
+                expect($subject.performance).to.equal(1);
             });
         });
     });

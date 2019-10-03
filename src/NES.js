@@ -11,8 +11,12 @@ export class NES {
             
             if (opts['onpower']) this.onpower = opts['onpower'];
             if (opts['onreset']) this.onreset = opts['onreset'];
+            
             if (opts['onemulation']) this.onemulation = opts['onemulation'];
             if (opts['onpause']) this.onpause = opts['onpause'];
+            if (opts['ontime']) this.ontime = opts['ontime'];
+            if (opts['onfps']) this.onfps = opts['onfps'];
+            
             if (opts['oninsertcartridge']) this.oninsertcartridge = opts['oninsertcartridge'];
             if (opts['onremovecartridge']) this.onremovecartridge = opts['onremovecartridge'];
         }

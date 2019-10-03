@@ -107,6 +107,12 @@
               console.log("Nestled: " + text);
           }
           
+          function showStats(e) {
+              statusOutput.innerText = e.target.fps + " FPS (" + e.target.performance.toFixed(2) +"x)";
+          }
+          nes.ontime = showStats;
+          nes.onfps = showStats;
+          
           //-------------------------------------------------------------------------------------------//
           
           const fileInput = document.getElementById('file_select_button');
