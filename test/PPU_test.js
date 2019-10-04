@@ -1288,20 +1288,20 @@ describe("Ppu", function() {
         
         context("if 'Is Behind' attribute is set", function() {
             def('attributes', () => 0x20);
-            beforeEach(function() { $subject.sprites = null; });
+            beforeEach(function() { $subject.sprLayer = null; });
             
-            it("sets #sprites to reference #spritesBehind layer", function() {
-                expect(() => $action).to.change($subject, 'sprites');
-                expect($subject.sprites).to.equal($subject.spritesBehind);
+            it("sets #sprLayer to reference #sprBehindLayer", function() {
+                expect(() => $action).to.change($subject, 'sprLayer');
+                expect($subject.sprLayer).to.equal($subject.sprBehindLayer);
             });
         });
         context("if 'Is Behind' attribute is not set", function() {
             def('attributes', () => ~0x20);
-            beforeEach(function() { $subject.sprites = null; });
+            beforeEach(function() { $subject.sprLayer = null; });
             
-            it("sets #sprites to reference #spritesInFront layer", function() {
-                expect(() => $action).to.change($subject, 'sprites');
-                expect($subject.sprites).to.equal($subject.spritesInFront);
+            it("sets #sprLayer to reference #sprInFrontLayer", function() {
+                expect(() => $action).to.change($subject, 'sprLayer');
+                expect($subject.sprLayer).to.equal($subject.sprInFrontLayer);
             });
         });
     });

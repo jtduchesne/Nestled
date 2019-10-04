@@ -31,10 +31,12 @@ export class PPU {
         this.sprPixelsBuffer = new Uint32Array(8);
         
         //Layers
-        this.spritesBehind  = new Buffer(264, 256);
-        this.spritesInFront = new Buffer(264, 256);
-        this.background = new Buffer(264, 256);
-        this.sprites    = this.spritesInFront;
+        this.sprBehindLayer  = new Buffer(264, 256);
+        this.sprInFrontLayer = new Buffer(264, 256);
+        this.sprite0Layer = new Buffer(264, 256);
+        
+        this.bkgLayer = new Buffer(264, 256);
+        this.sprLayer = this.sprInFrontLayer;
         
         this.isPowered = false;
     }
@@ -388,7 +390,13 @@ export class PPU {
         
         let offset = this.fineScrollX;
         let pixels = this.bkgPixelsBuffer.subarray(offset, offset+8);
-        this.background.setPixels(dot, scanline, pixels);
+        
+        if (this.sprite0 && !this.sprite0Hit) {
+            if (this.sprite0Layer.getPixels(dot, scanline).some((e,i) => (e & pixels[i])))
+                this.sprite0Hit = true;
+        }
+        
+        this.bkgLayer.setPixels(dot, scanline, pixels);
     }
     
     //== Sprites ====================================================//
@@ -481,9 +489,9 @@ export class PPU {
             
             let isBehind = attributes & 0x20;
             if (isBehind)
-                this.sprites = this.spritesBehind;
+                this.sprLayer = this.sprBehindLayer;
             else
-                this.sprites = this.spritesInFront;
+                this.sprLayer = this.sprInFrontLayer;
         }
     }
         
@@ -503,11 +511,10 @@ export class PPU {
         let x = this.oamSecondary[this.oamIndex++];
         let pixels = this.sprPixelsBuffer;
         
-        if (this.sprite0) {
-            if (this.background.getPixels(x, scanline).some((e,i) => (e & pixels[i])))
-                this.sprite0Hit = true;
-        }
-        this.sprites.setPixels(x, scanline, pixels);
+        if (this.sprite0)
+            this.sprite0Layer.setPixels(x, scanline+1, pixels);
+        
+        this.sprLayer.setPixels(x, scanline+1, pixels);
     }
     
     //== Pixels Rendering ===========================================//
@@ -535,16 +542,18 @@ export class PPU {
             context.fillRect(0, 0, width, height);
         
             // Sprites behind background
-            context.drawImage(this.spritesBehind.frame, 0, 0, 256, 240, 0, 0, width, height);
-            this.spritesBehind.clear();
+            context.drawImage(this.sprBehindLayer.frame, 0, 0, 256, 240, 0, 0, width, height);
+            this.sprBehindLayer.clear();
             
             // Background
-            context.drawImage(this.background.frame, 0, 0, 256, 240, 0, 0, width, height);
-            this.background.clear();
+            context.drawImage(this.bkgLayer.frame, 0, 0, 256, 240, 0, 0, width, height);
+            this.bkgLayer.clear();
             
             // Sprites in front of background
-            context.drawImage(this.spritesInFront.frame, 0, 0, 256, 240, 0, 0, width, height);
-            this.spritesInFront.clear();
+            context.drawImage(this.sprInFrontLayer.frame, 0, 0, 256, 240, 0, 0, width, height);
+            this.sprInFrontLayer.clear();
+            
+            this.sprite0Layer.clear();
         }
     }
     clearFrame() {
