@@ -386,4 +386,138 @@ describe("NES", function() {
             $action;
         });
     });
+    
+    //-------------------------------------------------------------------------------//
+    
+    describe(".insertController(controller)", function() {
+        def('action', () => $subject.insertController($joypad));
+        def('joypad', () => 'Joypad');
+        
+        context("if no controllers are connected", function() {
+            it("sets #controllers[0]", function() {
+                expect(() => $action).to.change($subject.controllers, '0');
+                expect($subject.controllers[0]).to.equal($joypad);
+            });
+            it("returns the inserted controller", function() {
+                expect($action).to.equal($joypad);
+            });
+            
+            it("triggers 'oninsertcontroller' event with itself as argument", function(done) {
+                $subject.oninsertcontroller = (e) => {
+                    expect(e.target).to.equal($subject);
+                    expect(e.target.controllers[0]).to.equal($joypad);
+                    done();
+                };
+                $action;
+            });
+        });
+        context("if there is already 1 controller connected", function() {
+            beforeEach(function() {
+                $subject.insertController('Other Joypad');
+            });
+            
+            it("sets #controllers[1]", function() {
+                expect(() => $action).to.change($subject.controllers, '1');
+                expect($subject.controllers[1]).to.equal($joypad);
+            });
+            it("returns the inserted controller", function() {
+                expect($action).to.equal($joypad);
+            });
+            
+            it("triggers 'oninsertcontroller' event with itself as argument", function(done) {
+                $subject.oninsertcontroller = (e) => {
+                    expect(e.target).to.equal($subject);
+                    expect(e.target.controllers[1]).to.equal($joypad);
+                    done();
+                };
+                $action;
+            });
+        });
+        context("if there are already 2 controllers connected", function() {
+            beforeEach(function() {
+                $subject.insertController('Other Joypad');
+                $subject.insertController('Zapper');
+            });
+            
+            it("does not change #controllers[]", function() {
+                expect(() => $action).not.to.change($subject.controllers, '0');
+                expect(() => $action).not.to.change($subject.controllers, '1');
+            });
+            it("returns -undefined-", function() {
+                expect($action).to.be.undefined;
+            });
+        });
+        context("if the given controller is already connected", function() {
+            beforeEach(function() {
+                $subject.insertController($joypad);
+            });
+            
+            it("does not change #controllers[]", function() {
+                expect(() => $action).not.to.change($subject.controllers, '0');
+                expect(() => $action).not.to.change($subject.controllers, '1');
+            });
+            it("returns the given controller", function() {
+                expect($action).to.equal($joypad);
+            });
+        });
+    });
+    
+    describe(".removeController(joypad)", function() {
+        def('action', () => $subject.removeController($joypad));
+        def('joypad', () => 'Joypad');
+        
+        context("if the given controller is not connected", function() {
+            beforeEach(function() {
+                $subject.insertController('Other Joypad');
+            });
+            
+            it("does not change #controllers[]", function() {
+                expect(() => $action).not.to.change($subject.controllers, '0');
+                expect(() => $action).not.to.change($subject.controllers, '1');
+            });
+            it("returns -undefined-", function() {
+                expect($action).to.be.undefined;
+            });
+        });
+        context("if the given joypad is in #controllers[0]t", function() {
+            beforeEach(function() {
+                $subject.insertController($joypad);
+                $subject.insertController('Zapper');
+            });
+            
+            it("removes it from #controllers[0]", function() {
+                expect(() => $action).to.change($subject.controllers, '0');
+                expect($subject.controllers[0]).not.to.equal($joypad);
+            });
+            it("does not change #controllers[1]", function() {
+                expect(() => $action).not.to.change($subject.controllers, '1');
+                expect($subject.controllers[1]).to.equal('Zapper');
+            });
+            it("returns the removed joypad", function() {
+                expect($action).to.equal($joypad);
+            });
+        });
+        context("if the given joypad is connected second", function() {
+            beforeEach(function() {
+                $subject.insertController('Other Joypad');
+                $subject.insertController($joypad);
+            });
+            
+            it("does not change #controllers[0]", function() {
+                expect(() => $action).not.to.change($subject.controllers, '0');
+                expect($subject.controllers[0]).not.to.equal('Joypad');
+            });
+            it("removes it from #controllers[1]", function() {
+                expect(() => $action).to.change($subject.controllers, '1');
+                expect($subject.controllers[1]).not.to.equal($joypad);
+            });
+            it("returns the removed joypad", function() {
+                expect($action).to.equal($joypad);
+            });
+            it("does not move the other joypad", function() {
+                expect(() => $action).not.to.change($subject.controllers, 'length');
+                expect($subject.controllers).to.have.a.lengthOf(2);
+            });
+        });
+    });
 });

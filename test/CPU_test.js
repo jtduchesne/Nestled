@@ -106,6 +106,20 @@ describe("Cpu", function() {
                 $subject.read(0x2000);
                 $subject.read(0x3FFF);
             });
+            it("reads from Controller 1 when address is [0x4016]", function(done) {
+                $nes.controllers[0].read = () => done();
+                $subject.read(0x4016);
+            });
+            it("also reads most significant bits of addressBus (0x40)", function() {
+                expect($subject.read(0x4016)).to.equal(0x40);
+            });
+            it("reads from Controller 2 when address is [0x4017]", function(done) {
+                $nes.controllers[1].read = () => done();
+                $subject.read(0x4017);
+            });
+            it("also reads most significant bits of addressBus (0x40)", function() {
+                expect($subject.read(0x4017)).to.equal(0x40);
+            });
             it("reads from PRG-RAM when address is between [0x6000-7FFF]", function() {
                 expect($subject.read(0x6000)).to.equal($PRGRAMData);
                 expect($subject.read(0x7FFF)).to.equal($PRGRAMData);
@@ -132,6 +146,16 @@ describe("Cpu", function() {
                 $nes.ppu.writeRegister = () => { if (++count === 2) done(); };
                 $subject.write(0x2000);
                 $subject.write(0x3FFF);
+            });
+            it("writes (strobe) to both Controllers when address is [0x4016]", function(done) {
+                var count = 0;
+                const write = (data) => {
+                    expect(data).to.equal(0xFF);
+                    if (++count === 2) done();
+                };
+                $nes.controllers[0].write = write;
+                $nes.controllers[1].write = write;
+                $subject.write(0x4016, 0xFF);
             });
             it("writes to PRG-RAM when address is between [0x6000, 0x7FFF]", function() {
                 $subject.write(0x6000, 0xFF);

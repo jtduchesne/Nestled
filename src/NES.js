@@ -1,4 +1,5 @@
 import { Cartridge, NoCartridge } from './Cartridge.js';
+import { NoController } from './Controller.js';
 import NESFile from './NESFile.js';
 import CPU from './CPU.js';
 import PPU from './PPU.js';
@@ -19,18 +20,26 @@ export class NES {
             
             if (opts['oninsertcartridge']) this.oninsertcartridge = opts['oninsertcartridge'];
             if (opts['onremovecartridge']) this.onremovecartridge = opts['onremovecartridge'];
+            
+            if (opts['oninsertcontroller']) this.oninsertcontroller = opts['oninsertcontroller'];
+            if (opts['onremovecontroller']) this.onremovecontroller = opts['onremovecontroller'];
         }
         
         this.cpu = new CPU(this);
         this.ppu = new PPU(this);
         this.mainLoop = new MainLoop(this);
         
+        this.cartridge = new NoCartridge;
         if (opts && opts['cartridge'] || opts instanceof Cartridge)
             this.insertCartridge(opts['cartridge'] || opts);
         else if (opts && opts['file'] || opts instanceof NESFile)
             this.insertCartridge(opts['file'] || opts);
-        else
-            this.removeCartridge();
+        
+        this.controllers = [new NoController, new NoController];
+        if (opts && opts['controllers'])
+            opts['controllers'].forEach((controller) => this.insertController(controller));
+        else if (opts && opts['controller'])
+            this.controllers = [opts['controller'], new NoController];
         
         this.isPowered = false;
     }
@@ -153,6 +162,34 @@ export class NES {
         if (cart && (typeof cart.blowInto === 'function'))
             cart.blowInto(Math.floor(Math.random() * 3) + 1);
         return this.insertCartridge(cart);
+    }
+    
+    //== Controllers ========================================================================//
+    insertController(controller) {
+        if (this.controllers.indexOf(controller) > -1)
+            return controller;
+        else if (this.controllers[0] instanceof NoController)
+            this.controllers[0] = controller;
+        else if (this.controllers[1] instanceof NoController)
+            this.controllers[1] = controller;
+        else
+            return;
+        
+        if (this.oninsertcontroller)
+            this.oninsertcontroller({target: this});
+        
+        return controller;
+    }
+    removeController(controller) {
+        let index = this.controllers.indexOf(controller);
+        if (index > -1) {
+            this.controllers[index] = new NoController;
+            
+            if (this.onremovecontroller)
+                this.onremovecontroller({target: this});
+            
+            return controller;
+        }
     }
     
     //== Video ==============================================================================//

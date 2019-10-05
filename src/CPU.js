@@ -135,10 +135,15 @@ export class CPU {
         if (address < 0x2000) {
             return this.ram[address & 0x7FF];
         } else if (address < 0x4018) {
-            if (address < 0x4000)        { return this.bus.ppu.readRegister(address); }
-            else if (address === 0x4016) { return 0; /* this.joypad[0].read(); */ }
-            else if (address === 0x4017) { return 0; /* this.joypad[1].read(); */ }
-            else                         { return 0; /* this.apu.read(); */ }
+            if (address < 0x4000){
+                return this.bus.ppu.readRegister(address);
+            } else if (address === 0x4016) {
+                return (address >>> 8) | this.bus.controllers[0].read();
+            } else if (address === 0x4017) {
+                return (address >>> 8) | this.bus.controllers[1].read();
+            } else {
+                return 0; /* this.apu.read(); */
+            }
         } else {
             return this.bus.cartridge.cpuRead(address);
         }
@@ -147,8 +152,9 @@ export class CPU {
         if (address < 0x2000) {
             this.ram[address & 0x7FF] = data;
         } else if (address < 0x4018) {
-            if (address < 0x4000)        { this.bus.ppu.writeRegister(address,data); }
-            else if (address === 0x4014) { //PPU DMA Access
+            if (address < 0x4000) {
+                this.bus.ppu.writeRegister(address,data);
+            } else if (address === 0x4014) {
                 var dmaAddress = data * 256;
                 let ppu = this.bus.ppu;
                 
@@ -157,9 +163,12 @@ export class CPU {
                 
                 if (this.cycle & 1) this.cycle += 513;
                 else this.cycle += 514;
+            } else if (address === 0x4016) {
+                this.bus.controllers[0].write(data);
+                this.bus.controllers[1].write(data);
+            } else {
+                /* this.apu.write(address,data); */
             }
-            else if (address === 0x4016) { /* (Joypads strobe); */ }
-            else                         { /* this.apu.write(address,data); */ }
         } else {
             return this.bus.cartridge.cpuWrite(address, data);
         }
