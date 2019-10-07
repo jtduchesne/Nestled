@@ -1,15 +1,29 @@
+const JOYPAD = Object.freeze({
+    a: 0, b: 1, select: 2, start: 3, up: 4, down: 5, left: 6, right: 7
+});
+
 export class Controller {
     constructor() {
-        this.a      = 0;
-        this.b      = 0;
-        this.select = 0;
-        this.start  = 0;
-        this.up     = 0;
-        this.down   = 0;
-        this.left   = 0;
-        this.right  = 0;
+        this.a      = false;
+        this.b      = false;
+        this.select = false;
+        this.start  = false;
+        this.up     = false;
+        this.down   = false;
+        this.left   = false;
+        this.right  = false;
         
         this.empty  = 1;
+        
+        this.buttonHandlers = [(keyDown) => { this.a      = keyDown; },
+                               (keyDown) => { this.b      = keyDown; },
+                               (keyDown) => { this.select = keyDown; },
+                               (keyDown) => { this.start  = keyDown; },
+                               (keyDown) => { this.up     = keyDown; },
+                               (keyDown) => { this.down   = keyDown; },
+                               (keyDown) => { this.left   = keyDown; },
+                               (keyDown) => { this.right  = keyDown; }];
+        this.data = [];
         
         this.strobing = false;
         this.strobe();
@@ -31,8 +45,19 @@ export class Controller {
     }
     
     strobe() {
-        this.data = [this.a, this.b, this.select, this.start,
-                     this.up, this.down, this.left, this.right];
+        this.data = [
+            this.a, this.b, this.select, this.start,
+            this.up, this.down, this.left, this.right
+        ].map((v) => { return v ? 1 : 0; });
+    }
+    
+    //== Joypad =====================================================//
+    getButtonHandler(name) {
+        let index = JOYPAD[name.toLowerCase()];
+        if (index != null)
+            return this.buttonHandlers[index];
+        else
+            throw new Error("'"+name+"' is not a valid button name");
     }
 }
 export default Controller;

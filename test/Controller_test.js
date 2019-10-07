@@ -1,14 +1,18 @@
-describe.only("Controller", function() {
+describe("Controller", function() {
     subject(() => new Nestled.Controller);
     
-    its('a',      () => is.expected.to.equal(0));
-    its('b',      () => is.expected.to.equal(0));
-    its('select', () => is.expected.to.equal(0));
-    its('start',  () => is.expected.to.equal(0));
-    its('up',     () => is.expected.to.equal(0));
-    its('down',   () => is.expected.to.equal(0));
-    its('left',   () => is.expected.to.equal(0));
-    its('right',  () => is.expected.to.equal(0));
+    function press(buttonName) {
+        $subject.getButtonHandler(buttonName)(true);
+    }
+    
+    its('a',      () => is.expected.to.equal(false));
+    its('b',      () => is.expected.to.equal(false));
+    its('select', () => is.expected.to.equal(false));
+    its('start',  () => is.expected.to.equal(false));
+    its('up',     () => is.expected.to.equal(false));
+    its('down',   () => is.expected.to.equal(false));
+    its('left',   () => is.expected.to.equal(false));
+    its('right',  () => is.expected.to.equal(false));
     
     its('empty',  () => is.expected.to.equal(1));
     
@@ -16,7 +20,7 @@ describe.only("Controller", function() {
     
     describe(".read()", function() {
         def('halfStrobe', () => {
-            $subject.write(1)
+            $subject.write(1);
         });
         def('fullStrobe', () => {
             $subject.write(1);
@@ -25,78 +29,77 @@ describe.only("Controller", function() {
         
         context("if strobe is not done correctly", function() {
             it("keeps reading the state of the first button (A)", function() {
-                $subject.a = 1;
-                $subject.b = 0;
-                $halfStrobe
+                press('a');
+                $halfStrobe;
                 expect($subject.read()).to.equal(1);
                 expect($subject.read()).to.equal(1);
             });
         });
         context("if strobe is done correctly", function() {
             it("reads #a the 1st time", function() {
-                $subject.a = 1;
-                $fullStrobe
+                press('a');
+                $fullStrobe;
                 
                 expect($subject.read()).to.equal(1);
             });
             it("reads #b the 2nd time", function() {
-                $subject.b = 1;
-                $fullStrobe
+                press('b');
+                $fullStrobe;
                 
                 for (var i=1; i<2; i++)
                     expect($subject.read()).to.equal(0);
                 expect($subject.read()).to.equal(1);
             });
             it("reads #select the 3rd time", function() {
-                $subject.select = 1;
-                $fullStrobe
+                press('select');
+                $fullStrobe;
                 
                 for (var i=1; i<3; i++)
                     expect($subject.read()).to.equal(0);
                 expect($subject.read()).to.equal(1);
             });
             it("reads #start the 4th time", function() {
-                $subject.start = 1;
-                $fullStrobe
+                press('start');
+                $fullStrobe;
                 
                 for (var i=1; i<4; i++)
                     expect($subject.read()).to.equal(0);
                 expect($subject.read()).to.equal(1);
             });
             it("reads #up the 5th time", function() {
-                $subject.up = 1;
-                $fullStrobe
+                press('up');
+                $fullStrobe;
                 
                 for (var i=1; i<5; i++)
                     expect($subject.read()).to.equal(0);
                 expect($subject.read()).to.equal(1);
             });
             it("reads #down the 6th time", function() {
-                $subject.down = 1;
-                $fullStrobe
+                press('down');
+                $fullStrobe;
                 
                 for (var i=1; i<6; i++)
                     expect($subject.read()).to.equal(0);
                 expect($subject.read()).to.equal(1);
             });
             it("reads #left the 7th time", function() {
-                $subject.left = 1;
-                $fullStrobe
+                press('left');
+                $fullStrobe;
                 
                 for (var i=1; i<7; i++)
                     expect($subject.read()).to.equal(0);
                 expect($subject.read()).to.equal(1);
             });
             it("reads #right the 8th time", function() {
-                $subject.right = 1;
-                $fullStrobe
+                press('right');
+                $fullStrobe;
                 
                 for (var i=1; i<8; i++)
                     expect($subject.read()).to.equal(0);
                 expect($subject.read()).to.equal(1);
             });
             it("reads -1- after the 8th time", function() {
-                $fullStrobe
+                $fullStrobe;
                 
                 for (var i=1; i<=8; i++)
                     expect($subject.read()).to.equal(0);
@@ -108,8 +111,8 @@ describe.only("Controller", function() {
     describe(".write(data)", function() {
         def('action', () => $subject.write($data));
         beforeEach(function() {
-            $subject.a = 1;
-            $subject.up = 1;
+            press('a');
+            press('up');
         });
         
         context("if data is 0", function() {
@@ -143,15 +146,36 @@ describe.only("Controller", function() {
     describe(".strobe()", function() {
         def('action', () => $subject.strobe());
         beforeEach(function() {
-            $subject.a = 1;
-            $subject.select = 1;
-            $subject.up = 1;
-            $subject.left = 1;
+            press('a');
+            press('select');
+            press('up');
+            press('left');
         });
         
         it("loads button states into #data", function() {
             expect(() => $action).to.change($subject, 'data');
             expect($subject.data).to.have.ordered.members([1,0,1,0,1,0,1,0]);
+        });
+    });
+    
+    //-------------------------------------------------------------------------------//
+    
+    describe(".getButtonHandler(name)", function() {
+        def('action', () => $subject.getButtonHandler($name));
+        
+        context("if a name is valid", function() {
+            def('name', () => 'a');
+            
+            it("returns the corresponding handler", function() {
+                expect($action).to.equal($subject.buttonHandlers[0]);
+            });
+        });
+        context("if a name is not valid", function() {
+            def('name', () => 'invalid');
+            
+            it("throws an error containing the invalid name", function() {
+                expect(() => $action).to.throw($name);
+            });
         });
     });
 });
