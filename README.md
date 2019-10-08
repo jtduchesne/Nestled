@@ -10,7 +10,7 @@ I've put a lot of efforts into writing beautiful, well organized and easy to und
   ✓ Games without mapper  
   ✓ CPU  
   ✓ PPU  
-  ✗ *Controllers*  
+  ✓ Controllers  
   ✗ *APU*  
   ✗ *Memory mappers*  
 
