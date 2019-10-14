@@ -83,9 +83,13 @@ export class CPU {
         let cart = this.bus.cartridge;
         this.PC = cart.cpuRead(0xFFFC) + cart.cpuRead(0xFFFD)*256;
         
+        this.apu.powerOn();
+        
         this.isPowered = true;
     }
     powerOff() {
+        this.apu.powerOff();
+        
         this.isPowered = false;
     }
     

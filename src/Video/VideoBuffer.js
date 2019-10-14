@@ -1,4 +1,4 @@
-export class Buffer {
+export class VideoBuffer {
     constructor(width, height) {
         this.canvas = document.createElement('canvas');
         this.canvas.width = width;
@@ -39,4 +39,4 @@ export class Buffer {
     }
 }
 
-export default Buffer;
+export default VideoBuffer;

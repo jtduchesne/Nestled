@@ -22,3 +22,9 @@ global.FileReader = class {
         this.onload();
     }
 };
+
+global.AudioContext = class {
+    createBuffer(channels, bufferLength, sampleRate) {
+        return new Float32Array(channels * bufferLength);
+    }
+};

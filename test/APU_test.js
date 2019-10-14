@@ -9,6 +9,32 @@ describe("APU", function() {
     its('irqDisabled', () => is.expected.to.be.false);
     its('irq',         () => is.expected.to.be.false);
     
+    describe(".powerOn()", function() {
+        def('action', () => $subject.powerOn());
+        
+        it("initializes #audio", function() {
+            expect(() => $action).to.change($subject, 'audio');
+            expect($subject.audio).to.be.an.instanceOf(Nestled.AudioBuffer);
+        });
+        it("sets #cyclesPerSample", function() {
+            expect(() => $action).to.change($subject, 'cyclesPerSample');
+            expect($subject.cyclesPerSample).to.be.greaterThan(0);
+        });
+    });
+    describe(".powerOff()", function() {
+        def('action', () => $subject.powerOff());
+        beforeEach(function() { $subject.powerOn(); });
+        
+        it("stops the audio", function(done) {
+            $subject.audio = { stop: () => done() };
+            $action;
+        });
+        it("destroys #audio", function() {
+            expect(() => $action).to.change($subject, 'audio');
+            expect($subject.audio).to.be.null;
+        });
+    });
+    
     describe(".reset()", function() {
         def('action', () => $subject.reset());
         beforeEach(function() {
@@ -351,6 +377,37 @@ describe("APU", function() {
                     expect($subject.cycle).to.equal(0);
                 });
             });
+        });
+        
+        context("when it reaches #cyclesPerSample", function() {
+            beforeEach(function() {
+                $subject.cyclesPerSample = 40.5;
+                $subject.cycle = 40;
+            });
+            
+            it("writes a sample to #audio", function(done) {
+                $subject.audio = new class { set sample(v) { done(); } };
+                $action;
+            });
+            it("decreases #cycle by #cyclesPerSample", function() {
+                expect(() => $action).to.decrease($subject, 'cycle');
+                expect($subject.cycle).to.equal(0.5);
+            });
+        });
+    });
+    
+    describe(".writeSample()", function() {
+        def('action', () => $subject.writeSample($value));
+        def('value', () => 0.1234);
+        
+        it("writes a sample to #audio", function(done) {
+            $subject.audio = new class {
+                set sample(value) {
+                    expect(value).to.equal($value);
+                    done();
+                }
+            };
+            $action;
         });
     });
 });

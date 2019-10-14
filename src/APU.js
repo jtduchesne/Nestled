@@ -1,3 +1,5 @@
+import AudioBuffer from './Audio/AudioBuffer.js';
+
 export class APU {
     constructor(cpu) {
         this.cpu = cpu;
@@ -13,6 +15,19 @@ export class APU {
         this.status  = null;
         this.counter = null;
         this.irq     = false;
+        
+        this.audio = null;
+        this.cyclesPerSample = 0.0;
+    }
+    
+    powerOn() {
+        this.audio = new AudioBuffer(8820, 44100);
+        this.cyclesPerSample = 1789772.72 / this.audio.sampleRate;
+    }
+    powerOff() {
+        if (this.audio)
+            this.audio.stop();
+        this.audio = null;
     }
     
     reset() {
@@ -157,6 +172,11 @@ export class APU {
         //this.triangle.doCycle();
         //this.noise.doCycle();
         //this.dmc.doCycle();
+        
+        if (this.cycle >= this.cyclesPerSample) {
+            this.writeSample(0);
+            this.cycle -= this.cyclesPerSample;
+        }
     }
     
     doQuarter() {
@@ -173,6 +193,11 @@ export class APU {
         //this.triangle.doHalf();
         //this.noise.doHalf();
         //this.dmc.doHalf();
+    }
+    
+    writeSample(value) {
+        if (this.audio)
+            this.audio.sample = value;
     }
 }
 

@@ -1,5 +1,5 @@
-import Buffer from './Buffer.js';
-import * as Colors from './Colors.js';
+import VideoBuffer from './Video/VideoBuffer.js';
+import * as Colors from './Video/Colors.js';
 
 //                      0x0000, 0x8000,   0x0080, 0x8080
 const bitplaneLookup = {0: 0,   32768: 1, 128: 2, 32896: 3};
@@ -31,11 +31,11 @@ export class PPU {
         this.sprPixelsBuffer = new Uint32Array(8);
         
         //Layers
-        this.sprBehindLayer  = new Buffer(264, 256);
-        this.sprInFrontLayer = new Buffer(264, 256);
-        this.sprite0Layer = new Buffer(264, 256);
+        this.sprBehindLayer  = new VideoBuffer(264, 256);
+        this.sprInFrontLayer = new VideoBuffer(264, 256);
+        this.sprite0Layer = new VideoBuffer(264, 256);
         
-        this.bkgLayer = new Buffer(264, 256);
+        this.bkgLayer = new VideoBuffer(264, 256);
         this.sprLayer = this.sprInFrontLayer;
         
         this.isPowered = false;
