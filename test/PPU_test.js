@@ -64,8 +64,8 @@ describe("Ppu", function() {
         its('isPowered', () => is.expected.to.be.false);
     });
     
-    describe(".doReset()", function() {
-        def('action', () => $subject.doReset());
+    describe(".reset()", function() {
+        def('action', () => $subject.reset());
         
         it("clears Control Register", function() {
             $subject.writeRegister(0x2000, 0xFF);
@@ -103,6 +103,8 @@ describe("Ppu", function() {
             expect($subject.readBuffer).to.equal(0);
         });
     });
+    
+    //-------------------------------------------------------------------------------//
     
     describe(".doVBlank()", function() {
         def('action', () => $subject.doVBlank());

@@ -1,3 +1,5 @@
+import APU from './APU.js';
+
 const cyclesLookup = [7,6,2,8,3,3,5,5,3,2,2,2,4,4,6,6, 2,5,2,8,4,4,6,6,2,4,2,7,4,4,7,7,
                       6,6,2,8,3,3,5,5,4,2,2,2,4,4,6,6, 2,5,2,8,4,4,6,6,2,4,2,7,4,4,7,7,
                       6,6,2,8,3,3,5,5,3,2,2,2,3,4,6,6, 2,5,2,8,4,4,6,6,2,4,2,7,4,4,7,7,
@@ -13,6 +15,7 @@ export function signByte(value) { return value>=0x80 ? value-0x100 : value; }
 export class CPU {
     constructor(nes) {
         this.bus = nes;
+        this.apu = new APU(this);
         
         this.cycle = 0;
         this.cycleOffset = 0;
@@ -86,11 +89,17 @@ export class CPU {
         this.isPowered = false;
     }
     
-    //== Main loop ==================================================//
+    reset() {
+        this.apu.reset();
+        this.doReset();
+    }
+    
+    //== Execution ==================================================//
     doInstructions(limit = 0) {
         limit += this.cycleOffset;
         while (this.cycle <= limit) {
-            this.doInstruction();
+            let cycles = this.doInstruction();
+            this.apu.doCycles(cycles);
         }
     }
     
@@ -98,13 +107,16 @@ export class CPU {
         let pc = this.PC++;
         this.opcode  = this.read(pc);
         this.operand = this.read(pc+1);
-     
+        
         this.instructionLookup[this.opcode].call(this,
             (override) => this.addressLookup[this.opcode].call(this,
                 (override !== undefined) ? override : this.operand
             )
         );
-        this.cycle += cyclesLookup[this.opcode];
+        let cycles = cyclesLookup[this.opcode];
+        this.cycle += cycles;
+        
+        return cycles;
     }
     
     //== Interrupts =================================================//
@@ -117,12 +129,14 @@ export class CPU {
     }
     doReset() {
         this.SP = this.SP+3;
-        this.Interrupt = true;
+        this.Interrupt = false;
         let cart = this.bus.cartridge;
         this.PC = cart.cpuRead(0xFFFC) + cart.cpuRead(0xFFFD)*256;
         this.cycle += 7;
     }
     doIRQ() {
+        if (this.Interrupt) return;
+        
         this.pushWord(this.PC);
         this.pushByte(this.P & ~0x10);
         let cart = this.bus.cartridge;
@@ -142,7 +156,7 @@ export class CPU {
             } else if (address === 0x4017) {
                 return (address >>> 8) | this.bus.controllers[1].read();
             } else {
-                return 0; /* this.apu.read(); */
+                return this.apu.readRegister(address);
             }
         } else {
             return this.bus.cartridge.cpuRead(address);
@@ -167,7 +181,7 @@ export class CPU {
                 this.bus.controllers[0].write(data);
                 this.bus.controllers[1].write(data);
             } else {
-                /* this.apu.write(address,data); */
+                this.apu.writeRegister(address, data);
             }
         } else {
             return this.bus.cartridge.cpuWrite(address, data);

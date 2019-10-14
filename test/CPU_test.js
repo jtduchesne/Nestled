@@ -28,6 +28,10 @@ describe("Cpu", function() {
     
     //-------------------------------------------------------------------------------//
     
+    its('apu', () => is.expected.to.be.an.instanceOf(Nestled.APU));
+    
+    //-------------------------------------------------------------------------------//
+    
     describe(".powerOn()", function() {
         beforeEach(function() { $subject.powerOn(); });
         
@@ -49,6 +53,19 @@ describe("Cpu", function() {
         
         it("sets isPowered to -false-", function() {
             expect($subject.isPowered).to.be.false; });
+    });
+    
+    describe(".reset()", function() {
+        def('action', () => $subject.reset());
+        
+        it("calls apu.reset()", function(done) {
+            $subject.apu.reset = () => done();
+            $action;
+        });
+        it("calls .doReset()", function(done) {
+            $subject.doReset = () => done();
+            $action;
+        });
     });
     
     //-------------------------------------------------------------------------------//
@@ -80,6 +97,7 @@ describe("Cpu", function() {
         });
         describe(".doIRQ()", function() {
             def('action', () => $subject.doIRQ());
+            beforeEach(function() { $subject.Interrupt = false; });
             
             it("pushes P with BRK flag cleared", function() {
                 $action;
@@ -100,11 +118,15 @@ describe("Cpu", function() {
                 expect($subject.read(0x0000)).to.equal($RAMData);
                 expect($subject.read(0x1FFF)).to.equal($RAMData);
             });
-            it("reads from PPU's registers when address is between [0x2000-4000]", function(done) {
+            it("reads from PPU's registers when address is between [0x2000-3FFF]", function(done) {
                 var count = 0;
                 $nes.ppu.readRegister = () => { if (++count === 2) done(); };
                 $subject.read(0x2000);
                 $subject.read(0x3FFF);
+            });
+            it("reads from APU's registers when address is [0x4015]", function(done) {
+                $subject.apu.readRegister = () => done();
+                $subject.read(0x4015);
             });
             it("reads from Controller 1 when address is [0x4016]", function(done) {
                 $nes.controllers[0].read = () => done();
@@ -140,12 +162,19 @@ describe("Cpu", function() {
         describe(".write(address,data)", function() {
             it("writes to RAM when address is between [0x0000, 0x07FF]", function() {
                 $subject.write(0x0000, 0xFF);
-                expect($subject.ram[0]).to.equal(0xFF); });
-            it("writes to PPU's registers when address is between [0x2000-4000]", function(done) {
+                expect($subject.ram[0]).to.equal(0xFF);
+            });
+            it("writes to PPU's registers when address is between [0x2000-3FFF]", function(done) {
                 var count = 0;
                 $nes.ppu.writeRegister = () => { if (++count === 2) done(); };
                 $subject.write(0x2000);
                 $subject.write(0x3FFF);
+            });
+            it("writes to APU's registers when address is between [0x4000-4015]", function(done) {
+                var count = 0;
+                $subject.apu.writeRegister = () => { if (++count === 2) done(); };
+                $subject.write(0x4000);
+                $subject.write(0x4015);
             });
             it("writes (strobe) to both Controllers when address is [0x4016]", function(done) {
                 var count = 0;
@@ -157,12 +186,18 @@ describe("Cpu", function() {
                 $nes.controllers[1].write = write;
                 $subject.write(0x4016, 0xFF);
             });
+            it("writes to APU's registers when address is [0x4017]", function(done) {
+                $subject.apu.writeRegister = () => done();
+                $subject.write(0x4017);
+            });
             it("writes to PRG-RAM when address is between [0x6000, 0x7FFF]", function() {
                 $subject.write(0x6000, 0xFF);
-                expect($nes.cartridge.PRGRAM[0]).to.equal(0xFF); });
+                expect($nes.cartridge.PRGRAM[0]).to.equal(0xFF);
+            });
             it("cannot writes to PRG-ROM when address is between [0x8000, 0xFFFF]", function() {
                 $subject.write(0x8000, 0xFF);
-                expect($nes.cartridge.PRGROM[0]).not.to.equal(0xFF); });
+                expect($nes.cartridge.PRGROM[0]).not.to.equal(0xFF);
+            });
         });
     });
     

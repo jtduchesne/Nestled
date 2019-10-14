@@ -57,13 +57,14 @@ export class PPU {
         this.isPowered = false;
     }
     
-    doReset() {
+    reset() {
         this.control = null; //$2000 Control Register
         this.mask    = null; //$2001 Mask Register
         this.scroll  = null; //$2005 Scroll Register
         this.data    = null; //$2007 Data Register
     }
     
+    //== Vertical Blank =============================================//
     doVBlank() {
         this.vblank = true;
         this.renderingEnabled = false;

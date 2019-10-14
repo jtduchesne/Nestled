@@ -82,12 +82,12 @@ describe("NES", function() {
     describe(".pressReset()", function() {
         def('action', () => $subject.pressReset());
         
-        it("calls cpu.doReset()", function(done) {
-            $subject.cpu.doReset = () => done();
+        it("calls cpu.reset()", function(done) {
+            $subject.cpu.reset = () => done();
             $action;
         });
-        it("calls ppu.doReset()", function(done) {
-            $subject.ppu.doReset = () => done();
+        it("calls ppu.reset()", function(done) {
+            $subject.ppu.reset = () => done();
             $action;
         });
         

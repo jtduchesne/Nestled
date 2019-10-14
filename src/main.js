@@ -6,3 +6,4 @@ export { PPU } from './PPU.js';
 export { Buffer } from './Buffer.js';
 export { Controller, NoController } from './Controller.js';
 export { Keyboard } from './Controllers/Keyboard.js';
+export { APU } from './APU.js';

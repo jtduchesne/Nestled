@@ -120,8 +120,8 @@ export class NES {
     pressReset()  {
         if (this.onreset) this.onreset({target: this});
         
-        this.cpu.doReset();
-        this.ppu.doReset();
+        this.cpu.reset();
+        this.ppu.reset();
     }
      
     //== Front red LED ======================================================================//
