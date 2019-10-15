@@ -1,15 +1,13 @@
+import Channel from './Channel.js';
+
 const duty = [
     0,  1,  2,  3,  4,  5,  6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
     15, 14, 13, 12, 11, 10, 9, 8, 7, 6,  5,  4,  3,  2,  1,  0,
 ];
-const lengths = [
-    10, 254, 20,  2, 40,  4, 80,  6, 160,  8, 60, 10, 14, 12, 26, 14,
-    12,  16, 24, 18, 48, 20, 96, 22, 192, 24, 72, 26, 16, 28, 32, 30,
-];
 
-export class TriangleChannel {
+export class TriangleChannel extends Channel {
     constructor() {
-        this.enabled = false;
+        super();
         
         this.dutyCycle = 0;
         
@@ -19,31 +17,18 @@ export class TriangleChannel {
         
         this.timerCycle  = 0;
         this.timerPeriod = 0;
-        
-        this.lengthCounter     = 0;
-        this.lengthCounterHalt = false;
     }
     
     reset() {
-        this.enabled = false;
+        super.reset();
         
         this.dutyPosition  = 0;
         this.linearCounter = 0;
+        
         this.timerCycle    = 0;
-        this.timerPeriod   = 0;
         
         this.counter = 0;
         this.timer   = 0;
-        this.length  = 0;
-    }
-    
-    get enabled() {
-        return this._enabled;
-    }
-    set enabled(value) {
-        if (!value)
-            this.lengthCounter = 0;
-        this._enabled = value;
     }
     
     //== Registers ==================================================//
@@ -61,14 +46,14 @@ export class TriangleChannel {
     }
     
     get length() {
-        return this.lengthCounter;
+        return super.length;
     }
     set length(value) {
-        if (this.enabled)
-            this.lengthCounter = lengths[(value & 0xF8) >>> 3];
+        this.linearCounterReset = true;
         
         this.timerPeriod = (this.timerPeriod & 0x0FF) | ((value & 0x07) << 8);
-        this.linearCounterReset = true;
+        
+        super.length = value;
     }
     
     //== Registers access ===========================================//
@@ -85,6 +70,7 @@ export class TriangleChannel {
         this.timerCycle -= 2;
         if (this.timerCycle <= 0) {
             this.timerCycle = (this.timerPeriod + 1);
+            
             if (this.lengthCounter && this.linearCounter && this.timerPeriod > 3) {
                 this.dutyCycle++;
                 if (this.dutyCycle >= 0x20)
@@ -105,8 +91,7 @@ export class TriangleChannel {
     }
     
     doHalf() {
-        if (this.lengthCounter > 0 && !this.lengthCounterHalt)
-            this.lengthCounter--;
+        this.updateLength();
     }
     
     //== Output =====================================================//

@@ -1,28 +1,26 @@
+import Channel from './Channel.js';
+
 const duties = [
     [0, 0, 0, 0, 0, 0, 0, 1],
     [0, 0, 0, 0, 0, 0, 1, 1],
     [0, 0, 0, 0, 1, 1, 1, 1],
     [1, 1, 1, 1, 1, 1, 0, 0],
 ];
-const lengths = [
-    10, 254, 20,  2, 40,  4, 80,  6, 160,  8, 60, 10, 14, 12, 26, 14,
-    12,  16, 24, 18, 48, 20, 96, 22, 192, 24, 72, 26, 16, 28, 32, 30,
-];
 
-export class PulseChannel {
+export class PulseChannel extends Channel {
     constructor(id) {
+        super();
+        
         this.id = id;
         
-        this.enabled = false;
-        this.volume  = 0;
+        this.constantVolume = 0;
         
-        this.constantVolume = false;
-        
-        this.envelopeReset  = false;
-        this.envelopeCycle  = 0;
-        this.envelopePeriod = 0;
-        this.envelopeVolume = 0;
-        this.envelopeLoop   = false;
+        this.envelopeEnabled = true;
+        this.envelopeReset   = false;
+        this.envelopeCycle   = 0;
+        this.envelopePeriod  = 0;
+        this.envelopeVolume  = 0;
+        this.envelopeLoop    = false;
         
         this.dutyCycle     = 0;
         this.dutySelection = 0;
@@ -36,47 +34,36 @@ export class PulseChannel {
         
         this.timerCycle  = 0;
         this.timerPeriod = 0;
-        
-        this.lengthCounter     = 0;
-        this.lengthCounterHalt = false;
     }
     
     reset() {
-        this.enabled = false;
+        super.reset();
         
         this.envelopeCycle  = 0;
         this.envelopeVolume = 0;
-        this.sweepCycle     = 0;
-        this.timerCycle     = 0;
-        this.timerPeriod    = 0;
         
-        this.duty   = 0;
+        this.sweepCycle = 0;
+        
+        this.timerCycle = 0;
+        
+        this.volume = 0;
         this.sweep  = 0;
         this.timer  = 0;
-        this.length = 0;
-    }
-    
-    get enabled() {
-        return this._enabled;
-    }
-    set enabled(value) {
-        if (!value)
-            this.lengthCounter = 0;
-        this._enabled = value;
     }
     
     //== Registers ==================================================//
-    get duty() {
-        return duties[this.dutySelection];
+    get volume() {
+        let volume = this.envelopeEnabled ? this.envelopeVolume : this.constantVolume;
+        return volume * duties[this.dutySelection][this.dutyCycle];
     }
-    set duty(value) {
+    set volume(value) {
         this.dutySelection     = (value & 0xC0) >>> 6;
         
-        this.volume            = (value & 0x0F);
-        this.constantVolume    = (value & 0x10) !== 0;
+        this.constantVolume    = (value & 0x0F);
+        this.envelopeEnabled   = (value & 0x10) === 0;
         this.lengthCounterHalt = (value & 0x20) !== 0;
         
-        this.envelopePeriod   = this.volume;
+        this.envelopePeriod   = this.constantVolume;
         this.envelopeLoop     = this.lengthCounterHalt;
     }
     
@@ -100,21 +87,21 @@ export class PulseChannel {
     }
     
     get length() {
-        return this.lengthCounter;
+        return super.length;
     }
     set length(value) {
-        if (this.enabled)
-            this.lengthCounter = lengths[(value & 0xF8) >>> 3];
-        
-        this.timerPeriod = (this.timerPeriod & 0x0FF) | ((value & 0x07) << 8);
         this.dutyCycle = 0;
         this.envelopeReset = true;
+        
+        this.timerPeriod = (this.timerPeriod & 0x0FF) | ((value & 0x07) << 8);
+        
+        super.length = value;
     }
     
     //== Registers access ===========================================//
     writeRegister(address, data) {
         switch (address & 0x3) {
-        case 0x0: this.duty   = data; break;
+        case 0x0: this.volume = data; break;
         case 0x1: this.sweep  = data; break;
         case 0x2: this.timer  = data; break;
         case 0x3: this.length = data; break;
@@ -165,16 +152,14 @@ export class PulseChannel {
             this.sweepReset = false;
         }
         
-        if (this.lengthCounter > 0 && !this.lengthCounterHalt)
-            this.lengthCounter--;
+        this.updateLength();
     }
     
     //== Output =====================================================//
     get output() {
         let timer = this.timer;
         if (this.length > 0 && timer >= 0x008 && timer+this.sweep < 0x800) {
-            let volume = this.constantVolume ? this.volume : this.envelopeVolume;
-            return volume * this.duty[this.dutyCycle];
+            return this.volume;
         } else {
             return 0;
         }

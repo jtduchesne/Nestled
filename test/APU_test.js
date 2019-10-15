@@ -386,28 +386,13 @@ describe("APU", function() {
             });
             
             it("writes a sample to #audio", function(done) {
-                $subject.audio = new class { set sample(v) { done(); } };
+                $subject.audio = { writeSample: () => done() };
                 $action;
             });
             it("decreases #cycle by #cyclesPerSample", function() {
                 expect(() => $action).to.decrease($subject, 'cycle');
                 expect($subject.cycle).to.equal(0.5);
             });
-        });
-    });
-    
-    describe(".writeSample()", function() {
-        def('action', () => $subject.writeSample($value));
-        def('value', () => 0.1234);
-        
-        it("writes a sample to #audio", function(done) {
-            $subject.audio = new class {
-                set sample(value) {
-                    expect(value).to.equal($value);
-                    done();
-                }
-            };
-            $action;
         });
     });
 });

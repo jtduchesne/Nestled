@@ -181,22 +181,23 @@ export class APU {
         //this.dmc.doCycle();
         
         if (this.cycle >= this.cyclesPerSample) {
-            var sample = 0;
+            if (this.audio) {
+                var sample = 0;
             
-            let pulse = this.pulse1.output + this.pulse2.output;
-            if (pulse)
-                sample += 95.52 / ((8128 / pulse) + 100);
+                let pulse = this.pulse1.output + this.pulse2.output;
+                if (pulse)
+                    sample += 95.52 / ((8128 / pulse) + 100);
             
-            let triangle = this.triangle.output;
-            let noise = 0;
-            let dmc = 0;
+                let triangle = this.triangle.output;
+                let noise = 0;
+                let dmc = 0;
 
-            if (triangle || noise || dmc) {
-                sample += 159.79 / ((1 / ((triangle / 8227) + (noise / 12241) + (dmc / 22638))) + 100);
+                if (triangle || noise || dmc) {
+                    sample += 159.79 / ((1 / ((triangle / 8227) + (noise / 12241) + (dmc / 22638))) + 100);
+                }
+            
+                this.audio.writeSample(sample);
             }
-            
-            this.writeSample(sample);
-            
             this.cycle -= this.cyclesPerSample;
         }
     }
@@ -215,11 +216,6 @@ export class APU {
         this.triangle.doHalf();
         //this.noise.doHalf();
         //this.dmc.doHalf();
-    }
-    
-    writeSample(value) {
-        if (this.audio)
-            this.audio.sample = value;
     }
 }
 
