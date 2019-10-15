@@ -1,11 +1,12 @@
 import AudioBuffer from './Audio/AudioBuffer.js';
+import PulseChannel from './Audio/PulseChannel.js';
 
 export class APU {
     constructor(cpu) {
         this.cpu = cpu;
         
-        //this.pulse1   = new PulseChannel(1);
-        //this.pulse2   = new PulseChannel(2);
+        this.pulse1   = new PulseChannel(1);
+        this.pulse2   = new PulseChannel(2);
         //this.triangle = new TriangleChannel;
         //this.noise    = new NoiseChannel;
         //this.dmc      = new DMCChannel(cpu);
@@ -31,8 +32,8 @@ export class APU {
     }
     
     reset() {
-        //this.pulse1.reset();
-        //this.pulse2.reset();
+        this.pulse1.reset();
+        this.pulse2.reset();
         //this.triangle.reset();
         //this.noise.reset();
         //this.dmc.reset();
@@ -51,8 +52,8 @@ export class APU {
     //== Registers ==================================================//
     //= 0x4015 Status =//
     get status() {
-        let value = //(this.pulse1.length   && 0x01) |
-                    //(this.pulse2.length   && 0x02) |
+        let value = (this.pulse1.length   && 0x01) |
+                    (this.pulse2.length   && 0x02) |
                     //(this.triangle.length && 0x04) |
                     //(this.noise.length    && 0x08) |
                     //(this.dmc.sampleLeft  && 0x10) |
@@ -65,14 +66,14 @@ export class APU {
     }
     set status(value) {
         if (value !== null) {
-            //this.pulse1.enabled   = !!(value & 0x01);
-            //this.pulse2.enabled   = !!(value & 0x02);
+            this.pulse1.enabled   = !!(value & 0x01);
+            this.pulse2.enabled   = !!(value & 0x02);
             //this.triangle.enabled = !!(value & 0x04);
             //this.noise.enabled    = !!(value & 0x08);
             //this.dmc.enabled      = !!(value & 0x10);
         } else {
-            //this.pulse1.enabled   = false;
-            //this.pulse2.enabled   = false;
+            this.pulse1.enabled   = false;
+            this.pulse2.enabled   = false;
             //this.triangle.enabled = false;
             //this.noise.enabled    = false;
             //this.dmc.enabled      = false;
@@ -108,9 +109,9 @@ export class APU {
     }
     writeRegister(address, data) {
         if (address <= 0x4003)
-            return; //this.pulse1.writeRegister(address, data);
+            this.pulse1.writeRegister(address, data);
         else if (address <= 0x4007)
-            return; //this.pulse2.writeRegister(address, data);
+            this.pulse2.writeRegister(address, data);
         else if (address <= 0x400B)
             return; //this.triangle.writeRegister(address, data);
         else if (address <= 0x400F)
@@ -167,29 +168,31 @@ export class APU {
                 this.cycle = 0;
             }
         }
-        //this.pulse1.docycle();
-        //this.pulse2.docycle();
+        this.pulse1.doCycle();
+        this.pulse2.doCycle();
         //this.triangle.doCycle();
         //this.noise.doCycle();
         //this.dmc.doCycle();
         
         if (this.cycle >= this.cyclesPerSample) {
-            this.writeSample(0);
+            let pulse = this.pulse1.output + this.pulse2.output;
+            this.writeSample(95.52 / ((8128.0 / pulse) + 100));
+            
             this.cycle -= this.cyclesPerSample;
         }
     }
     
     doQuarter() {
-        //this.pulse1.doQuarter();
-        //this.pulse2.doQuarter();
+        this.pulse1.doQuarter();
+        this.pulse2.doQuarter();
         //this.triangle.doQuarter();
         //this.noise.doQuarter();
         //this.dmc.doQuarter();
     }
     
     doHalf() {
-        //this.pulse1.doHalf();
-        //this.pulse2.doHalf();
+        this.pulse1.doHalf();
+        this.pulse2.doHalf();
         //this.triangle.doHalf();
         //this.noise.doHalf();
         //this.dmc.doHalf();
