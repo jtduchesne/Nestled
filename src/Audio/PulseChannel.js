@@ -124,7 +124,8 @@ export class PulseChannel {
     //== Execution ==================================================//
     doCycle() {
         if (--this.timerCycle <= 0) {
-            this.timerCycle = (this.timerPeriod + 1) * 2;
+            this.timerCycle = (this.timerPeriod + 1);
+            
             this.dutyCycle++;
             if (this.dutyCycle >= 0x8)
                 this.dutyCycle -= 0x8;

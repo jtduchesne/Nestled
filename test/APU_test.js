@@ -227,14 +227,14 @@ describe("APU", function() {
     
     describe(".doCycles(count)", function() {
         def('action', () => $subject.doCycles($count));
-        def('count', () => 5);
+        def('count', () => 6);
         
-        it("increases #cycle by [count]", function() {
-            expect(() => $action).to.increase($subject, 'cycle').by($count);
+        it("increases #cycle by [count]/2", function() {
+            expect(() => $action).to.increase($subject, 'cycle').by($count/2);
         });
-        it("calls .doCycle() [count] times", function(done) {
+        it("calls .doCycle() [count]/2 times", function(done) {
             var count = 0;
-            $subject.doCycle = () => { if (++count === $count) done(); };
+            $subject.doCycle = () => { if (++count === $count/2) done(); };
             $action;
         });
         
@@ -242,19 +242,19 @@ describe("APU", function() {
             beforeEach(function() { $subject.cycle = 1234; });
             
             it("resets #cycle after delay", function() {
-                $subject.resetDelay = $count;
+                $subject.resetDelay = $count/2;
                 expect(() => $action).to.decrease($subject, 'cycle');
                 expect($subject.cycle).to.equal(0 +1);
             });
             it("continues counting after delay", function() {
-                $subject.resetDelay = $count - 2;
+                $subject.resetDelay = $count/2 - 2;
                 expect(() => $action).to.change($subject, 'cycle');
                 expect($subject.cycle).to.equal(2 +1);
             });
             
-            it("still call .doCycle() [count] times", function(done) {
+            it("still call .doCycle() [count]/2 times", function(done) {
                 var count = 0;
-                $subject.doCycle = () => { if (++count === $count) done(); };
+                $subject.doCycle = () => { if (++count === $count/2) done(); };
                 $action;
             });
         });
