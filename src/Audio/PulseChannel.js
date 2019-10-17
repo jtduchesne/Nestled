@@ -22,8 +22,8 @@ export class PulseChannel extends Channel {
         this.envelopeVolume  = 0;
         this.envelopeLoop    = false;
         
-        this.dutyCycle     = 0;
-        this.dutySelection = 0;
+        this.dutyCycle = 0;
+        this.duty      = 0;
         
         this.sweepEnabled = false;
         this.sweepReset   = false;
@@ -54,10 +54,10 @@ export class PulseChannel extends Channel {
     //== Registers ==================================================//
     get volume() {
         let volume = this.envelopeEnabled ? this.envelopeVolume : this.constantVolume;
-        return volume * duties[this.dutySelection][this.dutyCycle];
+        return volume * this.duty[this.dutyCycle];
     }
     set volume(value) {
-        this.dutySelection     = (value & 0xC0) >>> 6;
+        this.duty = duties[(value & 0xC0) >>> 6];
         
         this.constantVolume    = (value & 0x0F);
         this.envelopeEnabled   = (value & 0x10) === 0;
