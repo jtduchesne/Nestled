@@ -192,11 +192,11 @@ describe("Cpu", function() {
             });
             it("writes to PRG-RAM when address is between [0x6000, 0x7FFF]", function() {
                 $subject.write(0x6000, 0xFF);
-                expect($nes.cartridge.PRGRAM[0]).to.equal(0xFF);
+                expect($cartridge.mapper.PRGRAM[0]).to.equal(0xFF);
             });
             it("cannot writes to PRG-ROM when address is between [0x8000, 0xFFFF]", function() {
                 $subject.write(0x8000, 0xFF);
-                expect($nes.cartridge.PRGROM[0]).not.to.equal(0xFF);
+                expect($cartridge.mapper.PRGROM[0]).not.to.equal(0xFF);
             });
         });
     });

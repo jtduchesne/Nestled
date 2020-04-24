@@ -1,4 +1,5 @@
 import NESFile from './NESFile.js';
+import MemoryMapper from './MemoryMapper.js';
 
 export class Cartridge {
     constructor(opts) {
@@ -8,24 +9,23 @@ export class Cartridge {
         if (opts && opts['file'] || opts instanceof NESFile)
             return this.load(opts['file'] || opts);
         else
-            return this.unload();
+            return this.reset();
     }
     
     reset() {
         this.isValid = false;
         
         this.name = "";
-        this.mapperNumber = 0;
         
-        this.horiMirroring = null;
-        this.vertMirroring = null;
+        this.mapper = null;
         
-        this.battery = null;
+        this.horiMirroring = false;
+        this.vertMirroring = false;
+        
+        this.battery = false;
         
         this.PRGROM = [];
         this.CHRROM = [];
-        this.PRGBank = [this.PRGRAM, this.PRGRAM];
-        this.CHRBank = [this.CHRRAM, this.CHRRAM];
         
         this.tvSystem = "NTSC";
         
@@ -36,7 +36,7 @@ export class Cartridge {
         if (file.isValid) {
             this.reset();
             
-            const header = new DataView(file.data, 0, 0x10);
+            let header = new DataView(file.data, 0, 0x10);
             var offset = 0x10;
             
             if (header.getUint32(0) === 0x4E45531A) { //"NES" + MS-DOS end-of-file
@@ -45,18 +45,35 @@ export class Cartridge {
                 file.updateStatus("Invalid format");
                 return this;
             }
-            this.file = file;
             
-            const numPRGBank = header.getUint8(4);
-            const numCHRBank = header.getUint8(5);
+            let flags6 = header.getUint8(6);
+            let flags7 = header.getUint8(7);
             
-            const flags6 = header.getUint8(6);
+            let mapperNumber = (flags6 >> 4) | (flags7 & 0xF0);
+            if (MemoryMapper.isSupported(mapperNumber)) {
+                file.updateStatus(
+                    `Mapper #${mapperNumber}: ${MemoryMapper.getName(mapperNumber)}`
+                );
+                this.isValid = true;
+            } else {
+                file.updateStatus(
+                    `Unsupported mapper (#${mapperNumber}: ${MemoryMapper.getName(mapperNumber)})`
+                );
+                this.isValid = false;
+            }
+            
             if (flags6 & 0x8) {
                 this.horiMirroring = false;
                 this.vertMirroring = false;
+                file.updateStatus("4-screens scrolling");
+            } else if (flags6 & 0x1) {
+                this.horiMirroring = false;
+                this.vertMirroring = true;
+                file.updateStatus("Horizontal scrolling");
             } else {
-                this.horiMirroring =  !(flags6 & 0x1);
-                this.vertMirroring = !!(flags6 & 0x1);
+                this.horiMirroring = true;
+                this.vertMirroring = false;
+                file.updateStatus("Vertical scrolling");
             }
             
             if (flags6 & 0x4) {
@@ -64,32 +81,20 @@ export class Cartridge {
                 offset += 0x200;
             }
             
-            const flags7 = header.getUint8(7);
-            this.mapperNumber = (flags6 >> 4) + (flags7 & 0xF0);
-            if (this.mapperNumber > 0) {
-                file.updateStatus("Unsupported mapper (" & this.mapperNumber & ")");
-                return this;
-            }
+            let numPRGBank = header.getUint8(4);
+            let numCHRBank = header.getUint8(5);
             
-            file.updateStatus(numPRGBank*16 + "kb of PRG-ROM", true);
+            file.updateStatus(`${numPRGBank*16}kb of PRG-ROM`, true);
             for (var curBank = 0; curBank < numPRGBank; curBank++) {
                 this.PRGROM.push(new Uint8Array(file.data, offset, 0x4000));
                 offset += 0x4000;
             }
-            if (this.PRGROM.length > 0)
-                this.PRGBank = [this.PRGROM[0], this.PRGROM[this.PRGROM.length-1]];
-            else
-                this.PRGBank = [this.PRGRAM, this.PRGRAM];
             
-            file.updateStatus(numCHRBank*8 + "kb of CHR-ROM", true);
+            file.updateStatus(`${numCHRBank*8}kb of CHR-ROM`, true);
             for (curBank = 0; curBank < numCHRBank; curBank++) {
                 this.CHRROM.push(new Uint8Array(file.data, offset, 0x2000));
                 offset += 0x2000;
             }
-            if (this.CHRROM.length > 0)
-                this.CHRBank = [this.CHRROM[0], this.CHRROM[this.CHRROM.length-1]];
-            else
-                this.CHRBank = [this.CHRRAM, this.CHRRAM];
             
             if (flags6 & 0x2) {
                 this.battery = true;
@@ -117,10 +122,14 @@ export class Cartridge {
                 this.name = this.name && (this.name[0].toUpperCase() + this.name.slice(1));
             }
             
-            file.updateStatus(this.name + " ready");
+            this.mapper = new MemoryMapper(mapperNumber, this);
+            
+            this.file = file;
+            
+            file.updateStatus(`${this.name} ready`);
             return this;
         } else {
-            file.updateStatus(file.name + " is not a valid file");
+            file.updateStatus(`${file.name} is not a valid file`);
             return this.unload();
         }
     }
@@ -130,51 +139,21 @@ export class Cartridge {
         return new NoCartridge;
     }
     
-    //== Memory access from CPU =====================================//
-    cpuRead(address) {
-        if (address >= 0xC000) {
-            return this.PRGBank[1][address & 0x3FFF];
-        } else if (address >= 0x8000) {
-            return this.PRGBank[0][address & 0x3FFF];
-        } else {
-            return this.PRGRAM[address & 0x1FFF];
-        }
-    }
-    cpuWrite(address, data) {
-        this.PRGRAM[address & 0x1FFF] = data;
-    }
+    //== Memory I/O =================================================//
+    cpuRead(address) { return this.mapper.cpuRead(address); }
+    cpuWrite(address, data) { this.mapper.cpuWrite(address, data); }
     
-    //== Memory access from PPU =====================================//
-    ppuRead(address) {
-        if (address >= 0x2000)
-            return this.CHRBank[1][address & 0x1FFF];
-        else
-            return this.CHRBank[0][address & 0x1FFF];
-    }
-    ppuWrite(address, data) {
-        this.CHRRAM[address & 0x1FFF] = data;
-    }
+    ppuRead(address) { return this.mapper.ppuRead(address); }
+    ppuWrite(address, data) { this.mapper.ppuWrite(address, data); }
     
-    //== CIRAM A10 (Pin22) ==========================================//
-    ciramA10(address) {
-        if (this.vertMirroring)
-            return address & 0x400; //Connected to PPU A10
-        else if (this.horiMirroring)
-            return address & 0x800; //Connected to PPU A11
-        else
-            return 0;
-    }
-    //== CIRAM /CE (Pin57) ==========================================//
-    ciramEnabled(address) {
-        return address & 0x2000; //Connected to PPU /A13 by default
-    }
+    ciramA10(address)     { return this.mapper.ciramA10(address); }
+    ciramEnabled(address) { return this.mapper.ciramEnabled(address); }
 }
 export default Cartridge;
 
 export class NoCartridge extends Cartridge {
     constructor(opts) {
         super(opts);
-        this.reset();
         this.name = "No Cartridge";
     }
     load(file) {

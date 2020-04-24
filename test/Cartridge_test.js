@@ -22,15 +22,11 @@ describe("Cartridge", function() {
     def('opts', () => $validNESFile);
     subject(() => new Nestled.Cartridge($opts));
     
-    def(['PRGRAMData','CHRRAMData']);
-    beforeEach(function() {
-        if ($PRGRAMData) $subject.PRGRAM.fill($PRGRAMData);
-        if ($CHRRAMData) $subject.CHRRAM.fill($CHRRAMData);
-    });
-    
     describe("constructor(opts)", function() {
         context("given an invalid -NESFile- object in opts['file']", function() {
             def('opts', () => ({ file: $invalidNESFile }));
+            
+            its('isValid', () => is.expected.to.be.false);
             
             it("returns a new -NoCartridge- object", function() {
                 expect($subject).to.be.an.instanceof(Nestled.NoCartridge);
@@ -39,6 +35,8 @@ describe("Cartridge", function() {
         
         context("given a valid -NESFile- object in opts['file']", function() {
             def('opts', () => ({ file: $validNESFile }));
+            
+            its('isValid', () => is.expected.to.be.true);
             
             it("returns a new -Cartridge- object", function() {
                 expect($subject).to.be.an.instanceof(Nestled.Cartridge);
@@ -49,6 +47,8 @@ describe("Cartridge", function() {
         context("given a valid -NESFile- object as opts", function() {
             def('opts', () => $validNESFile);
             
+            its('isValid', () => is.expected.to.be.true);
+            
             it("returns a new -Cartridge- object", function() {
                 expect($subject).to.be.an.instanceof(Nestled.Cartridge);
                 expect($subject).not.to.be.an.instanceof(Nestled.NoCartridge);
@@ -56,6 +56,8 @@ describe("Cartridge", function() {
         });
     });
         
+    //-------------------------------------------------------------------------------//
+    
     describe(".load(argument)", function() {
         def('action', () => $subject.load($argument));
         
@@ -63,6 +65,8 @@ describe("Cartridge", function() {
             def('argument', () => $invalidNESFile);
             
             beforeEach(() => $action);
+            
+            its('isValid', () => is.expected.to.be.false);
             
             its('name', () => is.expected.to.be.empty);
             its('file', () => is.expected.to.be.null);
@@ -83,10 +87,10 @@ describe("Cartridge", function() {
             
             beforeEach(() => $action);
             
+            its('isValid', () => is.expected.to.be.true);
+            
             its('name', () => is.expected.to.equal("Mapper 0 game"));
             its('file', () => is.expected.to.equal($validNESFile));
-            
-            its('mapperNumber', () => is.expected.to.equal(0));
             
             context("with horizontal mirroring", function() {
                 def('flags6', () => 0x00);
@@ -114,7 +118,7 @@ describe("Cartridge", function() {
             });
             
             context("with a 512 bytes trainer", function() {
-                def('flags6',      () => 0x04);
+                def('flags6', () => 0x04);
                 
                 def('trainerData', () => 0xAA);
                 def('PRGROMData',  () => 0xC3);
@@ -131,17 +135,15 @@ describe("Cartridge", function() {
             });
             
             its('PRGROM', () => is.expected.to.have.a.lengthOf($numPRG));
-            its('PRGBank', () => is.expected.to.have.a.lengthOf(2));
             it("sets PRGROM data", function() {
-                expect($subject.PRGBank[0][0x0000]).to.equal($PRGROMData);
-                expect($subject.PRGBank[1][0x3FFF]).to.equal($PRGROMData);
+                expect($subject.PRGROM[0][0x0000]).to.equal($PRGROMData);
+                expect($subject.PRGROM[$numPRG-1][0x3FFF]).to.equal($PRGROMData);
             });
             
             its('CHRROM', () => is.expected.to.have.a.lengthOf($numCHR));
-            its('CHRBank', () => is.expected.to.have.a.lengthOf(2));
             it("sets CHRROM data", function() {
-                expect($subject.CHRBank[0][0x0000]).to.equal($CHRROMData);
-                expect($subject.CHRBank[1][0x1FFF]).to.equal($CHRROMData);
+                expect($subject.CHRROM[0][0x0000]).to.equal($CHRROMData);
+                expect($subject.CHRROM[$numCHR-1][0x1FFF]).to.equal($CHRROMData);
             });
             
             context("with a name at the end of the file", function() {
@@ -173,8 +175,30 @@ describe("Cartridge", function() {
                 });
             });
             
+            context("if mapper #0", function() {
+                def('flags6', () => (0 << 4));
+                
+                its('isValid', () => is.expected.to.be.true);
+                its('mapper',  () => is.expected.to.be.an.instanceOf(Nestled.NROM));
+                
+                it("sets #mapper's number", function() {
+                    expect($subject.mapper.number).to.equal(0);
+                });
+            });
+            context("if mapper #15", function() {
+                def('flags6', () => (15 << 4));
+                
+                its('isValid', () => is.expected.to.be.false);
+                its('mapper',  () => is.expected.to.be.an.instanceOf(Nestled.NROM));
+                
+                it("sets #mapper's number", function() {
+                    expect($subject.mapper.number).to.equal(15);
+                });
+            });
+            
             it("returns a -Cartridge- object", function() {
                 expect($action).to.be.an.instanceof(Nestled.Cartridge);
+                expect($action).not.to.be.an.instanceof(Nestled.NoCartridge);
             });
             it("returns -this-", function() {
                 expect($action).to.equal($subject);
@@ -200,23 +224,9 @@ describe("Cartridge", function() {
         });
     });
     
+    //-------------------------------------------------------------------------------//
+    
     describe(".cpuRead(address)", function() {
-        def('valid', () => true);
-        
-        def('numPRG', () => 1);
-        
-        def('PRGRAMData', () => 0x12);
-        def('PRGROMData', () => 0x34);
-        
-        it("reads from PRG-RAM when address is between [0x6000-7FFF]", function() {
-            expect($subject.cpuRead(0x6000)).to.equal($PRGRAMData);
-            expect($subject.cpuRead(0x7FFF)).to.equal($PRGRAMData);
-        });
-        it("reads from PRG-ROM when address is between [0x8000-FFFF]", function() {
-            expect($subject.cpuRead(0x8000)).to.equal($PRGROMData);
-            expect($subject.cpuRead(0xFFFF)).to.equal($PRGROMData);
-        });
-        
         context("if there is no PRG-ROM data", function() {
             def('numPRG', () => 0);
             
@@ -224,14 +234,10 @@ describe("Cartridge", function() {
                 expect(() => $subject.cpuRead(0x8000)).to.not.throw();
                 expect(() => $subject.cpuRead(0xFFFF)).to.not.throw();
             });
-            it("reads from PRG-RAM instead", function() {
-                expect($subject.cpuRead(0x8000)).to.equal($PRGRAMData);
-                expect($subject.cpuRead(0xFFFF)).to.equal($PRGRAMData);
-            });
         });
         
         context("if no valid game loaded", function() {
-            def('valid', () => false);
+            def('opts', () => $invalidNESFile);
             
             it("does not throw any errors", function() {
                 expect(() => $subject.cpuRead(0x8000)).to.not.throw();
@@ -241,24 +247,6 @@ describe("Cartridge", function() {
     });
     
     describe(".cpuWrite(address,data)", function() {
-        def('valid', () => true);
-        
-        def('numPRG', () => 2);
-        
-        def('PRGRAMData', () => 0x9A);
-        def('PRGROMData', () => 0xBC);
-        
-        it("writes to PRG-RAM when address is between [0x6000-7FFF]", function() {
-            expect(() => $subject.cpuWrite(0x6000, 0xFF)).to.change($subject.PRGRAM, '0');
-            expect($subject.cpuRead(0x6000)).to.equal(0xFF);
-        });
-        it("cannot write to PRG-ROM", function() {
-            expect(() => $subject.cpuWrite(0x8000, 0xFF)).not.to.change($subject.PRGROM[0], '0');
-            expect($subject.cpuRead(0x8000)).to.equal(0xBC);
-            expect(() => $subject.cpuWrite(0xC000, 0xFF)).not.to.change($subject.PRGROM[1], '0');
-            expect($subject.cpuRead(0xC000)).to.equal(0xBC);
-        });
-        
         context("if there is no PRG-ROM data", function() {
             def('numPRG', () => 0);
             
@@ -266,14 +254,10 @@ describe("Cartridge", function() {
                 expect(() => $subject.cpuWrite(0x8000, 0xFF)).to.not.throw();
                 expect(() => $subject.cpuWrite(0xFFFF, 0xFF)).to.not.throw();
             });
-            it("writes to PRG-RAM instead", function() {
-                expect(() => $subject.cpuWrite(0x8000, 0xFF)).to.change($subject.PRGRAM, '0');
-                expect($subject.cpuRead(0x6000)).to.equal(0xFF);
-            });
         });
         
         context("if no valid game loaded", function() {
-            def('valid', () => false);
+            def('opts', () => $invalidNESFile);
             
             it("does not throw any errors", function() {
                 expect(() => $subject.cpuWrite(0x8000)).to.not.throw();
@@ -283,19 +267,6 @@ describe("Cartridge", function() {
     });
     
     describe(".ppuRead(address)", function() {
-        def('valid', () => true);
-        
-        def('numPRG', () => 1);
-        def('numCHR', () => 1);
-        
-        def('CHRRAMData', () => 0xDE);
-        def('CHRROMData', () => 0xF0);
-        
-        it("reads from CHR-ROM", function() {
-            expect($subject.ppuRead(0x0000)).to.equal($CHRROMData);
-            expect($subject.ppuRead(0x3FFF)).to.equal($CHRROMData);
-        });
-        
         context("if there is no CHR-ROM data", function() {
             def('numCHR', () => 0);
             
@@ -303,14 +274,10 @@ describe("Cartridge", function() {
                 expect(() => $subject.ppuRead(0x0000)).to.not.throw();
                 expect(() => $subject.ppuRead(0x3FFF)).to.not.throw();
             });
-            it("reads from CHR-RAM instead", function() {
-                expect($subject.ppuRead(0x0000)).to.equal($CHRRAMData);
-                expect($subject.ppuRead(0x3FFF)).to.equal($CHRRAMData);
-            });
         });
         
         context("if no valid game loaded", function() {
-            def('valid', () => false);
+            def('opts', () => $invalidNESFile);
             
             it("does not throw any errors", function() {
                 expect(() => $subject.ppuRead(0x0000)).to.not.throw();
@@ -320,19 +287,6 @@ describe("Cartridge", function() {
     });
     
     describe(".ppuWrite(address,data)", function() {
-        def('valid', () => true);
-        
-        def('numPRG', () => 1);
-        def('numCHR', () => 1);
-        
-        def('CHRRAMData', () => 0xDE);
-        def('CHRROMData', () => 0xF0);
-        
-        it("cannot write to CHR-ROM", function() {
-            expect(() => $subject.ppuWrite(0x0000, 0xFF)).not.to.change($subject.CHRROM[0], '0');
-            expect($subject.ppuRead(0x0000)).to.equal($CHRROMData);
-        });
-        
         context("if there is no CHR-ROM data", function() {
             def('numCHR', () => 0);
             
@@ -340,14 +294,10 @@ describe("Cartridge", function() {
                 expect(() => $subject.ppuWrite(0x0000, 0xFF)).to.not.throw();
                 expect(() => $subject.ppuWrite(0x3FFF, 0xFF)).to.not.throw();
             });
-            it("writes to CHR-RAM instead", function() {
-                expect(() => $subject.ppuWrite(0x0000, 0xFF)).to.change($subject.CHRRAM, '0');
-                expect($subject.ppuRead(0x0000)).to.equal(0xFF);
-            });
         });
         
         context("if no valid game loaded", function() {
-            def('valid', () => false);
+            def('opts', () => $invalidNESFile);
             
             it("does not throw any errors", function() {
                 expect(() => $subject.ppuWrite(0x0000)).to.not.throw();

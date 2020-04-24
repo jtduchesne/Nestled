@@ -2,9 +2,12 @@ describe("Ppu", function() {
     //------------------------------------------------------------------------------------//
     //- NESFile Fixture
     def('CHRROMData', () => 0xA5); // b10100101
+    def('horiMirroring', () => false);
+    def('vertMirroring', () => false);
+    def('flags6', () => ($vertMirroring ? $horiMirroring ? 0x08 : 0x01 : 0x00));
     def('NESFile', () => Object.assign(new Nestled.NESFile, {
         name: "Whatever", isValid: true, 
-        data: new Uint8Array([0x4E,0x45,0x53,0x1A, 0, 1, 0, 0, 0,0,0,0,0,0,0,0]
+        data: new Uint8Array([0x4E,0x45,0x53,0x1A, 0, 1, $flags6, 0, 0,0,0,0,0,0,0,0]
                               .concat(new Array(0x2000).fill($CHRROMData))).buffer
     }));
     //------------------------------------------------------------------------------------//
@@ -25,8 +28,8 @@ describe("Ppu", function() {
         $subject.vramBank[1].fill($VRAM1Data || $VRAMData);
         $subject.palette[0].fill($bkgPalData || $PalData);
         $subject.palette[1].fill($sprPalData || $PalData);
-        if ($CHRROMPattern1) $cartridge.CHRBank[0].set($CHRROMPattern1, 0x0000);
-        if ($CHRROMPattern2) $cartridge.CHRBank[0].set($CHRROMPattern2, 0x1000);
+        if ($CHRROMPattern1) $cartridge.mapper.CHRBank[0].set($CHRROMPattern1, 0x0000);
+        if ($CHRROMPattern2) $cartridge.mapper.CHRBank[0].set($CHRROMPattern2, 0x1000);
     });
     
     beforeEach("PowerOn", function() { $subject.powerOn(); });
@@ -498,7 +501,7 @@ describe("Ppu", function() {
             expect($subject.read(0x2001)).to.equal($VRAM0Data);
         });
         context("when cartridge has horizontal mirroring", function() {
-            beforeEach(function() { $nes.cartridge.horiMirroring = true; });
+            def('horiMirroring', () => true);
             
             it("reads from vramBank[0] when address [0x2000-0x23FF]", function() {
                 expect($subject.read(0x2002)).to.equal($VRAM0Data);
@@ -514,7 +517,7 @@ describe("Ppu", function() {
             });
         });
         context("when cartridge has vertical mirroring", function() {
-            beforeEach(function() { $nes.cartridge.vertMirroring = true; });
+            def('vertMirroring', () => true);
             
             it("reads from vramBank[0] when address [0x2000-0x23FF]", function() {
                 expect($subject.read(0x2003)).to.equal($VRAM0Data);
@@ -541,7 +544,7 @@ describe("Ppu", function() {
             expect($subject.vramBank[0][0x2]).to.equal(0xFF);
         });
         context("when cartridge has horizontal mirroring", function() {
-            beforeEach(function() { $nes.cartridge.horiMirroring = true; });
+            def('horiMirroring', () => true);
             
             it("writes to vramBank[0] when address [0x2000-0x23FF]", function() {
                 $subject.write(0x2003, 0xFF);
@@ -561,7 +564,7 @@ describe("Ppu", function() {
             });
         });
         context("when cartridge has vertical mirroring", function() {
-            beforeEach(function() { $nes.cartridge.vertMirroring = true; });
+            def('vertMirroring', () => true);
             
             it("writes to vramBank[0] when address [0x2000-0x23FF]", function() {
                 $subject.write(0x2004, 0xFF);
@@ -798,7 +801,7 @@ describe("Ppu", function() {
             });
             
             context("when mirroring is horizontal", function() {
-                beforeEach(function() { $nes.cartridge.horiMirroring = true; });
+                def('horiMirroring', () => true);
                 def('VRAM0Data', () => 0x11);
                 def('VRAM1Data', () => 0x22);
                 
@@ -812,7 +815,7 @@ describe("Ppu", function() {
                 });
             });
             context("when mirroring is vertical", function() {
-                beforeEach(function() { $nes.cartridge.vertMirroring = true; });
+                def('vertMirroring', () => true);
                 def('VRAM0Data', () => 0x33);
                 def('VRAM1Data', () => 0x44);
                 
@@ -861,7 +864,7 @@ describe("Ppu", function() {
             });
             
             context("when mirroring is horizontal", function() {
-                beforeEach(function() { $nes.cartridge.horiMirroring = true; });
+                def('horiMirroring', () => true);
                 def('VRAM0Data', () => 0x00);
                 def('VRAM1Data', () => 0xFF);
                 
@@ -875,7 +878,7 @@ describe("Ppu", function() {
                 });
             });
             context("when mirroring is vertical", function() {
-                beforeEach(function() { $nes.cartridge.vertMirroring = true; });
+                def('vertMirroring', () => true);
                 def('VRAM0Data', () => 0x00);
                 def('VRAM1Data', () => 0xFF);
                 
