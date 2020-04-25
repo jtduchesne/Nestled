@@ -13,10 +13,9 @@ export class Mapper {
         else
             this.PRGBank = [this.PRGRAM, this.PRGRAM];
         
-        if (this.CHRROM.length > 0)
-            this.CHRBank = [this.CHRROM[0], this.CHRROM[this.CHRROM.length-1]];
-        else
-            this.CHRBank = [this.CHRRAM, this.CHRRAM];
+        if (this.CHRROM.length === 0)
+            this.CHRROM = [this.CHRRAM.subarray(0, 0x1000), this.CHRRAM.subarray(0x1000)];
+        this.CHRBank = [this.CHRROM[0], this.CHRROM[1]];
     }
     
     //== Memory access from CPU =====================================//
@@ -35,10 +34,10 @@ export class Mapper {
     
     //== Memory access from PPU =====================================//
     ppuRead(address) {
-        if (address >= 0x2000)
-            return this.CHRBank[1][address & 0x1FFF];
+        if (address >= 0x1000)
+            return this.CHRBank[1][address & 0x0FFF];
         else
-            return this.CHRBank[0][address & 0x1FFF];
+            return this.CHRBank[0][address & 0x0FFF];
     }
     ppuWrite(address, data) {
         this.CHRRAM[address & 0x1FFF] = data;

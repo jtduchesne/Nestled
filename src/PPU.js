@@ -376,7 +376,7 @@ export class PPU {
         let addressBus = this.addressBus;
         let patternIndex = this.fetchNameTable(addressBus);
         this.fetchAttributeTable(addressBus);
-        this.fetchBkgPatternTable(patternIndex);
+        this.fetchBkgPatternTable(patternIndex, this.fineScrollY);
     }
     fetchNullNTs() {
         if (!this.showBackground) return;

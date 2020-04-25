@@ -21,15 +21,15 @@ describe("Ppu", function() {
     def(['VRAM0Data','VRAM1Data']);
     def('PalData', () => 0x33); // b00110011
     def(['bkgPalData','sprPalData']);
-    def('CHRROMPattern1'); //If set, this pattern is set at the beginning of CHR-ROM
-    def('CHRROMPattern2'); //If set, this pattern is set at CHR-ROM[0x1000]
+    def('CHRROMPattern1'); //If set, this pattern is set in CHR-ROM[0]
+    def('CHRROMPattern2'); //If set, this pattern is set in CHR-ROM[1]
     beforeEach(function() {
         $subject.vramBank[0].fill($VRAM0Data || $VRAMData);
         $subject.vramBank[1].fill($VRAM1Data || $VRAMData);
         $subject.palette[0].fill($bkgPalData || $PalData);
         $subject.palette[1].fill($sprPalData || $PalData);
-        if ($CHRROMPattern1) $cartridge.mapper.CHRBank[0].set($CHRROMPattern1, 0x0000);
-        if ($CHRROMPattern2) $cartridge.mapper.CHRBank[0].set($CHRROMPattern2, 0x1000);
+        if ($CHRROMPattern1) $cartridge.mapper.CHRBank[0].set($CHRROMPattern1);
+        if ($CHRROMPattern2) $cartridge.mapper.CHRBank[1].set($CHRROMPattern2);
     });
     
     beforeEach("PowerOn", function() { $subject.powerOn(); });

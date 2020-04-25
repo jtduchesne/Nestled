@@ -4,8 +4,6 @@ export class NROM extends Mapper {
     constructor(number, cartridge) {
         super(number || 0, cartridge);
         
-        this.CHRBank[1] = this.CHRBank[0];
-        
         this.vertMirroring = cartridge.vertMirroring;
         this.horiMirroring = cartridge.horiMirroring;
     }

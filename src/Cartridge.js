@@ -82,19 +82,30 @@ export class Cartridge {
             }
             
             let numPRGBank = header.getUint8(4);
-            let numCHRBank = header.getUint8(5);
+            let numCHRBank = header.getUint8(5) * 2;
+            var skipped = 0;
             
             file.updateStatus(`${numPRGBank*16}kb of PRG-ROM`, true);
             for (var curBank = 0; curBank < numPRGBank; curBank++) {
+                if (offset + 0x4000 > file.data.byteLength) {
+                    skipped += 4;
+                    continue;
+                }
                 this.PRGROM.push(new Uint8Array(file.data, offset, 0x4000));
                 offset += 0x4000;
             }
             
-            file.updateStatus(`${numCHRBank*8}kb of CHR-ROM`, true);
+            file.updateStatus(`${numCHRBank*4}kb of CHR-ROM`, true);
             for (curBank = 0; curBank < numCHRBank; curBank++) {
-                this.CHRROM.push(new Uint8Array(file.data, offset, 0x2000));
-                offset += 0x2000;
+                if (offset + 0x1000 > file.data.byteLength) {
+                    skipped++;
+                    continue;
+                }
+                this.CHRROM.push(new Uint8Array(file.data, offset, 0x1000));
+                offset += 0x1000;
             }
+            
+            if (skipped > 0) file.updateStatus(`${skipped*4}kb of data skipped...`, true);
             
             if (flags6 & 0x2) {
                 this.battery = true;

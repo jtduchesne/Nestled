@@ -12,6 +12,8 @@ I've put a lot of efforts into writing beautiful, well organized and easy to und
   ✓ PPU  
   ✓ Controllers  
   ✓ APU  
-  ✗ *Memory mappers*  
+  ✓ Memory mappers:  
+    ✓ MMC1 ✗ *UNROM* ✗ *CNROM* ✗ *MMC3* ✗ *MMC5*  
+  ✗ *Debugger*  
 
 Fully tested using [Mocha.js](http://mochajs.org/) + [Chai.js](http://chaijs.com/)

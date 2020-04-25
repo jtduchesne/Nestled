@@ -140,10 +140,10 @@ describe("Cartridge", function() {
                 expect($subject.PRGROM[$numPRG-1][0x3FFF]).to.equal($PRGROMData);
             });
             
-            its('CHRROM', () => is.expected.to.have.a.lengthOf($numCHR));
+            its('CHRROM', () => is.expected.to.have.a.lengthOf($numCHR*2));
             it("sets CHRROM data", function() {
                 expect($subject.CHRROM[0][0x0000]).to.equal($CHRROMData);
-                expect($subject.CHRROM[$numCHR-1][0x1FFF]).to.equal($CHRROMData);
+                expect($subject.CHRROM[$numCHR-1][0x0FFF]).to.equal($CHRROMData);
             });
             
             context("with a name at the end of the file", function() {

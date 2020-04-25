@@ -1,11 +1,11 @@
-describe("NROM", function() {
+describe("MMC1", function() {
     //----------------------------------------------------------------------------------------------------//
     //- Cartridge Fixtures
     def('numPRG', () => 2);
     def('PRGROM', () => new Array($numPRG).fill(0).map(() => new Uint8Array(0x4000)));
     
     def('numCHR', () => 1);
-    def('CHRROM', () => new Array($numCHR*2).fill(0).map(() => new Uint8Array(0x1000)));
+    def('CHRROM', () => new Array($numCHR*2).fill(0).map(() => new Uint8Array(0x2000)));
     
     def('vertMirroring', () => true);
     def('horiMirroring', () => true);
@@ -28,7 +28,7 @@ describe("NROM", function() {
         }
     });
     //----------------------------------------------------------------------------------------------------//
-    subject(() => new Nestled.NROM($number, $cartridge));
+    subject(() => new Nestled.MMC1($number, $cartridge));
     def('number', () => 0);
     
     its('number', () => is.expected.to.equal($number));
@@ -79,23 +79,23 @@ describe("NROM", function() {
             
             it("does not throw any errors", function() {
                 expect(() => $subject.ppuRead(0x0000)).to.not.throw();
-                expect(() => $subject.ppuRead(0x1FFF)).to.not.throw();
+                expect(() => $subject.ppuRead(0x3FFF)).to.not.throw();
             });
         });
         context("if there is 1 CHR-ROM bank", function() {
             def('numCHR', () => 1);
             
-            it("always reads from the first banks", function() {
+            it("always reads from the same bank", function() {
                 expect($subject.ppuRead(0x0000)).to.equal($CHRROMData0);
-                expect($subject.ppuRead(0x1FFF)).to.equal($CHRROMData1);
+                expect($subject.ppuRead(0x3FFF)).to.equal($CHRROMData0);
             });
         });
         context("if there is more than 1 CHR-ROM bank", function() {
             def('numCHR', () => 2);
         
-            it("always reads from the first banks", function() {
+            it("always reads from the same bank", function() {
                 expect($subject.ppuRead(0x0000)).to.equal($CHRROMData0);
-                expect($subject.ppuRead(0x1FFF)).to.equal($CHRROMData1);
+                expect($subject.ppuRead(0x3FFF)).to.equal($CHRROMData0);
             });
         });
     });

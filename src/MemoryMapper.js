@@ -1,11 +1,13 @@
 import NROM from './Mappers/NROM.js';
+import MMC1 from './Mappers/MMC1.js';
 
-const supportedNumbers = [0];
+const supportedNumbers = [0,1];
 
 export class MemoryMapper {
     constructor(number, cartridge) {
         switch (number) {
         case 0:  return new NROM(number, cartridge);
+        case 1:  return new MMC1(number, cartridge);
         default: return new NROM(number, cartridge);
         }
     }

@@ -5,7 +5,7 @@ describe("Mapper", function() {
     def('PRGROM', () => new Array($numPRG).fill(0).map(() => new Uint8Array(0x4000)));
     
     def('numCHR', () => 1);
-    def('CHRROM', () => new Array($numCHR).fill(0).map(() => new Uint8Array(0x2000)));
+    def('CHRROM', () => new Array($numCHR*2).fill(0).map(() => new Uint8Array(0x1000)));
     
     def('PRGRAMData','CHRRAMData')
     def('vertMirroring','horiMirroring');
@@ -22,8 +22,10 @@ describe("Mapper", function() {
     beforeEach(function() {
         if ($PRGROMData0 && $numPRG > 0) $PRGROM[0].fill($PRGROMData0);
         if ($PRGROMData1 && $numPRG > 1) $PRGROM[$numPRG-1].fill($PRGROMData1);
-        if ($CHRROMData0 && $numCHR > 0) $CHRROM[0].fill($CHRROMData0);
-        if ($CHRROMData1 && $numCHR > 1) $CHRROM[$numCHR-1].fill($CHRROMData1);
+        if ($CHRROMData0 && $numCHR > 0) {
+            $CHRROM[0].fill($CHRROMData0);
+            $CHRROM[1].fill($CHRROMData1);
+        }
     });
     //----------------------------------------------------------------------------------------------------//
     subject(() => new Nestled.Mapper($number, $cartridge));
@@ -53,7 +55,7 @@ describe("Mapper", function() {
             expect($subject).to.have.lengthOf(2);
         });
         its('0', () => is.expected.to.equal($CHRROM[0]));
-        its('1', () => is.expected.to.equal($CHRROM[$CHRROM.length-1]));
+        its('1', () => is.expected.to.equal($CHRROM[1]));
     });
     
     //-------------------------------------------------------------------------------//
@@ -136,35 +138,27 @@ describe("Mapper", function() {
             
             it("does not throw any errors", function() {
                 expect(() => $subject.ppuRead(0x0000)).to.not.throw();
-                expect(() => $subject.ppuRead(0x3FFF)).to.not.throw();
+                expect(() => $subject.ppuRead(0x1FFF)).to.not.throw();
             });
             it("reads from CHR-RAM instead", function() {
                 expect($subject.ppuRead(0x0000)).to.equal($CHRRAMData);
-                expect($subject.ppuRead(0x3FFF)).to.equal($CHRRAMData);
+                expect($subject.ppuRead(0x1FFF)).to.equal($CHRRAMData);
             });
         });
         context("if there is 1 CHR-ROM bank", function() {
             def('numCHR', () => 1);
             
-            it("always reads from the same bank", function() {
+            it("always reads from the first banks", function() {
                 expect($subject.ppuRead(0x0000)).to.equal($CHRROMData0);
-                expect($subject.ppuRead(0x3FFF)).to.equal($CHRROMData0);
+                expect($subject.ppuRead(0x1FFF)).to.equal($CHRROMData1);
             });
         });
-        context("if there are 2 CHR-ROM banks", function() {
+        context("if there are more than 1 CHR-ROM bank", function() {
             def('numCHR', () => 2);
         
-            it("reads from both banks", function() {
+            it("a;ways reads from the first banks", function() {
                 expect($subject.ppuRead(0x0000)).to.equal($CHRROMData0);
-                expect($subject.ppuRead(0x3FFF)).to.equal($CHRROMData1);
-            });
-        });
-        context("if there are more than 2 CHR-ROM banks", function() {
-            def('numCHR', () => 3);
-        
-            it("reads from first and last banks", function() {
-                expect($subject.ppuRead(0x0000)).to.equal($CHRROMData0);
-                expect($subject.ppuRead(0x3FFF)).to.equal($CHRROMData1);
+                expect($subject.ppuRead(0x1FFF)).to.equal($CHRROMData1);
             });
         });
     });
@@ -177,8 +171,8 @@ describe("Mapper", function() {
         it("cannot write to CHR-ROM", function() {
             expect(() => $subject.ppuWrite(0x0000, 0xFF)).not.to.change($subject.CHRBank[0], '0');
             expect($subject.ppuRead(0x0000)).to.equal($CHRROMData0);
-            expect(() => $subject.ppuWrite(0x2000, 0xFF)).not.to.change($subject.CHRBank[1], '0');
-            expect($subject.ppuRead(0x2000)).to.equal($CHRROMData1);
+            expect(() => $subject.ppuWrite(0x1000, 0xFF)).not.to.change($subject.CHRBank[1], '0');
+            expect($subject.ppuRead(0x1000)).to.equal($CHRROMData1);
         });
     });
 });

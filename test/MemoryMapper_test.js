@@ -30,6 +30,14 @@ describe("MemoryMapper", function() {
             expect($subject).to.be.an.instanceOf(Nestled.NROM);
         });
     });
+    context("when mapperNumber=1", function() {
+        def('mapperNumber', () => 1);
+        
+        its('number', () => is.expected.to.equal($mapperNumber));
+        it("returns a -MMC1-", function() {
+            expect($subject).to.be.an.instanceOf(Nestled.MMC1);
+        });
+    });
     context("when mapperNumber is unsupported", function() {
         def('mapperNumber', () => 1234);
         
