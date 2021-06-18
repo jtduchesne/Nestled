@@ -7,7 +7,7 @@ https://nestled.jtduchesne.com/ *
 ![image](https://user-images.githubusercontent.com/580063/122583955-c9a0e980-d027-11eb-919a-608ddf401cb6.png)
 ![image](https://user-images.githubusercontent.com/580063/122584378-4af87c00-d028-11eb-9724-57d15b3e1b5c.png)
 
-This is a work-in-progress but fully fonctional javascript NES emulator carefully written in the *ECMAScript 6* standard.
+This is a work-in-progress but fully functional javascript NES emulator carefully written in the *ECMAScript 6* standard.
 
 I've put a lot of efforts into writing beautiful, well organized and easy to understand code, and the same applies to the Git commits themselves. The repository, with its complete history, can be used for learning the step-by-step creation of a solo side-project using *Git*, *Node.js*, *Rollup*, *Mocha*, *Chai*, *ESLint*, and of course *Javascript* (currently writing a blog about all this).
 
