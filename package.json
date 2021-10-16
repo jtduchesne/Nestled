@@ -6,7 +6,6 @@
   "scripts": {
     "test": "mocha \"test/**/*_test.js\" || true",
     "debug": "mocha debug \"test/**/*_test.js\" || true",
-    "start": "serve public",
     "prepublishOnly": "echo \"Not meant to be published as package...\" && exit 1"
   },
   "repository": {
@@ -28,12 +27,10 @@
     "url": "https://github.com/jtduchesne/Nestled/issues"
   },
   "homepage": "https://github.com/jtduchesne/Nestled#readme",
-  "dependencies": {
-    "serve": "^11.3.0"
-  },
+  "dependencies": {},
   "devDependencies": {
     "bdd-lazy-var": "^2.6.1",
-    "canvas": "^2.6.1",
+    "canvas": "^2.8.0",
     "chai": "^4.3.4",
     "eslint": "^7.32.0",
     "mocha": "^9.1.3"
