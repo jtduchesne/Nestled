@@ -23,3 +23,5 @@ npm install --save-dev canvas
 echo "lts/fermium" > .nvmrc
 nvm install
 npm install
+
+npm uninstall rollup rollup-plugin-node-resolve rollup-plugin-commonjs rollup-plugin-cleanup rollup-plugin-terser

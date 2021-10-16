@@ -7,8 +7,6 @@
     "lint": "eslint src/ || true",
     "test": "mocha \"test/**/*_test.js\"",
     "debug": "mocha debug \"test/**/*_test.js\"",
-    "build": "rollup -c",
-    "watch": "rollup -c -w",
     "start": "serve public",
     "prepublishOnly": "echo \"Not meant to be published as package...\" && exit 1"
   },
@@ -39,11 +37,6 @@
     "canvas": "^2.6.1",
     "chai": "^4.2.0",
     "eslint": "^6.8.0",
-    "mocha": "^6.2.3",
-    "rollup": "^1.32.1",
-    "rollup-plugin-cleanup": "^3.1.1",
-    "rollup-plugin-commonjs": "^10.1.0",
-    "rollup-plugin-node-resolve": "^5.2.0",
-    "rollup-plugin-terser": "^5.3.0"
+    "mocha": "^6.2.3"
   }
 }
