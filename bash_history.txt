@@ -28,3 +28,6 @@ npm uninstall rollup rollup-plugin-node-resolve rollup-plugin-commonjs rollup-pl
 
 npm uninstall eslint
 npm install --save-dev eslint
+
+npm uninstall mocha && npm install --save-dev mocha
+npm update chai bdd-lazy-var
