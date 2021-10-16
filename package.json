@@ -4,7 +4,6 @@
   "description": "Javascript NES emulator",
   "private": true,
   "scripts": {
-    "lint": "eslint src/ || true",
     "test": "mocha \"test/**/*_test.js\"",
     "debug": "mocha debug \"test/**/*_test.js\"",
     "start": "serve public",
@@ -36,7 +35,7 @@
     "bdd-lazy-var": "^2.5.4",
     "canvas": "^2.6.1",
     "chai": "^4.2.0",
-    "eslint": "^6.8.0",
+    "eslint": "^7.32.0",
     "mocha": "^6.2.3"
   }
 }

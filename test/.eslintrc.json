@@ -1,0 +1,10 @@
+{
+    "env": {
+        "node": true,
+        "mocha": true,
+        "es6": true
+    },
+    "rules": {
+        "no-undef": "off"
+    }
+}
