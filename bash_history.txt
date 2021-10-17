@@ -36,3 +36,4 @@ npm update canvas
 npm uninstall serve
 
 npm install webpack webpack-cli
+npm install --save-dev webpack-dev-server

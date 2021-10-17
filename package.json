@@ -6,6 +6,7 @@
   "scripts": {
     "build": "webpack || true",
     "watch": "webpack watch",
+    "serve": "webpack serve --live-reload --open",
     "test": "mocha \"test/**/*_test.js\" || true",
     "debug": "mocha debug \"test/**/*_test.js\" || true",
     "prepublishOnly": "echo \"Not meant to be published as package...\" && exit 1"
@@ -38,6 +39,7 @@
     "canvas": "^2.8.0",
     "chai": "^4.3.4",
     "eslint": "^7.32.0",
-    "mocha": "^9.1.3"
+    "mocha": "^9.1.3",
+    "webpack-dev-server": "^4.3.1"
   }
 }
