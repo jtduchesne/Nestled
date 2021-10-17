@@ -34,3 +34,5 @@ npm update chai bdd-lazy-var
 
 npm update canvas
 npm uninstall serve
+
+npm install webpack webpack-cli

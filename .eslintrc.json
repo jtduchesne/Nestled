@@ -11,5 +11,6 @@
         }],
         "no-unused-vars": "warn",
         "eqeqeq": ["warn", "smart"]
-    }
+    },
+    "ignorePatterns": ["/dist", "webpack.config.js"]
 }
