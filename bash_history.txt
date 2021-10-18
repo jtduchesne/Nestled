@@ -39,3 +39,5 @@ npm install webpack webpack-cli
 npm install --save-dev webpack-dev-server
 
 npm install babel-loader @babel/core @babel/preset-env
+
+npm install html-webpack-plugin copy-webpack-plugin
