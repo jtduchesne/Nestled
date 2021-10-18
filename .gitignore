@@ -2,8 +2,8 @@ node_modules/
 
 dist/
 
-public/javascripts/nestled.*
-public/javascripts/lib/groundwork*
+app/javascripts/nestled.*
+app/javascripts/lib/groundwork*
 !*/lib/*.min.js
-public/stylesheets/groundwork*
+app/stylesheets/groundwork*
 !*.min.css
