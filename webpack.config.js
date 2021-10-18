@@ -2,15 +2,23 @@ const path = require('path');
 
 module.exports = {
     mode: 'development',
-    entry: './src/main.js',
+    entry: {
+        core: {
+            import: './core/src/main.js',
+            library: {
+                name: 'Nestled',
+                type: 'var',
+            },
+        },
+    },
     output: {
-        library: 'Nestled',
-        filename: 'nestled.js',
-        path: path.resolve(__dirname, 'dist')
+        filename: '[name].js',
+        path: path.resolve(__dirname, 'dist'),
+        clean: true
     },
     devtool: 'cheap-module-source-map',
     devServer: {
-        watchFiles: ['src/**/*.js']
+        watchFiles: ['core/src/**/*.js']
     },
     module: {
         rules: [
