@@ -1,13 +1,4 @@
 {
-    "env": {
-        "browser": true,
-        "commonjs": true,
-        "es6": true
-    },
-    "parserOptions": {
-        "ecmaVersion": 6,
-        "sourceType": "module"
-    },
     "extends": "eslint:recommended",
     "rules": {
         "linebreak-style": ["error", "unix"],
@@ -20,5 +11,6 @@
         }],
         "no-unused-vars": "warn",
         "eqeqeq": ["warn", "smart"]
-    }
+    },
+    "ignorePatterns": ["/dist", "webpack.config.js"]
 }

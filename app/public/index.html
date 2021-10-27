@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+ 
+<head>
+  <title>Nestled</title>
+  <meta name='description' content="Javascript NES emulator">
+   
+  <script type="application/javascript">
+      function showButtons() {
+          document.getElementById('buttons_row').querySelectorAll("object, button").forEach((element, index) =>
+              setTimeout(() => {
+                  element.classList.remove("waiting");
+                  element.classList.add("bounceIn", "animated");
+              }, index * 50)
+          );
+      }
+  </script>
+</head>
+ 
+<body class="centered">
+  <main class="container bordered align-center">
+    <div class="row">
+      <div class="whole column">
+        <canvas id="screen" width="256" height="240"></canvas>
+      </div>
+    </div>
+    <div class="row">
+      <div class="whole column">
+        <p id="status">&nbsp;</p>
+      </div>
+    </div>
+    <div id="buttons_row" class="equalize row gap-bottom">
+      <div class="one twelfth mobile relative">
+        <object class="absolute middle right off waiting" id="front_led" width="16" height="16" type="image/svg+xml" data="images/LED.svg" onload="showButtons()"></object>
+      </div>
+      <div class="eleven twelfths mobile">
+        <button class="small waiting gap-left" id="power_button">Power</button>
+        <button class="small waiting" id="reset_button" disabled="disabled">Reset</button>
+        <button class="small waiting gap-left" id="pause_button" disabled="disabled">Pause</button>
+      </div>
+    </div>
+    <div class="row">
+      <div class="whole column">
+        <input type="file" accept=".nes" id="file_select_button" name="nes_file" />
+      </div>
+    </div>
+  </main>
+</body>
+ 
+</html>
