@@ -43,3 +43,6 @@ npm install babel-loader @babel/core @babel/preset-env
 npm install html-webpack-plugin copy-webpack-plugin
 
 npm install mini-css-extract-plugin css-loader sass-loader node-sass
+
+npm uninstall copy-webpack-plugin
+npm install html-loader

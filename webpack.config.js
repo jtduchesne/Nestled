@@ -1,4 +1,3 @@
-const CopyPlugin = require("copy-webpack-plugin");
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const path = require('path');
@@ -16,9 +15,7 @@ module.exports = {
         app: {
             import: [
                 './app/index.js',
-                './app/images/LED.svg',
-                './app/stylesheets/style.css',
-                './app/stylesheets/groundwork-2.5.0.min.css',
+                './app/style.css',
             ],
             dependOn: 'core',
         },
@@ -35,6 +32,12 @@ module.exports = {
     module: {
         rules: [
             {
+                test: /\.html?$/,
+                use: {
+                    loader: "html-loader"
+                }
+            },
+            {
                 test: /\.js$/,
                 exclude: /node_modules/,
                 use: {
@@ -42,7 +45,14 @@ module.exports = {
                 }
             },
             {
-                test: /\.(gif|jpe?g|png|svg)$/,
+                test: /\/fonts?\/?.*?\.(eot|svg|ttf|woff2?)$/,
+                type: 'asset',
+                generator: {
+                    filename: 'fonts/[name][ext]'
+                },
+            },
+            {
+                test: /\/images?\/?.*?\.(gif|jpe?g|png|svg)$/,
                 type: 'asset/resource',
                 generator: {
                     filename: 'images/[name][ext]'
@@ -59,15 +69,10 @@ module.exports = {
         ]
     },
     plugins: [
-        new CopyPlugin({
-            patterns: [{
-                from: "app/public/",
-                globOptions: {
-                    ignore: "**/app/public/index.html"
-                },
-            }]
+        new HtmlWebpackPlugin({
+            template: "./app/public/index.html",
+            favicon: "./app/public/favicon.ico",
         }),
-        new HtmlWebpackPlugin({ template: "./app/public/index.html" }),
         new MiniCssExtractPlugin({ filename: "stylesheets/[name].css" }),
     ],
 };
