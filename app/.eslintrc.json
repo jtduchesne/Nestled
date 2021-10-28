@@ -1,0 +1,12 @@
+{
+    "env": {
+        "browser": true
+    },
+    "parserOptions": {
+        "sourceType": "module",
+        "ecmaVersion": "latest"
+    },
+    "globals": {
+        "Nestled": true
+    }
+}

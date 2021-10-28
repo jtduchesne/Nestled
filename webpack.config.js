@@ -14,8 +14,8 @@ module.exports = {
         },
         app: {
             import: [
-                './app/index.js',
-                './app/style.css',
+                './app/src/index.js',
+                './app/src/style.css',
             ],
             dependOn: 'core',
         },
@@ -27,7 +27,7 @@ module.exports = {
     },
     devtool: 'cheap-module-source-map',
     devServer: {
-        watchFiles: ['core/src/**/*.js', 'app/index.js']
+        watchFiles: ['core/src/**/*.js', 'app/src/**/*']
     },
     module: {
         rules: [
@@ -35,13 +35,6 @@ module.exports = {
                 test: /\.html?$/,
                 use: {
                     loader: "html-loader"
-                }
-            },
-            {
-                test: /\.js$/,
-                exclude: /node_modules/,
-                use: {
-                    loader: 'babel-loader'
                 }
             },
             {
@@ -65,6 +58,13 @@ module.exports = {
                     "css-loader",
                     "sass-loader",
                 ],
+            },
+            {
+                test: /\.js$/,
+                exclude: /node_modules/,
+                use: {
+                    loader: 'babel-loader'
+                }
             },
         ]
     },
