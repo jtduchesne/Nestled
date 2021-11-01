@@ -1,5 +1,4 @@
-import NROM from './Mappers/NROM.js';
-import MMC1 from './Mappers/MMC1.js';
+import { NROM, MMC1 } from './Mappers';
 
 const supportedNumbers = [0,1];
 

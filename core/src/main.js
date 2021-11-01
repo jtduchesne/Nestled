@@ -5,8 +5,7 @@ export { Cartridge, NoCartridge } from './Cartridge.js';
 
 export { MemoryMapper } from './MemoryMapper.js';
 export { Mapper } from './Mappers/Mapper.js';
-export { NROM } from './Mappers/NROM.js';
-export { MMC1 } from './Mappers/MMC1.js';
+export { NROM, MMC1 } from './Mappers';
 
 export { CPU } from './CPU.js';
 
