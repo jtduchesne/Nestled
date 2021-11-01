@@ -1,8 +1,10 @@
 import AudioBuffer from './Audio/AudioBuffer.js';
-import PulseChannel from './Audio/PulseChannel.js';
-import TriangleChannel from './Audio/TriangleChannel.js';
-import NoiseChannel from './Audio/NoiseChannel.js';
-import DMC from './Audio/DMC.js';
+import {
+    PulseChannel,
+    TriangleChannel,
+    NoiseChannel,
+    DMC
+} from './Audio/Channels';
 
 export class APU {
     constructor(cpu) {
