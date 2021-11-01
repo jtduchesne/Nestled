@@ -1,4 +1,4 @@
-import Controller from '../Controller.js';
+import Controller from './Controller.js';
 
 export const KEYS = Object.freeze({
     8: 'Backspace', 9: 'Tab', 13: 'Enter', 16: 'Shift', 17: 'Ctrl', 18: 'Alt', 19: 'Pause',

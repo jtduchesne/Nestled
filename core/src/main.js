@@ -15,5 +15,5 @@ export { VideoBuffer } from './Video/VideoBuffer.js';
 export { APU } from './APU.js';
 export { AudioBuffer } from './Audio/AudioBuffer.js';
 
-export { Controller, NoController } from './Controller.js';
-export { Keyboard } from './Controllers/Keyboard.js';
+export { Controller, NoController } from './Controllers';
+export { Keyboard } from './Controllers';

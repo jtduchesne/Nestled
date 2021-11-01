@@ -1,5 +1,5 @@
 import { Cartridge, NoCartridge } from './Cartridge.js';
-import { NoController } from './Controller.js';
+import { NoController } from './Controllers';
 import NESFile from './NESFile.js';
 import CPU from './CPU.js';
 import PPU from './PPU.js';
