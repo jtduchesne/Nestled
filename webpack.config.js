@@ -21,7 +21,7 @@ module.exports = {
         },
     },
     output: {
-        filename: '[name].js',
+        filename: 'javascripts/[name].js',
         path: path.resolve(__dirname, 'dist'),
         clean: true
     },
@@ -45,14 +45,14 @@ module.exports = {
                 }
             },
             {
-                test: /\/fonts?\/?.*?\.(eot|svg|ttf|woff2?)$/,
+                test: /\/fonts?\/.*?\.(eot|svg|ttf|woff2?)$/,
                 type: 'asset',
                 generator: {
                     filename: 'fonts/[name][ext]'
                 },
             },
             {
-                test: /\/images?\/?.*?\.(gif|jpe?g|png|svg)$/,
+                test: /\/images?\/.*?\.(gif|jpe?g|png|svg)$/,
                 type: 'asset/resource',
                 generator: {
                     filename: 'images/[name][ext]'
