@@ -6,7 +6,7 @@ module.exports = {
     mode: 'development',
     entry: {
         core: {
-            import: './core/src/main.js',
+            import: './core/src/index.js',
             library: {
                 name: 'Nestled',
                 type: 'var',
