@@ -68,17 +68,12 @@
     function resetFileInput() { fileInput.value = ""; }
     resetFileInput();
 
-    const nesFile = new Nestled.NESFile({
-        onload:   () => nes.insertCartridge(nesFile),
-        onunload: () => nes.removeCartridge(),
-    });
-
     fileInput.addEventListener('change', (e) => {
-        nesFile.load(e.target.files[0]);
+        nes.insertCartridge(e.target.files[0]);
     }, false);
     fileInput.addEventListener('click', () => {
         if (nes.isPowered)
             nes.powerOff();
-        nesFile.unload();
+        nes.removeCartridge();
     }, false);
 })();

@@ -1,6 +1,5 @@
-import { Cartridge, NoCartridge } from './Cartridge.js';
+import { Cartridge } from './Cartridge.js';
 import { NoController } from './Controllers';
-import NESFile from './NESFile.js';
 import CPU from './CPU.js';
 import PPU from './PPU.js';
 import MainLoop from './MainLoop.js';
@@ -13,10 +12,8 @@ export class NES {
         this.ppu = new PPU(this);
         this.mainLoop = new MainLoop(this);
         
-        this.cartridge = new NoCartridge;
-        if (opts && opts['cartridge'] || opts instanceof Cartridge)
-            this.insertCartridge(opts['cartridge'] || opts);
-        else if (opts && opts['file'] || opts instanceof NESFile)
+        this.cartridge = new Cartridge;
+        if (opts && opts['file'] || opts instanceof File)
             this.insertCartridge(opts['file'] || opts);
         
         this.controllers = [new NoController, new NoController];
@@ -106,33 +103,20 @@ export class NES {
     
     //== Cartridge ==========================================================================//
     insertCartridge(inserted) {
-        if (!(this.cartridge instanceof NoCartridge)) this.removeCartridge();
-        
-        if (inserted instanceof NESFile)
-            this.cartridge = new Cartridge({file: inserted});
-        else
-            this.cartridge = inserted;
-        
-        if (!(this.cartridge instanceof NoCartridge)) {
-            if (this.cartridge.tvSystem === "NTSC")
-                this.ppu.ntsc = true;
-            else
-                this.ppu.ntsc = false;
-        }
-        
-        return this.cartridge;
+        return this.cartridge.load(inserted).then((cart) => {
+            this.ppu.ntsc = (cart.tvSystem === "NTSC");
+            return cart;
+        });
     }
     removeCartridge() {
-        const removed = this.cartridge;
-        this.cartridge = new NoCartridge;
-        
-        return removed;
+        return this.cartridge.unload();
     }
     blowIntoCartridge() { //Indeed
-        const cart = this.removeCartridge();
-        if (cart && (typeof cart.blowInto === 'function'))
-            cart.blowInto(Math.floor(Math.random() * 3) + 1);
-        return this.insertCartridge(cart);
+        return this.removeCartridge().then((cart) => {
+            if (cart && (typeof cart.blowInto === 'function'))
+                cart.blowInto(Math.floor(Math.random() * 3) + 1);
+            return this.insertCartridge(cart);
+        });
     }
     
     //== Controllers ========================================================================//
