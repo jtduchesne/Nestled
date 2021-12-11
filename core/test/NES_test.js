@@ -35,14 +35,6 @@ describe("NES", function() {
                 expect(() => $action).to.change($subject.ppu, 'isPowered');
                 expect($subject.ppu.isPowered).to.be.true;
             });
-            
-            it("triggers 'onpower' event with itself as argument", function(done) {
-                $subject.onpower = (e) => {
-                    expect(e.target).to.equal($subject).and.have.property('isPowered', true);
-                    done();
-                };
-                $action;
-            });
         });
         context("when it is on", function() {
             beforeEach(function() { $powerOn; });
@@ -68,14 +60,6 @@ describe("NES", function() {
                 expect(() => $action).to.change($subject.ppu, 'isPowered');
                 expect($subject.ppu.isPowered).to.be.false;
             });
-            
-            it("triggers 'onpower' event with itself as argument", function(done) {
-                $subject.onpower = (e) => {
-                    expect(e.target).to.equal($subject).and.have.property('isPowered', false);
-                    done();
-                };
-                $action;
-            });
         });
     });
     
@@ -88,14 +72,6 @@ describe("NES", function() {
         });
         it("calls ppu.reset()", function(done) {
             $subject.ppu.reset = () => done();
-            $action;
-        });
-        
-        it("triggers 'onreset' event with itself as argument", function(done) {
-            $subject.onreset = (e) => {
-                expect(e.target).to.equal($subject);
-                done();
-            };
             $action;
         });
     });
@@ -112,14 +88,6 @@ describe("NES", function() {
             expect(() => $action).to.change($subject, 'isPowered');
             expect($subject.isPowered).to.be.true;
         });
-        
-        it("triggers 'onpower' event with itself as argument", function(done) {
-            $subject.onpower = (e) => {
-                expect(e.target).to.equal($subject).and.have.property('isPowered', true);
-                done();
-            };
-            $action;
-        });
     });
     
     describe(".powerOff()", function() {
@@ -131,14 +99,6 @@ describe("NES", function() {
         it("sets #isPowered to -false-", function() {
             expect(() => $action).to.change($subject, 'isPowered');
             expect($subject.isPowered).to.be.false;
-        });
-        
-        it("triggers 'onpower' event with itself as argument", function(done) {
-            $subject.onpower = (e) => {
-                expect(e.target).to.equal($subject).and.have.property('isPowered', false);
-                done();
-            };
-            $action;
         });
     });
     
@@ -163,16 +123,6 @@ describe("NES", function() {
                 expect(() => $action).to.change($subject, 'isRunning');
                 expect($subject.isRunning).to.be.true;
             });
-            
-            it("triggers 'onemulation' event with itself as argument", function(done) {
-                $subject.onemulation = (e) => {
-                    expect(e.target).to.equal($subject).and.have.property('isRunning', true);
-                    done();
-                };
-                $action;
-                $subject.onemulation = undefined; //Otherwise 'onemulation' is called also in the afterEach
-                                                  //hook, then calls done() and screws up Mocha...
-            });
         });
     });
     
@@ -185,15 +135,6 @@ describe("NES", function() {
             it("sets #isRunning to -false-", function() {
                 expect(() => $action).to.change($subject, 'isRunning');
                 expect($subject.isRunning).to.be.false;
-            });
-            
-            it("triggers 'onemulation' event with itself as argument", function(done) {
-                $subject.onemulation = (e) => {
-                    expect(e.target).to.equal($subject).and.have.property('isRunning', false);
-                    done();
-                };
-                $action;
-                $subject.onemulation = undefined;
             });
         });
         context("if not running", function() {
@@ -215,14 +156,6 @@ describe("NES", function() {
             it("sets #isPaused to -true-", function() {
                 expect(() => $action).to.change($subject, 'isPaused');
                 expect($subject.isPaused).to.be.true;
-            });
-            
-            it("triggers 'onpause' event with itself as argument", function(done) {
-                $subject.onpause = (e) => {
-                    expect(e.target).to.equal($subject).and.have.property('isPaused', true);
-                    done();
-                };
-                $action;
             });
         });
         context("if already paused", function() {
@@ -261,14 +194,6 @@ describe("NES", function() {
             it("sets #isPaused to -false-", function() {
                 expect(() => $action).to.change($subject, 'isPaused');
                 expect($subject.isPaused).to.be.false;
-            });
-            
-            it("triggers 'onpause' event with itself as argument", function(done) {
-                $subject.onpause = (e) => {
-                    expect(e.target).to.equal($subject).and.have.property('isPaused', false);
-                    done();
-                };
-                $action;
             });
         });
         context("if not running", function() {
@@ -336,13 +261,6 @@ describe("NES", function() {
             it("returns #cartridge", function() {
                 expect($action).to.equal($subject.cartridge);
             });
-            it("triggers 'oninsertcartridge' event with itself as argument", function(done) {
-                $subject.oninsertcartridge = (e) => {
-                    expect(e.target).to.equal($subject);
-                    done();
-                };
-                $action;
-            });
         });
         
         context("when argument is a -Cartridge- object", function() {
@@ -354,13 +272,6 @@ describe("NES", function() {
             });
             it("returns #cartridge", function() {
                 expect($action).to.equal($subject.cartridge);
-            });
-            it("triggers 'oninsertcartridge' event with itself as argument", function(done) {
-                $subject.oninsertcartridge = (e) => {
-                    expect(e.target).to.equal($subject);
-                    done();
-                };
-                $action;
             });
         });
     });
@@ -378,13 +289,6 @@ describe("NES", function() {
         it("returns the removed cartridge", function() {
             expect($action).to.equal($cartridge);
         });
-        it("triggers 'onremovecartridge' event with itself as argument", function(done) {
-            $subject.onremovecartridge = (e) => {
-                expect(e.target).to.equal($subject);
-                done();
-            };
-            $action;
-        });
     });
     
     //-------------------------------------------------------------------------------//
@@ -401,15 +305,6 @@ describe("NES", function() {
             it("returns the inserted controller", function() {
                 expect($action).to.equal($joypad);
             });
-            
-            it("triggers 'oninsertcontroller' event with itself as argument", function(done) {
-                $subject.oninsertcontroller = (e) => {
-                    expect(e.target).to.equal($subject);
-                    expect(e.target.controllers[0]).to.equal($joypad);
-                    done();
-                };
-                $action;
-            });
         });
         context("if there is already 1 controller connected", function() {
             beforeEach(function() {
@@ -422,15 +317,6 @@ describe("NES", function() {
             });
             it("returns the inserted controller", function() {
                 expect($action).to.equal($joypad);
-            });
-            
-            it("triggers 'oninsertcontroller' event with itself as argument", function(done) {
-                $subject.oninsertcontroller = (e) => {
-                    expect(e.target).to.equal($subject);
-                    expect(e.target.controllers[1]).to.equal($joypad);
-                    done();
-                };
-                $action;
             });
         });
         context("if there are already 2 controllers connected", function() {

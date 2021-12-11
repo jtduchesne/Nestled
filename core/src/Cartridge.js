@@ -14,6 +14,7 @@ export class Cartridge {
     
     reset() {
         this.isValid = false;
+        this.statuses = [];
         
         this.name = "";
         
@@ -40,9 +41,9 @@ export class Cartridge {
             var offset = 0x10;
             
             if (header.getUint32(0) === 0x4E45531A) { //"NES" + MS-DOS end-of-file
-                file.updateStatus("iNES format");
+                this.statuses.push("iNES format");
             } else {
-                file.updateStatus("Invalid format");
+                this.statuses.push("Invalid format");
                 return this;
             }
             
@@ -51,12 +52,12 @@ export class Cartridge {
             
             let mapperNumber = (flags6 >> 4) | (flags7 & 0xF0);
             if (MemoryMapper.isSupported(mapperNumber)) {
-                file.updateStatus(
+                this.statuses.push(
                     `Mapper #${mapperNumber}: ${MemoryMapper.getName(mapperNumber)}`
                 );
                 this.isValid = true;
             } else {
-                file.updateStatus(
+                this.statuses.push(
                     `Unsupported mapper (#${mapperNumber}: ${MemoryMapper.getName(mapperNumber)})`
                 );
                 this.isValid = false;
@@ -65,15 +66,15 @@ export class Cartridge {
             if (flags6 & 0x8) {
                 this.horiMirroring = false;
                 this.vertMirroring = false;
-                file.updateStatus("4-screens scrolling");
+                this.statuses.push("4-screens scrolling");
             } else if (flags6 & 0x1) {
                 this.horiMirroring = false;
                 this.vertMirroring = true;
-                file.updateStatus("Horizontal scrolling");
+                this.statuses.push("Horizontal scrolling");
             } else {
                 this.horiMirroring = true;
                 this.vertMirroring = false;
-                file.updateStatus("Vertical scrolling");
+                this.statuses.push("Vertical scrolling");
             }
             
             if (flags6 & 0x4) {
@@ -85,7 +86,7 @@ export class Cartridge {
             let numCHRBank = header.getUint8(5) * 2;
             var skipped = 0;
             
-            file.updateStatus(`${numPRGBank*16}kb of PRG-ROM`, true);
+            this.statuses.push(`${numPRGBank*16}kb of PRG-ROM`);
             for (var curBank = 0; curBank < numPRGBank; curBank++) {
                 if (offset + 0x4000 > file.data.byteLength) {
                     skipped += 4;
@@ -95,7 +96,7 @@ export class Cartridge {
                 offset += 0x4000;
             }
             
-            file.updateStatus(`${numCHRBank*4}kb of CHR-ROM`, true);
+            this.statuses.push(`${numCHRBank*4}kb of CHR-ROM`);
             for (curBank = 0; curBank < numCHRBank; curBank++) {
                 if (offset + 0x1000 > file.data.byteLength) {
                     skipped++;
@@ -105,11 +106,11 @@ export class Cartridge {
                 offset += 0x1000;
             }
             
-            if (skipped > 0) file.updateStatus(`${skipped*4}kb of data skipped...`, true);
+            if (skipped > 0) this.statuses.push(`${skipped*4}kb of data skipped...`);
             
             if (flags6 & 0x2) {
                 this.battery = true;
-                file.updateStatus("Battery-backed SRAM", true);
+                this.statuses.push("Battery-backed SRAM");
             }
             
             if (offset < file.data.byteLength) {
@@ -137,10 +138,8 @@ export class Cartridge {
             
             this.file = file;
             
-            file.updateStatus(`${this.name} ready`);
             return this;
         } else {
-            file.updateStatus(`${file.name} is not a valid file`);
             return this.unload();
         }
     }

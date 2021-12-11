@@ -7,23 +7,7 @@ import MainLoop from './MainLoop.js';
 
 export class NES {
     constructor(opts) {
-        if (opts) {
-            if (opts['screen']) this.screen = opts['screen'];
-            
-            if (opts['onpower']) this.onpower = opts['onpower'];
-            if (opts['onreset']) this.onreset = opts['onreset'];
-            
-            if (opts['onemulation']) this.onemulation = opts['onemulation'];
-            if (opts['onpause']) this.onpause = opts['onpause'];
-            if (opts['ontime']) this.ontime = opts['ontime'];
-            if (opts['onfps']) this.onfps = opts['onfps'];
-            
-            if (opts['oninsertcartridge']) this.oninsertcartridge = opts['oninsertcartridge'];
-            if (opts['onremovecartridge']) this.onremovecartridge = opts['onremovecartridge'];
-            
-            if (opts['oninsertcontroller']) this.oninsertcontroller = opts['oninsertcontroller'];
-            if (opts['onremovecontroller']) this.onremovecontroller = opts['onremovecontroller'];
-        }
+        this.isPowered = false;
         
         this.cpu = new CPU(this);
         this.ppu = new PPU(this);
@@ -41,7 +25,9 @@ export class NES {
         else if (opts && opts['controller'])
             this.controllers = [opts['controller'], new NoController];
         
-        this.isPowered = false;
+        this.screen = null;
+        if (opts && opts['screen'])
+            this.screen = opts['screen'];
     }
      
     //== Power ==============================================================================//
@@ -51,8 +37,6 @@ export class NES {
             
             this.cpu.powerOn();
             this.ppu.powerOn();
-        
-            if (this.onpower) this.onpower({target: this});
             
             this.startEmulation();
         }
@@ -65,8 +49,6 @@ export class NES {
             
             this.cpu.powerOff();
             this.ppu.powerOff();
-        
-            if (this.onpower) this.onpower({target: this});
         }
     }
      
@@ -74,13 +56,11 @@ export class NES {
     startEmulation() {
         if (!this.isRunning) {
             this.mainLoop.start();
-            if (this.onemulation) this.onemulation({target: this});
         }
     }
     stopEmulation() {
         if (this.isRunning) {
             this.mainLoop.stop();
-            if (this.onemulation) this.onemulation({target: this});
         }
     }
     get isRunning() { return this.mainLoop.isRunning; }
@@ -88,13 +68,11 @@ export class NES {
     pauseEmulation() {
         if (this.isRunning && !this.isPaused) {
             this.mainLoop.pause();
-            if (this.onpause) this.onpause({target: this});
         }
     }
     resumeEmulation() {
         if (this.isPaused) {
             this.mainLoop.start();
-            if (this.onpause) this.onpause({target: this});
         }
     }
     get isPaused() { return this.mainLoop.isPaused; }
@@ -118,8 +96,6 @@ export class NES {
         return this.isPowered;
     }
     pressReset()  {
-        if (this.onreset) this.onreset({target: this});
-        
         this.cpu.reset();
         this.ppu.reset();
     }
@@ -142,17 +118,12 @@ export class NES {
                 this.ppu.ntsc = true;
             else
                 this.ppu.ntsc = false;
-            
-            if (this.oninsertcartridge) this.oninsertcartridge({target: this});
         }
         
         return this.cartridge;
     }
     removeCartridge() {
         const removed = this.cartridge;
-        if (removed && !(removed instanceof NoCartridge)) {
-            if (this.onremovecartridge) this.onremovecartridge({target: this});
-        }
         this.cartridge = new NoCartridge;
         
         return removed;
@@ -175,18 +146,12 @@ export class NES {
         else
             return;
         
-        if (this.oninsertcontroller)
-            this.oninsertcontroller({target: this});
-        
         return controller;
     }
     removeController(controller) {
         let index = this.controllers.indexOf(controller);
         if (index > -1) {
             this.controllers[index] = new NoController;
-            
-            if (this.onremovecontroller)
-                this.onremovecontroller({target: this});
             
             return controller;
         }

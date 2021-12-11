@@ -104,11 +104,8 @@ export class MainLoop {
             this.cancelPendingFrames();
             this.bus.pauseEmulation();
         } else {
-            var dropped = false;
-            let onfps = this.bus.onfps;
             if (delta >= frameTime) {
                 while ((delta -= frameTime) >= frameTime) {
-                    dropped = true;
                     this.cancelFrame(cpu, ppu);
                     this.fps--;
                     this.frameTime += frameTime;
@@ -130,21 +127,11 @@ export class MainLoop {
             if (this.framesThisSecond >= 60) {
                 this.performance = 1000 / this.frameTime;
                 
-                let ontime = this.bus.ontime;
-                if (ontime) ontime({target: this});
-                
-                if (onfps && this.fps !== 60) {
-                    this.fps = 60;
-                    onfps({target: this});
-                }
-                
+                this.fps = 60;
                 this.frameTime = 0.0;
                 this.framesThisSecond = 0;
             } else {
                 this.performance = (1000*this.framesThisSecond / 60) / this.frameTime;
-                
-                if (onfps && dropped)
-                    onfps({target: this});
             }
         }
         

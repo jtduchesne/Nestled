@@ -265,13 +265,6 @@ describe("MainLoop", function() {
                 expect(() => $action).to.change($subject, 'fps');
                 expect($subject.fps).to.be.equal(59);
             });
-            it("triggers 'onfps' event with itself as argument", function(done) {
-                $nes.onfps = (e) => {
-                    expect(e.target).to.equal($subject).and.have.property('fps', 59);
-                    done();
-                };
-                $action;
-            });
             
             it("increases #frameTime", function() {
                 expect(() => $action).to.increase($subject, 'frameTime');

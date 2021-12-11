@@ -3,14 +3,11 @@ export class NESFile {
         if (opts) {
             if (opts['onload'])   this.onload = opts['onload'];
             if (opts['onunload']) this.onunload = opts['onunload'];
-            if (opts['onstatus']) this.onstatus = opts['onstatus'];
         }
         
         this.name = "";
         this.size = 0;
         this.data = null;
-        
-        this.updateStatus("No file loaded");
     }
     
     load(file) {
@@ -37,20 +34,13 @@ export class NESFile {
                 
                 this.isLoaded = true;
                 this.isValid = true;
-                
-                this.updateStatus(this.name + " loaded");
             }
         ).then(
             this.onload && this.onload.bind(null, {target: this})
         ).catch(
-            (error) => {
+            () => {
                 this.isLoaded = true;
                 this.isValid = false;
-                
-                this.updateStatus(this.name + " loaded");
-                
-                if (error.message)
-                    this.updateStatus(error.message);
             }
         );
     }
@@ -62,7 +52,6 @@ export class NESFile {
                 this.isLoaded = false;
                 this.isValid = null;
                 
-                this.updateStatus(this.name + " unloaded");
                 this.reset();
             });
         }
@@ -72,12 +61,6 @@ export class NESFile {
         this.name = "";
         this.size = 0;
         this.data = null;
-    }
-    
-    updateStatus(text) {
-        this.status = text || "";
-        if (this.onstatus) this.onstatus({target: this});
-        return this.status;
     }
 }
 export default NESFile;

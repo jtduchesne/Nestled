@@ -25,12 +25,6 @@ describe("NESFile", function() {
                 return $action.finally(() => { expect($subject.size).to.equal(0); }); });
             it("clears #data", function() {
                 return $action.finally(() => { expect($subject.data).to.be.null; }); });
-            
-            it("updates the status", function() {
-                return $action.finally(() => {
-                    expect($subject.status).to.include("empty");
-                });
-            });
         });
         context("when the file is valid", function() {
             def('file', () => $validFile);
@@ -49,12 +43,6 @@ describe("NESFile", function() {
                 return $action.finally(() => { expect($subject.size).to.equal($file.size); }); });
             it("sets #data", function() {
                 return $action.finally(() => { expect($subject.data).to.eql($file.arrayBuffer); }); });
-            
-            it("updates the status", function() {
-                return $action.finally(() => {
-                    expect($subject.status).to.include($file.name).and.include("loaded");
-                });
-            });
             
             it("triggers 'onload' event with itself as argument", function() {
                 $subject.onload = (e) => {
@@ -92,12 +80,6 @@ describe("NESFile", function() {
             it("clears #data", function() {
                 return $action.finally(() => { expect($subject.data).to.be.null; }); });
             
-            it("updates the status", function() {
-                return $action.finally(() => {
-                    expect($subject.status).to.include("validfile").and.include("unloaded");
-                });
-            });
-            
             it("triggers 'onunload' event with itself as argument", function() {
                 $subject.onunload = (e) => {
                     expect(e.target).to.equal($subject);
@@ -108,29 +90,6 @@ describe("NESFile", function() {
         context("when no file is loaded", function() {
             it("does NOT returns Promise", function() {
                 expect($action).not.to.be.a('Promise'); });
-            
-            it("keeps the 'no file' status", function() {
-                expect($subject.status.toLowerCase()).to.include("no file");
-            });
-        });
-    });
-    
-    describe(".updateStatus(text)", function() {
-        def('action', () => $subject.updateStatus($text));
-        def('text', () => "This is a new status");
-        
-        it("returns the status", function() {
-            expect($action).to.equal($text); });
-        it("sets #status", function() {
-            expect(() => $action).to.change($subject, 'status');
-            expect($subject.status).to.equal($text);
-        });
-        
-        it("triggers 'onstatus' event with itself as argument", function() {
-            $subject.onstatus = (e) => {
-                expect(e.target).to.equal($subject).and.have.property('status', $text);
-            };
-            return $action;
         });
     });
 });

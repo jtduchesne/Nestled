@@ -8,40 +8,45 @@
 
     const nes = new Nestled.NES({screen: screenOutput, controller: joypad});
 
-    const frontLED    = document.getElementById('front_led');
+    const frontLED = document.getElementById('front_led');
+
+    function updateFrontLED() {
+        frontLED.classList.remove("on", "off", "paused");
+        frontLED.classList.add(nes.frontLEDState);
+    }
+
     const powerButton = document.getElementById('power_button');
     const resetButton = document.getElementById('reset_button');
     const pauseButton = document.getElementById('pause_button');
 
-    powerButton.addEventListener('click', () => nes.pressPower(), false);
-    resetButton.addEventListener('click', () => nes.pressReset(), false);
-    pauseButton.addEventListener('click', () => {
-        pauseButton.setAttribute("disabled", "disabled");
-        nes.pause();
-    }, false);
-
-    nes.onpower = (e) => {
-        frontLED.classList.remove("on", "off", "paused");
-        frontLED.classList.add(e.target.frontLEDState);
-        if (e.target.isPowered) {
+    let interval;
+    powerButton.addEventListener('click', () => {
+        if (nes.pressPower()) {
             resetButton.disabled = false;
             pauseButton.disabled = false;
-            updateStatus(e.target.cartridge.name + " started");
+            updateStatus(nes.cartridge.name + " started");
+            interval = setInterval(showStats, 1000);
         } else {
             resetButton.setAttribute("disabled", "disabled");
             pauseButton.setAttribute("disabled", "disabled");
-            updateStatus(e.target.cartridge.name + " stopped");
+            updateStatus(nes.cartridge.name + " stopped");
+            clearInterval(interval);
         }
-    };
-    nes.onpause = (e) => {
-        frontLED.classList.remove("on", "off", "paused");
-        frontLED.classList.add(e.target.frontLEDState);
-        pauseButton.disabled = false;
-        if (e.target.isPaused)
-            updateStatus(e.target.cartridge.name + " paused");
-        else
-            updateStatus(e.target.cartridge.name + " resumed");
-    };
+        updateFrontLED();
+    }, false);
+
+    resetButton.addEventListener('click', () => nes.pressReset(), false);
+
+    pauseButton.addEventListener('click', () => {
+        if (nes.pause()) {
+            pauseButton.innerText = "Resume";
+            updateStatus(nes.cartridge.name + " paused");
+        } else {
+            pauseButton.innerText = "Pause";
+            updateStatus(nes.cartridge.name + " resumed");
+        }
+        updateFrontLED();
+    }, false);
 
   //-------------------------------------------------------------------------------------------//
 
@@ -52,11 +57,9 @@
         console.log("Nestled: " + text);
     }
 
-    function showStats(e) {
-        statusOutput.innerText = e.target.fps + " FPS (" + e.target.performance.toFixed(2) +"x)";
+    function showStats() {
+        statusOutput.innerText = nes.mainLoop.fps + " FPS (" + nes.mainLoop.performance.toFixed(2) +"x)";
     }
-    nes.ontime = showStats;
-    nes.onfps = showStats;
 
   //-------------------------------------------------------------------------------------------//
 
@@ -66,7 +69,6 @@
     resetFileInput();
 
     const nesFile = new Nestled.NESFile({
-        onstatus: (e) => updateStatus(e.target.status),
         onload:   () => nes.insertCartridge(nesFile),
         onunload: () => nes.removeCartridge(),
     });
