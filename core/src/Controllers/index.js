@@ -1,2 +1,5 @@
-export { Controller, NoController } from "./Controller";
-export { Keyboard } from "./Keyboard";
+export * from './Devices';
+
+export { Controller } from './Controller';
+
+export { default } from './CtrlConnector';

@@ -1,6 +1,6 @@
-import Controller from './Controller.js';
+import Joypad from '../Joypad';
 
-export const KEYS = Object.freeze({
+const KEYS = Object.freeze({
     8: 'Backspace', 9: 'Tab', 13: 'Enter', 16: 'Shift', 17: 'Ctrl', 18: 'Alt', 19: 'Pause',
     27: 'Escape', 32: 'Space', 33: 'Page-up', 34: 'Page-down', 35: 'End', 36: 'Home',
     37: 'Left', 38: 'Up', 39: 'Right', 40: 'Down',
@@ -18,7 +18,7 @@ export const KEYS = Object.freeze({
     219: '[', 220: '\\', 221: ']', 222: '\'',
 });
 
-export class Keyboard extends Controller {
+export class Keyboard extends Joypad {
     constructor(opts) {
         super();
         
@@ -29,6 +29,10 @@ export class Keyboard extends Controller {
             window.addEventListener('keydown', (e) => this.pressKey(e, true));
             window.addEventListener('keyup',   (e) => this.pressKey(e, false));
         }
+    }
+    
+    get map() {
+        return KEYS;
     }
     
     assignKey(buttonName, keyCode) {

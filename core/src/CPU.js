@@ -156,9 +156,9 @@ export class CPU {
             if (address < 0x4000){
                 return this.bus.ppu.readRegister(address);
             } else if (address === 0x4016) {
-                return (address >>> 8) | this.bus.controllers[0].read();
+                return (address >>> 8) | this.bus.ctrlConnector.controllers[0].read();
             } else if (address === 0x4017) {
-                return (address >>> 8) | this.bus.controllers[1].read();
+                return (address >>> 8) | this.bus.ctrlConnector.controllers[1].read();
             } else {
                 return this.apu.readRegister(address);
             }
@@ -182,8 +182,8 @@ export class CPU {
                 if (this.cycle & 1) this.cycle += 513;
                 else this.cycle += 514;
             } else if (address === 0x4016) {
-                this.bus.controllers[0].write(data);
-                this.bus.controllers[1].write(data);
+                this.bus.ctrlConnector.controllers[0].write(data);
+                this.bus.ctrlConnector.controllers[1].write(data);
             } else {
                 this.apu.writeRegister(address, data);
             }

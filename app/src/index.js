@@ -1,12 +1,7 @@
 (function() {
     const screenOutput = document.getElementById('screen');
 
-    const joypad = new Nestled.Keyboard(
-      //    -A-     -W-       -S-        -D-       -Shift-    -Enter-  -K-    -L-
-        {left: 65, up: 87, down: 83, right: 68, select: 16, start: 13, b: 75, a: 76}
-    );
-
-    const nes = new Nestled.NES({screen: screenOutput, controller: joypad});
+    const nes = new Nestled.NES({screen: screenOutput});
 
     const frontLED = document.getElementById('front_led');
 
@@ -47,6 +42,14 @@
         }
         updateFrontLED();
     }, false);
+
+  //-------------------------------------------------------------------------------------------//
+
+    const joypad = new Nestled.Keyboard(
+        //    -A-     -W-       -S-        -D-       -Shift-    -Enter-  -K-    -L-
+        {left: 65, up: 87, down: 83, right: 68, select: 16, start: 13, b: 75, a: 76}
+    );
+    nes.insertController(joypad);
 
   //-------------------------------------------------------------------------------------------//
 

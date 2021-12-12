@@ -1,8 +1,8 @@
 import { Cartridge } from './Cartridge.js';
-import { NoController } from './Controllers';
 import CPU from './CPU.js';
 import PPU from './PPU.js';
 import MainLoop from './MainLoop.js';
+import CtrlConnector from './Controllers';
 
 export class NES {
     constructor(opts) {
@@ -16,11 +16,11 @@ export class NES {
         if (opts && opts['file'] || opts instanceof File)
             this.insertCartridge(opts['file'] || opts);
         
-        this.controllers = [new NoController, new NoController];
+        this.ctrlConnector = new CtrlConnector;
         if (opts && opts['controllers'])
-            opts['controllers'].forEach((controller) => this.insertController(controller));
+            this.ctrlConnector.insert(...opts['controllers']);
         else if (opts && opts['controller'])
-            this.controllers = [opts['controller'], new NoController];
+            this.ctrlConnector.insert(opts['controller']);
         
         this.screen = null;
         if (opts && opts['screen'])
@@ -121,24 +121,10 @@ export class NES {
     
     //== Controllers ========================================================================//
     insertController(controller) {
-        if (this.controllers.indexOf(controller) > -1)
-            return controller;
-        else if (this.controllers[0] instanceof NoController)
-            this.controllers[0] = controller;
-        else if (this.controllers[1] instanceof NoController)
-            this.controllers[1] = controller;
-        else
-            return;
-        
-        return controller;
+        return this.ctrlConnector.insert(controller);
     }
     removeController(controller) {
-        let index = this.controllers.indexOf(controller);
-        if (index > -1) {
-            this.controllers[index] = new NoController;
-            
-            return controller;
-        }
+        return this.ctrlConnector.remove(controller);
     }
     
     //== Video ==============================================================================//
