@@ -1,13 +1,32 @@
-export class Mapper {
-    constructor(number, cartridge) {
-        this.number = number;
+export class Cartridge {
+    constructor(mapperNumber) {
+        if (typeof mapperNumber !== 'undefined')
+            this.mapperNumber = mapperNumber;
+        else
+            this.mapperNumber = -1;
         
-        this.PRGRAM = cartridge.PRGRAM;
-        this.CHRRAM = cartridge.CHRRAM;
+        this.PRGRAM = new Uint8Array(0x4000);
+        this.CHRRAM = new Uint8Array(0x2000);
         
-        this.PRGROM = cartridge.PRGROM;
-        this.CHRROM = cartridge.CHRROM;
+        this.horiMirroring = false;
+        this.vertMirroring = false;
         
+        this.battery = false;
+        
+        this.reset();
+    }
+    
+    get empty()   { return this.mapperNumber < 0; }
+    get present() { return this.mapperNumber >= 0; }
+    
+    reset() {
+        this.PRGROM = [];
+        this.CHRROM = [];
+        this.PRGBank = [this.PRGRAM, this.PRGRAM];
+        this.CHRBank = [this.CHRRAM, this.CHRRAM];
+    }
+    
+    init() {
         if (this.PRGROM.length > 0)
             this.PRGBank = [this.PRGROM[0], this.PRGROM[this.PRGROM.length-1]];
         else
@@ -52,4 +71,5 @@ export class Mapper {
         return address & 0x2000; //Connected to PPU /A13 by default
     }
 }
-export default Mapper;
+
+export default Cartridge;

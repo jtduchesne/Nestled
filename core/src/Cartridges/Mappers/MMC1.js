@@ -1,20 +1,24 @@
-import Mapper from './Mapper.js';
+import Cartridge from '../Cartridge';
 
-export class MMC1 extends Mapper {
-    constructor(number, cartridge) {
-        super(number || 1, cartridge);
+export class MMC1 extends Cartridge {
+    constructor(number) {
+        super(number || 1);
         
         this.mirroring   = 0;
         this.PRGBankMode = 3;
         this.CHRBankMode = 0;
         
+        this.buffer = 0;
+        this.index = 0;
+    }
+    
+    init() {
+        super.init();
+        
         this.lastPRGBank = this.PRGROM[this.PRGROM.length-1];
         
         this.PRGBank[0] = this.PRGROM[0];
         this.PRGBank[1] = this.lastPRGBank;
-        
-        this.buffer = 0;
-        this.index = 0;
     }
     
     //== Internal registers =========================================//

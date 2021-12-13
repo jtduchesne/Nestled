@@ -1,12 +1,6 @@
-import Mapper from './Mapper.js';
+import Cartridge from '../Cartridge';
 
-export class NROM extends Mapper {
-    constructor(number, cartridge) {
-        super(number || 0, cartridge);
-        
-        this.vertMirroring = cartridge.vertMirroring;
-        this.horiMirroring = cartridge.horiMirroring;
-    }
+export class NROM extends Cartridge {
     
     //== CIRAM A10 (Pin22) ==========================================//
     ciramA10(address) {

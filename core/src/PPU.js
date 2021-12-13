@@ -249,14 +249,14 @@ export class PPU {
     }
     
     read(address) {
-        let cartridge = this.bus.cartridge;
+        let cartridge = this.bus.cartConnector.cartridge;
         if (cartridge.ciramEnabled(address))
             return this.vramBank[cartridge.ciramA10(address) ? 1 : 0][address & 0x3FF];
         else
             return cartridge.ppuRead(address);
     }
     write(address, data) {
-        let cartridge = this.bus.cartridge;
+        let cartridge = this.bus.cartConnector.cartridge;
         if (cartridge.ciramEnabled(address))
             this.vramBank[cartridge.ciramA10(address) ? 1 : 0][address & 0x3FF] = data;
         else

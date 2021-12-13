@@ -1,30 +1,25 @@
-import MemoryMapper from './MemoryMapper.js';
+import Cartridge from './Cartridge';
+import Mapper, * as Mappers from "./Mappers";
 
-export class Cartridge {
+export class CartConnector {
     constructor() {
-        this.PRGRAM = new Uint8Array(0x4000);
-        this.CHRRAM = new Uint8Array(0x2000);
+        this.name = "No Cartridge";
+        this.cartridge = new Cartridge;
         
         this.reset();
-        
-        this.name = "No Cartridge";
-        this.mapper = new MemoryMapper(0, this);
     }
+    
+    get empty()   { return this.cartridge.empty; }
+    get present() { return this.cartridge.present; }
     
     reset() {
         this.isLoaded = false;
         this.isValid = false;
         this.statuses = [];
         
-        this.horiMirroring = false;
-        this.vertMirroring = false;
-        
-        this.battery = false;
-        
-        this.PRGROM = [];
-        this.CHRROM = [];
-        
         this.tvSystem = "NTSC";
+        
+        this.cartridge.reset();
     }
     
     parseData(data) {
@@ -41,39 +36,40 @@ export class Cartridge {
         let flags7 = header.getUint8(7);
         
         let mapperNumber = (flags6 >> 4) | (flags7 & 0xF0);
-        if (MemoryMapper.isSupported(mapperNumber)) {
+        if (Mappers.supported(mapperNumber)) {
             this.statuses.push(
-                `Mapper #${mapperNumber}: ${MemoryMapper.getName(mapperNumber)}`
+                `Mapper #${mapperNumber}: ${Mappers.name(mapperNumber)}`
             );
             this.isValid = true;
         } else {
             this.statuses.push(
-                `Unsupported mapper (#${mapperNumber}: ${MemoryMapper.getName(mapperNumber)})`
+                `Unsupported mapper (#${mapperNumber}: ${Mappers.name(mapperNumber)})`
             );
             this.isValid = false;
         }
+        this.cartridge = new Mapper(mapperNumber);
         
         if (flags6 & 0x8) {
-            this.horiMirroring = false;
-            this.vertMirroring = false;
+            this.cartridge.horiMirroring = false;
+            this.cartridge.vertMirroring = false;
             this.statuses.push("4-screens scrolling");
         } else if (flags6 & 0x1) {
-            this.horiMirroring = false;
-            this.vertMirroring = true;
+            this.cartridge.horiMirroring = false;
+            this.cartridge.vertMirroring = true;
             this.statuses.push("Horizontal scrolling");
         } else {
-            this.horiMirroring = true;
-            this.vertMirroring = false;
+            this.cartridge.horiMirroring = true;
+            this.cartridge.vertMirroring = false;
             this.statuses.push("Vertical scrolling");
         }
         
         if (flags6 & 0x2) {
-            this.battery = true;
+            this.cartridge.battery = true;
             this.statuses.push("Battery-backed SRAM");
         }
         
         if (flags6 & 0x4) {
-            this.PRGRAM.set(new Uint8Array(data, offset, 0x200), 0x1000);
+            this.cartridge.PRGRAM.set(new Uint8Array(data, offset, 0x200), 0x1000);
             offset += 0x200;
         }
         
@@ -87,7 +83,7 @@ export class Cartridge {
                 skipped += 4;
                 continue;
             }
-            this.PRGROM.push(new Uint8Array(data, offset, 0x4000));
+            this.cartridge.PRGROM.push(new Uint8Array(data, offset, 0x4000));
             offset += 0x4000;
         }
         
@@ -97,7 +93,7 @@ export class Cartridge {
                 skipped++;
                 continue;
             }
-            this.CHRROM.push(new Uint8Array(data, offset, 0x1000));
+            this.cartridge.CHRROM.push(new Uint8Array(data, offset, 0x1000));
             offset += 0x1000;
         }
         
@@ -107,7 +103,7 @@ export class Cartridge {
             this.name = String.fromCharCode.apply(null, new Uint8Array(data, offset)).replace(/\0/g, '');
         }
         
-        this.mapper = new MemoryMapper(mapperNumber, this);
+        this.cartridge.init();
     }
     parseFilename(filename) {
         const countryCodes = /\((U|E|Unk|Unl|1|4|A|J|B|K|C|NL|PD|F|S|FC|SW|FN|G|UK|GR|HK|I|H)+\)/.exec(filename);
@@ -159,6 +155,8 @@ export class Cartridge {
                     this.statuses.push(error.message);
                 else
                     this.statuses.push("Loading failed");
+                
+                this.cartridge = new Cartridge;
                 return this;
             }
         );
@@ -168,16 +166,6 @@ export class Cartridge {
         
         return Promise.resolve(this);
     }
-    
-    //== Memory I/O =================================================//
-    cpuRead(address) { return this.mapper.cpuRead(address); }
-    cpuWrite(address, data) { this.mapper.cpuWrite(address, data); }
-    
-    ppuRead(address) { return this.mapper.ppuRead(address); }
-    ppuWrite(address, data) { this.mapper.ppuWrite(address, data); }
-    
-    ciramA10(address)     { return this.mapper.ciramA10(address); }
-    ciramEnabled(address) { return this.mapper.ciramEnabled(address); }
 }
 
-export default Cartridge;
+export default CartConnector;

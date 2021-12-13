@@ -1,26 +1,10 @@
-import { NROM, MMC1 } from './Mappers';
+import NROM from './NROM';
+import MMC1 from './MMC1';
 
-const supportedNumbers = [0,1];
+const constructors = Object.freeze([NROM, MMC1]);
+const supported = (number) => typeof constructors[number] !== 'undefined';
 
-export class MemoryMapper {
-    constructor(number, cartridge) {
-        switch (number) {
-        case 0:  return new NROM(number, cartridge);
-        case 1:  return new MMC1(number, cartridge);
-        default: return new NROM(number, cartridge);
-        }
-    }
-    
-    static isSupported(number) {
-        return supportedNumbers.includes(number);
-    }
-    static getName(number) {
-        return names[number] || "Unknown";
-    }
-}
-export default MemoryMapper;
-
-const names = [
+const names = Object.freeze([
     //0x00
     "NROM","Nintendo MMC1","UNROM","CNROM","Nintendo MMC3","Nintendo MMC5","FFE Rev. A","ANROM",
     "","Nintendo MMC2","Nintendo MMC4","Color Dreams","REX DBZ 5","CPROM","REX SL-1632","100-in-1",
@@ -65,4 +49,17 @@ const names = [
     "BMC QUATTRO","BMC 22+20-in-1 RST","BMC MAXI","","","","UNL6035052","",
     //0xF0
     "","","","S74LS374NA","DECATHLON","","FONG SHEN BANG","","","","","","SAN GUO ZHI PIRATE","DRAGON BALL PIRATE","","",
-];
+]);
+const name = (number) => names[number] || "Unknown";
+
+export default class {
+    constructor(number) {
+        return new (constructors[number] || NROM)(number);
+    }
+}
+
+export {
+    constructors,
+    supported, name,
+    NROM, MMC1,
+};

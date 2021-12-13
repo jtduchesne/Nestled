@@ -1,7 +1,7 @@
-import { Cartridge } from './Cartridge.js';
 import CPU from './CPU.js';
 import PPU from './PPU.js';
 import MainLoop from './MainLoop.js';
+import CartConnector from './Cartridges';
 import CtrlConnector from './Controllers';
 
 export class NES {
@@ -12,7 +12,7 @@ export class NES {
         this.ppu = new PPU(this);
         this.mainLoop = new MainLoop(this);
         
-        this.cartridge = new Cartridge;
+        this.cartConnector = new CartConnector;
         if (opts && opts['file'] || opts instanceof File)
             this.insertCartridge(opts['file'] || opts);
         
@@ -102,21 +102,14 @@ export class NES {
     get frontLEDState() { return this.isPowered ? this.isPaused ? "paused" : "on" : "off"; }
     
     //== Cartridge ==========================================================================//
-    insertCartridge(inserted) {
-        return this.cartridge.load(inserted).then((cart) => {
-            this.ppu.ntsc = (cart.tvSystem === "NTSC");
-            return cart;
+    insertCartridge(file) {
+        return this.cartConnector.load(file).then((connector) => {
+            this.ppu.ntsc = (connector.tvSystem === "NTSC");
+            return connector;
         });
     }
     removeCartridge() {
-        return this.cartridge.unload();
-    }
-    blowIntoCartridge() { //Indeed
-        return this.removeCartridge().then((cart) => {
-            if (cart && (typeof cart.blowInto === 'function'))
-                cart.blowInto(Math.floor(Math.random() * 3) + 1);
-            return this.insertCartridge(cart);
-        });
+        return this.cartConnector.unload();
     }
     
     //== Controllers ========================================================================//

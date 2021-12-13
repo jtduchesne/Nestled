@@ -19,12 +19,12 @@
         if (nes.pressPower()) {
             resetButton.disabled = false;
             pauseButton.disabled = false;
-            updateStatus(nes.cartridge.name + " started");
+            updateStatus(nes.cartConnector.name + " started");
             interval = setInterval(showStats, 1000);
         } else {
             resetButton.setAttribute("disabled", "disabled");
             pauseButton.setAttribute("disabled", "disabled");
-            updateStatus(nes.cartridge.name + " stopped");
+            updateStatus(nes.cartConnector.name + " stopped");
             clearInterval(interval);
         }
         updateFrontLED();
@@ -35,10 +35,10 @@
     pauseButton.addEventListener('click', () => {
         if (nes.pause()) {
             pauseButton.innerText = "Resume";
-            updateStatus(nes.cartridge.name + " paused");
+            updateStatus(nes.cartConnector.name + " paused");
         } else {
             pauseButton.innerText = "Pause";
-            updateStatus(nes.cartridge.name + " resumed");
+            updateStatus(nes.cartConnector.name + " resumed");
         }
         updateFrontLED();
     }, false);

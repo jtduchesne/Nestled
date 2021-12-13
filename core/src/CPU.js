@@ -80,7 +80,7 @@ export class CPU {
         //Stack pointer
         this.SP = 0xFD;
         //Program counter
-        let cart = this.bus.cartridge;
+        let cart = this.bus.cartConnector.cartridge;
         this.PC = cart.cpuRead(0xFFFC) + cart.cpuRead(0xFFFD)*256;
         
         this.apu.powerOn();
@@ -127,14 +127,14 @@ export class CPU {
     doNMI() {
         this.pushWord(this.PC);
         this.pushByte(this.P & ~0x10);
-        let cart = this.bus.cartridge;
+        let cart = this.bus.cartConnector.cartridge;
         this.PC = cart.cpuRead(0xFFFA) + cart.cpuRead(0xFFFB)*256;
         this.cycle += 7;
     }
     doReset() {
         this.SP = this.SP+3;
         this.Interrupt = false;
-        let cart = this.bus.cartridge;
+        let cart = this.bus.cartConnector.cartridge;
         this.PC = cart.cpuRead(0xFFFC) + cart.cpuRead(0xFFFD)*256;
         this.cycle += 7;
     }
@@ -143,7 +143,7 @@ export class CPU {
         
         this.pushWord(this.PC);
         this.pushByte(this.P & ~0x10);
-        let cart = this.bus.cartridge;
+        let cart = this.bus.cartConnector.cartridge;
         this.PC = cart.cpuRead(0xFFFE) + cart.cpuRead(0xFFFF)*256;
         this.cycle += 7;
     }
@@ -163,7 +163,7 @@ export class CPU {
                 return this.apu.readRegister(address);
             }
         } else {
-            return this.bus.cartridge.cpuRead(address);
+            return this.bus.cartConnector.cartridge.cpuRead(address);
         }
     }
     write(address, data) {
@@ -188,7 +188,7 @@ export class CPU {
                 this.apu.writeRegister(address, data);
             }
         } else {
-            return this.bus.cartridge.cpuWrite(address, data);
+            return this.bus.cartConnector.cartridge.cpuWrite(address, data);
         }
     }
     
@@ -303,7 +303,7 @@ export class CPU {
         this.pushWord(this.PC+1);
         this.pushByte(this.P);
         this.Interrupt = true;
-        let cart = this.bus.cartridge;
+        let cart = this.bus.cartConnector.cartridge;
         this.PC = fnFetchOperand(cart.cpuRead(0xFFFE) + cart.cpuRead(0xFFFF)*256);
     }
     RTI(fnFetchOperand) { //Return from Interrupt
