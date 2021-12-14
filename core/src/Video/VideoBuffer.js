@@ -9,8 +9,6 @@ export class VideoBuffer {
         
         this.imageData = this.context.createImageData(width, height);
         const buffer = new Uint32Array(this.imageData.data.buffer);
-    
-        this.dirty = false;
         
         this.getPixels = function(x, y) {
             let offset = y*width + x;
@@ -19,23 +17,17 @@ export class VideoBuffer {
         this.setPixels = function(x, y, values) {
             let offset = y*width + x;
             buffer.set(values, offset);
-            this.dirty = true;
-            return values;
         };
     }
     
     get frame() {
-        if (this.dirty) {
-            this.context.putImageData(this.imageData, 0, 0);
-            this.dirty = false;
-        }
+        this.context.putImageData(this.imageData, 0, 0);
         return this.canvas;
     }
     
     clear() {
         this.imageData.data.fill(0);
         this.context.putImageData(this.imageData, 0, 0);
-        this.dirty = false;
     }
 }
 

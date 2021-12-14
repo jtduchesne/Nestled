@@ -1,5 +1,5 @@
-import VideoBuffer from './Video/VideoBuffer.js';
-import * as Colors from './Video/Colors.js';
+import { VideoBuffer, Colors } from './Video';
+const { pxlColors, cssColors } = Colors;
 
 //                      0x0000, 0x8000,   0x0080, 0x8080
 const bitplaneLookup = {0: 0,   32768: 1, 128: 2, 32896: 3};
@@ -23,10 +23,7 @@ export class PPU {
         //Palettes
         this.palette = [new Uint8Array(4*4), new Uint8Array(4*4)];
         
-        //Colors
-        this.pxlColors = Colors.pxlColor;
-        this.cssColors = Colors.cssColor;
-        
+        //Buffers
         this.bkgPixelsBuffer = new Uint32Array(16);
         this.sprPixelsBuffer = new Uint32Array(8);
         
@@ -520,50 +517,29 @@ export class PPU {
     
     //== Pixels Rendering ===========================================//
     getPatternPixels(pattern, palette, paletteIndex) {
-        let colors = this.pxlColors;
         let paletteOffset = paletteIndex * 4;
         
         let pixels = new Uint32Array(8);
         for (var offset = 0; offset < 8; offset++) {
             let colorIndex = bitplaneLookup[(pattern << offset) & 0x8080];
-            pixels[offset] = colorIndex ? colors[palette[paletteOffset + colorIndex]] : 0x00000000;
+            pixels[offset] = colorIndex ? pxlColors[palette[paletteOffset + colorIndex]] : 0x00000000;
         }
         return pixels;
     }
     //== Output =====================================================//
     printFrame() {
-        let canvas = this.bus.outputCanvas;
-        if (canvas) {
-            let context = this.bus.outputContext;
-            let width   = canvas.width;
-            let height  = canvas.height;
+        let output = this.bus.videoOutput;
         
-            // Backdrop
-            context.fillStyle = this.cssColors[this.backdrop];
-            context.fillRect(0, 0, width, height);
+        output.fill(cssColors[this.backdrop]); // Backdrop
         
-            // Sprites behind background
-            context.drawImage(this.sprBehindLayer.frame, 0, 0, 256, 240, 0, 0, width, height);
-            this.sprBehindLayer.clear();
-            
-            // Background
-            context.drawImage(this.bkgLayer.frame, 0, 0, 256, 240, 0, 0, width, height);
-            this.bkgLayer.clear();
-            
-            // Sprites in front of background
-            context.drawImage(this.sprInFrontLayer.frame, 0, 0, 256, 240, 0, 0, width, height);
-            this.sprInFrontLayer.clear();
-            
-            this.sprite0Layer.clear();
-        }
+        output.draw(this.sprBehindLayer);  // Sprites behind background
+        output.draw(this.bkgLayer);        // Background
+        output.draw(this.sprInFrontLayer); // Sprites in front of background
+        
+        this.sprite0Layer.clear();
     }
     clearFrame() {
-        if (this.canvas) {
-            let canvas = this.bus.outputCanvas;
-            let context = this.bus.outputContext;
-            context.fillStyle = this.cssColors[this.backdrop];
-            context.fillRect(0, 0, canvas.width, canvas.height);
-        }
+        this.bus.videoOutput.fill(cssColors[this.backdrop]);
     }
 }
 

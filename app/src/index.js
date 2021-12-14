@@ -1,7 +1,5 @@
 (function() {
-    const screenOutput = document.getElementById('screen');
-
-    const nes = new Nestled.NES({screen: screenOutput});
+    const nes = new Nestled.NES();
 
     const frontLED = document.getElementById('front_led');
 
@@ -50,6 +48,11 @@
         {left: 65, up: 87, down: 83, right: 68, select: 16, start: 13, b: 75, a: 76}
     );
     nes.insertController(joypad);
+
+  //-------------------------------------------------------------------------------------------//
+
+    const screenOutput = document.getElementById('screen');
+    nes.connectVideo(screenOutput);
 
   //-------------------------------------------------------------------------------------------//
 

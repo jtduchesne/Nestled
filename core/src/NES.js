@@ -3,6 +3,7 @@ import PPU from './PPU.js';
 import MainLoop from './MainLoop.js';
 import CartConnector from './Cartridges';
 import CtrlConnector from './Controllers';
+import VideoOutput from './Video';
 
 export class NES {
     constructor(opts) {
@@ -22,9 +23,9 @@ export class NES {
         else if (opts && opts['controller'])
             this.ctrlConnector.insert(opts['controller']);
         
-        this.screen = null;
-        if (opts && opts['screen'])
-            this.screen = opts['screen'];
+        this.videoOutput = new VideoOutput;
+        if (opts && opts['video'])
+            this.videoOutput.connect(opts['video']);
     }
      
     //== Power ==============================================================================//
@@ -121,17 +122,11 @@ export class NES {
     }
     
     //== Video ==============================================================================//
-    get screen() {
-        return this.outputCanvas; }
-    set screen(value) {
-        if (value && value.nodeName === 'CANVAS') {
-            this.outputCanvas = value;
-            this.outputContext = value.getContext('2d', {alpha: false});
-            this.outputContext.imageSmoothingEnabled = false;
-        } else {
-            this.outputCanvas  = null;
-            this.outputContext = null;
-        }
+    connectVideo(output) {
+        return this.videoOutput.connect(output);
+    }
+    disconnectVideo() {
+        return this.videoOutput.disconnect();
     }
 }
 export default NES;
