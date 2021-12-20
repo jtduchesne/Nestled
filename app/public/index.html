@@ -23,7 +23,7 @@
     <input type="range" id="audio" min="0" max="100" value="70" />
     <p id="status">&nbsp;</p>
     <div id="buttons_row">
-      <object class="off waiting" id="front_led" width="16" height="16" type="image/svg+xml" data="../images/LED.svg" onload="showButtons()"></object>
+      <object class="off waiting" id="front_led" width="16" height="16" type="image/svg+xml" data="../images/LED.svg" onload="showButtons()" onerror="showButtons()"></object>
       <div>
         <button class="waiting" id="power_button">Power</button>
         <button class="waiting" id="reset_button" disabled="disabled">Reset</button>

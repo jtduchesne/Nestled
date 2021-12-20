@@ -6,7 +6,7 @@
   "scripts": {
     "build": "webpack || true",
     "watch": "webpack watch",
-    "serve": "webpack serve --live-reload --open",
+    "serve": "webpack serve --live-reload",
     "test": "cd core && mocha \"test/**/*_test.js\" || true",
     "debug": "cd core && mocha debug \"test/**/*_test.js\" || true",
     "prepublishOnly": "echo \"Not meant to be published as package...\" && exit 1"
