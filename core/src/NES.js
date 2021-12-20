@@ -7,7 +7,7 @@ import VideoOutput from './Video';
 import AudioOutput from './Audio';
 
 export class NES {
-    constructor(opts) {
+    constructor() {
         this.isPowered = false;
         
         this.cpu = new CPU(this);
@@ -15,22 +15,9 @@ export class NES {
         this.mainLoop = new MainLoop(this);
         
         this.cartConnector = new CartConnector;
-        if (opts && opts['file'] || opts instanceof File)
-            this.insertCartridge(opts['file'] || opts);
-        
         this.ctrlConnector = new CtrlConnector;
-        if (opts && opts['controllers'])
-            this.ctrlConnector.insert(...opts['controllers']);
-        else if (opts && opts['controller'])
-            this.ctrlConnector.insert(opts['controller']);
-        
         this.videoOutput = new VideoOutput;
-        if (opts && opts['video'])
-            this.videoOutput.connect(opts['video']);
-        
         this.audioOutput = new AudioOutput;
-        if (opts && opts['audio'])
-            this.audioOutput.connect(opts['audio']);
     }
      
     //== Power ==============================================================================//
