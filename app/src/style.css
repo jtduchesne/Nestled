@@ -17,6 +17,11 @@ main {
     background-color: #000;
 }
 
+#audio {
+    display: block;
+    margin: 0 auto;
+}
+
 #status {
     text-align: center;
 }

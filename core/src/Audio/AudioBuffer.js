@@ -1,46 +1,32 @@
 export class AudioBuffer {
-    constructor(bufferLength, sampleRate) {
-        this.context = new AudioContext();
+    constructor(output) {
+        this.output       = output;
+        this.context      = output.context;
+        this.sampleRate   = this.context.sampleRate;
+        this.bufferLength = this.sampleRate / 30;
         
-        this.bufferLength = bufferLength;
-        this.sampleRate   = sampleRate;
+        this.cyclesPerSample = 1789772.727 / 2 / this.sampleRate;
         
-        this.index = 0;
-        
-        if (window)
-            this.createBuffer();
-        else
-            this.data = new Float32Array(bufferLength);
+        this.buffers = [];
+        this.createBuffer();
     }
     
     createBuffer() {
-        this.buffer = this.context.createBuffer(1, this.bufferLength, this.sampleRate);
-        this.data   = this.buffer.getChannelData(0);
+        let buffer = this.context.createBuffer(1, this.bufferLength, this.sampleRate);
+        this.data  = buffer.getChannelData(0);
         
-        this.sourceNode = this.context.createBufferSource();
-        this.sourceNode.connect(this.context.destination);
-    }
-    
-    //===============================================================//
-    play() {
-        this.sourceNode = this.context.createBufferSource();
-        this.sourceNode.connect(this.context.destination);
+        this.buffers.push(buffer);
         
-        this.sourceNode.buffer = this.buffer;
-        this.sourceNode.start();
-        
-        this.createBuffer();
-        this.index = 0;
-    }
-    stop() {
         this.index = 0;
     }
     
     //===============================================================//
     writeSample(value) {
         this.data[this.index++] = value;
+        
         if (this.index === this.bufferLength) {
-            this.play();
+            this.createBuffer();
+            this.output.schedule(this.buffers.shift());
         }
     }
 }

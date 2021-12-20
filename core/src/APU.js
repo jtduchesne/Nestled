@@ -1,4 +1,4 @@
-import AudioBuffer from './Audio/AudioBuffer.js';
+import { AudioBuffer } from './Audio/AudioBuffer.js';
 import {
     PulseChannel,
     TriangleChannel,
@@ -8,6 +8,7 @@ import {
 
 export class APU {
     constructor(cpu) {
+        this.bus = cpu.bus;
         this.cpu = cpu;
         
         this.pulse1   = new PulseChannel(1);
@@ -24,19 +25,16 @@ export class APU {
         
         this.status  = null;
         this.counter = null;
-        
-        this.audio = null;
-        this.cyclesPerSample = 0.0;
     }
     
     powerOn() {
-        this.audio = new AudioBuffer(4410, 44100);
-        this.cyclesPerSample = 1789772.72 / 2 / this.audio.sampleRate;
+        this.bus.audioOutput.start();
+        this.audioBuffer = new AudioBuffer(this.bus.audioOutput);
+        this.cyclesPerSample = this.audioBuffer.cyclesPerSample;
     }
     powerOff() {
-        if (this.audio)
-            this.audio.stop();
-        this.audio = null;
+        this.bus.audioOutput.stop();
+        this.audioBuffer = null;
     }
     
     reset() {
@@ -187,17 +185,16 @@ export class APU {
         this.dmc.doCycle();
         
         if (this.cycle >= this.cyclesPerSample) {
-            if (this.audio) {
-                var sample = 0;
-                
-                let pulses = this.pulse1.output + this.pulse2.output;
-                sample += pulsesSamples[pulses];
-                
-                let others = 3*this.triangle.output + 2*this.noise.output + this.dmc.output;
-                sample += othersSamples[others];
-                
-                this.audio.writeSample(sample);
-            }
+            var sample = 0;
+            
+            let pulses = this.pulse1.output + this.pulse2.output;
+            sample += pulsesSamples[pulses];
+            
+            let others = 3*this.triangle.output + 2*this.noise.output + this.dmc.output;
+            sample += othersSamples[others];
+            
+            this.audioBuffer.writeSample(sample);
+            
             this.cycle -= this.cyclesPerSample;
         }
     }

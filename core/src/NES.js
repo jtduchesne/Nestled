@@ -4,6 +4,7 @@ import MainLoop from './MainLoop.js';
 import CartConnector from './Cartridges';
 import CtrlConnector from './Controllers';
 import VideoOutput from './Video';
+import AudioOutput from './Audio';
 
 export class NES {
     constructor(opts) {
@@ -26,6 +27,10 @@ export class NES {
         this.videoOutput = new VideoOutput;
         if (opts && opts['video'])
             this.videoOutput.connect(opts['video']);
+        
+        this.audioOutput = new AudioOutput;
+        if (opts && opts['audio'])
+            this.audioOutput.connect(opts['audio']);
     }
      
     //== Power ==============================================================================//
@@ -127,6 +132,14 @@ export class NES {
     }
     disconnectVideo() {
         return this.videoOutput.disconnect();
+    }
+    
+    //== Audio ==============================================================================//
+    connectAudio(output) {
+        return this.audioOutput.connect(output);
+    }
+    disconnectAudio() {
+        return this.audioOutput.disconnect();
     }
 }
 export default NES;

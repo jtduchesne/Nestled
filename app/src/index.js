@@ -56,6 +56,11 @@
 
   //-------------------------------------------------------------------------------------------//
 
+    const audioOutput = document.getElementById('audio');
+    nes.connectAudio(audioOutput);
+
+  //-------------------------------------------------------------------------------------------//
+
     const statusOutput = document.getElementById('status');
 
     function updateStatus(text) {
