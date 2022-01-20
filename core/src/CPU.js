@@ -10,7 +10,9 @@ const cyclesLookup = [7,6,2,8,3,3,5,5,3,2,2,2,4,4,6,6, 2,5,2,8,4,4,6,6,2,4,2,7,4
                       2,6,3,8,3,3,5,5,2,2,2,2,4,4,6,6, 2,5,2,8,4,4,6,6,2,4,2,7,4,4,7,7];
 
 //Helper function to convert signed bytes to javascript's native numbers
-export function signByte(value) { return value>=0x80 ? value-0x100 : value; }
+function signByte(value) { return value>0x7F ? value-0x100 : value; }
+//Helper function to simulate binary overflow
+function wrapByte(value) { return value>0xFF ? value-0x100 : value; }
 
 export class CPU {
     constructor(nes) {
@@ -39,7 +41,7 @@ export class CPU {
             this.rel, this.indY, this.imp, this.indY, this.zeroX, this.zeroX, this.zeroX, this.zeroX, this.imp, this.absY, this.imp, this.absY, this.absX, this.absX, this.absX, this.absX,
             this.imm, this.indX, this.imm, this.indX, this.zero,  this.zero,  this.zero,  this.zero,  this.imp, this.imm,  this.imp, this.imm,  this.abs,  this.abs,  this.abs,  this.abs,
             this.rel, this.indY, this.imp, this.indY, this.zeroX, this.zeroX, this.zeroX, this.zeroX, this.imp, this.absY, this.imp, this.absY, this.absX, this.absX, this.absX, this.absX
-        ];
+        ].map((fn) => fn.bind(this));
         
         //Instructions lookup table
         this.instructionLookup = [
@@ -59,7 +61,7 @@ export class CPU {
             this.BNE, this.CMP, this.KIL, this.NOP, this.NOP, this.CMP, this.DEC, this.NOP, this.CLD, this.CMP, this.NOP, this.NOP, this.NOP, this.CMP, this.DEC, this.NOP,
             this.CPX, this.SBC, this.NOP, this.NOP, this.CPX, this.SBC, this.INC, this.NOP, this.INX, this.SBC, this.NOP, this.NOP, this.CPX, this.SBC, this.INC, this.NOP,
             this.BEQ, this.SBC, this.KIL, this.NOP, this.NOP, this.SBC, this.INC, this.NOP, this.SED, this.SBC, this.NOP, this.NOP, this.NOP, this.SBC, this.INC, this.NOP
-        ];
+        ].map((fn) => fn.bind(this));
         
         this.isPowered = false;
     }
@@ -67,6 +69,18 @@ export class CPU {
     powerOn() {
         this.cycle = 0;
         this.cycleOffset = 0;
+        
+        //Bus access optimizations
+        this.ppu   = this.bus.ppu;
+        this.ctrl1 = this.bus.ctrlConnector.controllers[0];
+        this.ctrl2 = this.bus.ctrlConnector.controllers[1];
+        this.cart  = this.bus.cartConnector.cartridge;
+        
+        //Interrupt vector optimizations
+        let cart = this.bus.cartConnector.cartridge;
+        this.nmiVector   = () => cart.cpuRead(0xFFFA) + cart.cpuRead(0xFFFB)*256;
+        this.resetVector = () => cart.cpuRead(0xFFFC) + cart.cpuRead(0xFFFD)*256;
+        this.irqVector   = () => cart.cpuRead(0xFFFE) + cart.cpuRead(0xFFFF)*256;
         
         //Accumulator
         this.A = 0;
@@ -78,8 +92,7 @@ export class CPU {
         //Stack pointer
         this.SP = 0xFD;
         //Program counter
-        let cart = this.bus.cartConnector.cartridge;
-        this.PC = cart.cpuRead(0xFFFC) + cart.cpuRead(0xFFFD)*256;
+        this.PC = this.resetVector();
         
         this.apu.powerOn();
         
@@ -106,12 +119,11 @@ export class CPU {
     }
     
     doInstruction() {
-        let pc = this.PC++;
-        this.opcode  = this.read(pc);
-        this.operand = this.read(pc+1);
+        this.opcode  = this.read(this.PC++);
+        this.operand = this.read(this.PC++);
         
-        this.instructionLookup[this.opcode].call(this,
-            (override) => this.addressLookup[this.opcode].call(this,
+        this.instructionLookup[this.opcode](
+            (override) => this.addressLookup[this.opcode](
                 (override !== undefined) ? override : this.operand
             )
         );
@@ -125,15 +137,13 @@ export class CPU {
     doNMI() {
         this.pushWord(this.PC);
         this.pushByte(this.P & ~0x10);
-        let cart = this.bus.cartConnector.cartridge;
-        this.PC = cart.cpuRead(0xFFFA) + cart.cpuRead(0xFFFB)*256;
+        this.PC = this.nmiVector();
         this.cycle += 7;
     }
     doReset() {
         this.SP = this.SP+3;
         this.Interrupt = false;
-        let cart = this.bus.cartConnector.cartridge;
-        this.PC = cart.cpuRead(0xFFFC) + cart.cpuRead(0xFFFD)*256;
+        this.PC = this.resetVector();
         this.cycle += 7;
     }
     doIRQ() {
@@ -141,58 +151,59 @@ export class CPU {
         
         this.pushWord(this.PC);
         this.pushByte(this.P & ~0x10);
-        let cart = this.bus.cartConnector.cartridge;
-        this.PC = cart.cpuRead(0xFFFE) + cart.cpuRead(0xFFFF)*256;
+        this.PC = this.irqVector();
         this.cycle += 7;
     }
     
     //== Memory access ==============================================//
     read(address) {
-        if (address < 0x2000) {
+        if (address < 0x800) {
+            return this.ram[address];
+        } else if (address < 0x2000) {
             return this.ram[address & 0x7FF];
         } else if (address < 0x4018) {
             if (address < 0x4000){
-                return this.bus.ppu.readRegister(address);
+                return this.ppu.readRegister(address);
             } else if (address === 0x4016) {
-                return (address >>> 8) | this.bus.ctrlConnector.controllers[0].read();
+                return (address >>> 8) | this.ctrl1.read();
             } else if (address === 0x4017) {
-                return (address >>> 8) | this.bus.ctrlConnector.controllers[1].read();
+                return (address >>> 8) | this.ctrl2.read();
             } else {
                 return this.apu.readRegister(address);
             }
         } else {
-            return this.bus.cartConnector.cartridge.cpuRead(address);
+            return this.cart.cpuRead(address);
         }
     }
     write(address, data) {
-        if (address < 0x2000) {
+        if (address < 0x800) {
+            this.ram[address] = data;
+        } else if (address < 0x2000) {
             this.ram[address & 0x7FF] = data;
         } else if (address < 0x4018) {
             if (address < 0x4000) {
-                this.bus.ppu.writeRegister(address,data);
+                this.ppu.writeRegister(address,data);
             } else if (address === 0x4014) {
-                var dmaAddress = data * 256;
-                let ppu = this.bus.ppu;
-                
-                for(var count = 0; count < 256; count++)
-                    ppu.OAMData = this.read(dmaAddress++);
+                let dmaAddress = data * 256;
+                for(let count = 0; count < 256; count++)
+                    this.ppu.OAMData = this.read(dmaAddress++);
                 
                 if (this.cycle & 1) this.cycle += 513;
                 else this.cycle += 514;
             } else if (address === 0x4016) {
-                this.bus.ctrlConnector.controllers[0].write(data);
-                this.bus.ctrlConnector.controllers[1].write(data);
+                this.ctrl1.write(data);
+                this.ctrl2.write(data);
             } else {
                 this.apu.writeRegister(address, data);
             }
         } else {
-            return this.bus.cartConnector.cartridge.cpuWrite(address, data);
+            return this.cart.cpuWrite(address, data);
         }
     }
     
     //== Stack ======================================================//
     get SP()      { return this._SP; }
-    set SP(value) { this._SP = value & 0xFF; }
+    set SP(value) { this._SP = wrapByte(value); }
     
     pushByte(value) {
         this.stack[this.SP--] = value;
@@ -253,63 +264,54 @@ export class CPU {
     
     //== Addressing Modes ===========================================//
     
-    imp(operand) { return operand; }                            //Implied
+    imp(operand) { this.PC--; return operand; }                 //Implied
     /* eslint-disable-next-line no-unused-vars */
-    imm(operand) { return this.PC; }                            //Immediate - #00
+    imm(operand) { return this.PC-1; }                          //Immediate - #00
     rel(operand) {
-        if (operand) {
-            this.cycle++;
-            return this.PC + signByte(operand) + 1;
-        } else
-            return this.PC + 1; }                               //Relative - ±#00
-    
-    _zero(operand) { return (operand > 0xFF) ? operand-0x100 : operand || 0; }
+        this.cycle++;
+        return this.PC + signByte(operand); }                   //Relative - ±#00
     
     zero(operand)  { return operand; }                          //Zero Page - $00
-    zeroX(operand) { return this._zero(operand + this.X); }     //Zero Page indexed X - $00+X
-    zeroY(operand) { return this._zero(operand + this.Y); }     //Zero Page indexed Y - $00+Y
+    zeroX(operand) { return wrapByte(operand + this.X); }       //Zero Page indexed X - $00+X
+    zeroY(operand) { return wrapByte(operand + this.Y); }       //Zero Page indexed Y - $00+Y
     
-    _abs(operand) { return operand + this.read(++this.PC)*256; }
+    readWord(operand) { return this.operand = operand + this.read(this.PC++)*256; }
     
     abs(operand) {
-        return this._abs(operand); }                            //Absolute - $0000
+        return this.readWord(operand); }                        //Absolute - $0000
     absX(operand) {
-        let x = this.X;
-        if ((operand + x) > 0xFF) this.cycle++;
-        return this._abs(operand) + x; }                        //Absolute indexed X - $0000+X
+        if ((operand + this.X) > 0xFF) this.cycle++;
+        return this.readWord(operand) + this.X; }               //Absolute indexed X - $0000+X
     absY(operand) {
-        let y = this.Y;
-        if ((operand + y) > 0xFF) this.cycle++;
-        return this._abs(operand) + y; }                        //Absolute indexed Y - $0000+Y
+        if ((operand + this.Y) > 0xFF) this.cycle++;
+        return this.readWord(operand) + this.Y; }               //Absolute indexed Y - $0000+Y
     
     ind(operand) {
-        operand = this._abs(operand);
+        operand = this.readWord(operand);
         return this.read(operand) + this.read(operand+1)*256; } //Indirect - ($0000)
     indX(operand) {
-        operand = this._zero(operand + this.X);
+        operand = wrapByte(operand + this.X);
         return this.read(operand) + this.read(operand+1)*256; } //Indirect indexed X - ($00+X)
     indY(operand) {
         operand = this.read(operand) + this.read(operand+1)*256;
-        let y = this.Y;
-        if (((operand&0xFF) + y) > 0xFF) this.cycle++;
-        return operand + y; }                                   //Indirect indexed Y - ($00)+Y
+        if ((wrapByte(operand) + this.Y) > 0xFF) this.cycle++;
+        return operand + this.Y; }                              //Indirect indexed Y - ($00)+Y
     
     //== OpCodes ====================================================//
     
     // Jump, subroutine and interrupt
     BRK(fnFetchOperand) { //Interrupt
-        this.pushWord(this.PC+1);
+        this.pushWord(this.PC);
         this.pushByte(this.P);
         this.Interrupt = true;
-        let cart = this.bus.cartConnector.cartridge;
-        this.PC = fnFetchOperand(cart.cpuRead(0xFFFE) + cart.cpuRead(0xFFFF)*256);
+        this.PC = fnFetchOperand(this.irqVector());
     }
     RTI(fnFetchOperand) { //Return from Interrupt
         this.P = this.pullByte();
         this.PC = fnFetchOperand(this.pullWord());
     }
     JSR(fnFetchOperand) { //Jump to Subroutine
-        this.pushWord(this.PC+1);
+        this.pushWord(this.PC);
         this.PC = fnFetchOperand();
     }
     RTS(fnFetchOperand) { //Return from Subroutine
@@ -323,50 +325,34 @@ export class CPU {
     BPL(fnFetchOperand) { //Branch if Positive
         if (!this.Negative)
             this.PC = fnFetchOperand();
-        else
-            this.PC = fnFetchOperand(null);
     }
     BMI(fnFetchOperand) { //Branch if Negative
         if (this.Negative)
             this.PC = fnFetchOperand();
-        else
-            this.PC = fnFetchOperand(null);
     }
     BVC(fnFetchOperand) { //Branch if oVerflow Clear
         if (!this.Overflow)
             this.PC = fnFetchOperand();
-        else
-            this.PC = fnFetchOperand(null);
     }
     BVS(fnFetchOperand) { //Branch if oVerflow Set
         if (this.Overflow)
             this.PC = fnFetchOperand();
-        else
-            this.PC = fnFetchOperand(null);
     }
     BCC(fnFetchOperand) { //Branch if Carry Clear
         if (!this.Carry)
             this.PC = fnFetchOperand();
-        else
-            this.PC = fnFetchOperand(null);
     }
     BCS(fnFetchOperand) { //Branch if Carry Set
         if (this.Carry)
             this.PC = fnFetchOperand();
-        else
-            this.PC = fnFetchOperand(null);
     }
     BNE(fnFetchOperand) { //Branch if Not Equal
         if (!this.Zero)
             this.PC = fnFetchOperand();
-        else
-            this.PC = fnFetchOperand(null);
     }
     BEQ(fnFetchOperand) { //Branch if Equal
         if (this.Zero)
             this.PC = fnFetchOperand();
-        else
-            this.PC = fnFetchOperand(null);
     }
     
     // Stack
@@ -394,16 +380,16 @@ export class CPU {
     TXS(fnFetchOperand) { fnFetchOperand(this.SP = this.X); } //Transfert X to SP
     
     // Move operations
-    LDA(fnFetchOperand) { this.A = this.read(fnFetchOperand()); this.PC++; } //Load Accumulator
-    LDX(fnFetchOperand) { this.X = this.read(fnFetchOperand()); this.PC++; } //Load X
-    LDY(fnFetchOperand) { this.Y = this.read(fnFetchOperand()); this.PC++; } //Load Y
-    STA(fnFetchOperand) { this.write(fnFetchOperand(), this.A); this.PC++; } //Store Accumulator
-    STX(fnFetchOperand) { this.write(fnFetchOperand(), this.X); this.PC++; } //Store X
-    STY(fnFetchOperand) { this.write(fnFetchOperand(), this.Y); this.PC++; } //Store Y
+    LDA(fnFetchOperand) { this.A = this.read(fnFetchOperand()); } //Load Accumulator
+    LDX(fnFetchOperand) { this.X = this.read(fnFetchOperand()); } //Load X
+    LDY(fnFetchOperand) { this.Y = this.read(fnFetchOperand()); } //Load Y
+    STA(fnFetchOperand) { this.write(fnFetchOperand(), this.A); } //Store Accumulator
+    STX(fnFetchOperand) { this.write(fnFetchOperand(), this.X); } //Store X
+    STY(fnFetchOperand) { this.write(fnFetchOperand(), this.Y); } //Store Y
     
     // Arithmetic operations
-    ADC(fnFetchOperand) { this.add(this.A, this.read(fnFetchOperand()));      this.PC++; } //Add with Carry
-    SBC(fnFetchOperand) { this.add(this.A, 0xFF-this.read(fnFetchOperand())); this.PC++; } //Subtract with Carry
+    ADC(fnFetchOperand) { this.add(this.A, this.read(fnFetchOperand()));      } //Add with Carry
+    SBC(fnFetchOperand) { this.add(this.A, 0xFF-this.read(fnFetchOperand())); } //Subtract with Carry
     add(reg, operand) {
         let alu = reg + operand + this.Carry;
         this.Carry = false;
@@ -420,7 +406,6 @@ export class CPU {
             let address = fnFetchOperand();
             operand = this.read(address);
             this.write(address, this.ALU(operand * 2));
-            this.PC++;
         }
         this.Carry = (operand & 0x80);
     }
@@ -433,7 +418,6 @@ export class CPU {
             let address = fnFetchOperand();
             operand = this.read(address);
             this.write(address, this.ALU(operand >>> 1));
-            this.PC++;
         }
         this.Carry = (operand & 0x01);
     }
@@ -446,7 +430,6 @@ export class CPU {
             let address = fnFetchOperand();
             operand = this.read(address);
             this.write(address, this.ALU(operand * 2 + this.Carry));
-            this.PC++;
         }
         this.Carry = (operand & 0x80);
     }
@@ -459,7 +442,6 @@ export class CPU {
             let address = fnFetchOperand();
             operand = this.read(address);
             this.write(address, this.ALU((operand >>> 1) + this.Carry*128));
-            this.PC++;
         }
         this.Carry = (operand & 0x01);
     }
@@ -467,12 +449,10 @@ export class CPU {
     INC(fnFetchOperand) { //Increment memory
         let address = fnFetchOperand();
         this.write(address, this.ALU(this.read(address) + 1));
-        this.PC++;
     }
     DEC(fnFetchOperand) { //Decrement memory
         let address = fnFetchOperand();
         this.write(address, this.ALU(this.read(address) - 1));
-        this.PC++;
     }
     INX(fnFetchOperand) { this.X = fnFetchOperand(this.X) + 1; } //Increment X
     DEX(fnFetchOperand) { this.X = fnFetchOperand(this.X) - 1; } //Decrement X
@@ -488,21 +468,20 @@ export class CPU {
             this.Overflow = (operand >= 0x40);
         }
         this.Zero = !(this.A & operand);
-        this.PC++;
     }
     
-    CMP(fnFetchOperand) { this.compare(this.A, this.read(fnFetchOperand())); this.PC++; } //Compare with Accumulator
-    CPX(fnFetchOperand) { this.compare(this.X, this.read(fnFetchOperand())); this.PC++; } //Compare with X
-    CPY(fnFetchOperand) { this.compare(this.Y, this.read(fnFetchOperand())); this.PC++; } //Compare with Y
+    CMP(fnFetchOperand) { this.compare(this.A, this.read(fnFetchOperand())); } //Compare with Accumulator
+    CPX(fnFetchOperand) { this.compare(this.X, this.read(fnFetchOperand())); } //Compare with X
+    CPY(fnFetchOperand) { this.compare(this.Y, this.read(fnFetchOperand())); } //Compare with Y
     compare(reg, operand) {
         this.ALU(reg + (0x100-operand));
         this.Carry = (reg >= operand);
     }
     
     // Logical operations
-    ORA(fnFetchOperand) { this.A = this.A | this.read(fnFetchOperand()); this.PC++; } //Logical OR
-    AND(fnFetchOperand) { this.A = this.A & this.read(fnFetchOperand()); this.PC++; } //Logical AND
-    EOR(fnFetchOperand) { this.A = this.A ^ this.read(fnFetchOperand()); this.PC++; } //Exclusive OR
+    ORA(fnFetchOperand) { this.A = this.A | this.read(fnFetchOperand()); } //Logical OR
+    AND(fnFetchOperand) { this.A = this.A & this.read(fnFetchOperand()); } //Logical AND
+    EOR(fnFetchOperand) { this.A = this.A ^ this.read(fnFetchOperand()); } //Exclusive OR
     
     // Others
     NOP(fnFetchOperand) { fnFetchOperand(); }

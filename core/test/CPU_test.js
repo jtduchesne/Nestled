@@ -485,26 +485,29 @@ describe("Cpu", function() {
             $subject.PC = 0x0010;
             $subject.ram.set([0x34,0x12,0x78,0x56,0xBC,0x9A,0xF0,0xDE], 0x0010);
         });
-        //The first byte is read in the main loop just before invoking the addressing mode
-        def('byteOperand', () => $subject.read($subject.PC));
         
         describe(".imp(operand)", function() {
             it("returns the operand", function() {
-                expect($subject.imp(null)).to.be.null; });
+                expect($subject.imp(null)).to.be.null;
+                expect($subject.imp(0xFF)).to.equal(0xFF);
+            });
+            it("decrements PC", function() {
+                expect(() => $subject.imp(0x00)).to.decrease($subject, 'PC').by(1); });
         });
         describe(".imm()", function() {
-            it("returns PC", function() {
-                expect($subject.imm()).to.equal(0x0010); });
+            it("returns PC-1", function() {
+                expect($subject.imm()).to.equal($PC-1); });
+            it("does not actually decrement PC", function() {
+                expect(() => $subject.imm()).not.to.change($subject, 'PC'); });
         });
         
         describe(".rel(operand)", function() {
-            //PC will first be incremented once (to 0x0011)
             it("returns PC plus the operand when positive", function() {
-                expect($subject.rel(1)).to.equal(0x0012);
-                expect($subject.rel(0x01)).to.equal(0x0012); });
+                expect($subject.rel(1)).to.equal($PC +1);
+                expect($subject.rel(0x01)).to.equal($PC +1); });
             it("returns PC minus the operand when negative", function() {
-                expect($subject.rel(-1)).to.equal(0x0010);
-                expect($subject.rel(0xFF)).to.equal(0x00010); });
+                expect($subject.rel(-1)).to.equal($PC -1);
+                expect($subject.rel(0xFF)).to.equal($PC -1); });
         });
         
         describe(".zero(operand)", function() {
