@@ -6,21 +6,14 @@ export class CartConnector {
         this.name = "No Cartridge";
         this.cartridge = new Cartridge;
         
-        this.reset();
+        this.statuses = [];
+        
+        this.isLoaded = false;
+        this.isValid = false;
     }
     
     get empty()   { return this.cartridge.empty; }
     get present() { return this.cartridge.present; }
-    
-    reset() {
-        this.isLoaded = false;
-        this.isValid = false;
-        this.statuses = [];
-        
-        this.tvSystem = "NTSC";
-        
-        this.cartridge.reset();
-    }
     
     parseData(data) {
         let header = new DataView(data, 0, 0x10);
@@ -106,6 +99,7 @@ export class CartConnector {
         this.cartridge.init();
     }
     parseFilename(filename) {
+        this.tvSystem = "NTSC";
         const countryCodes = /\((U|E|Unk|Unl|1|4|A|J|B|K|C|NL|PD|F|S|FC|SW|FN|G|UK|GR|HK|I|H)+\)/.exec(filename);
         if (countryCodes) {
             if (countryCodes[0].search(/A|B|[^F]C|NL|E|S|SW|FN|G|UK|GR|I|H/) > 0)
@@ -126,19 +120,27 @@ export class CartConnector {
     }
     
     load(file) {
-        this.parseFilename(file.name);
+        this.statuses = [];
+        this.isLoaded = false;
+        this.isValid = false;
         
         return new Promise(
             (resolve, reject) => {
-                if (file.size) {
-                    const reader = new FileReader;
-                    reader.onabort = () => reject(new DOMException);
-                    reader.onerror = () => reject(reader.error);
-                    reader.onload = () => resolve(reader.result);
+                if (file) {
+                    this.parseFilename(file.name);
                     
-                    reader.readAsArrayBuffer(file);
+                    if (file.size) {
+                        const reader = new FileReader;
+                        reader.onabort = () => reject(new DOMException);
+                        reader.onerror = () => reject(reader.error);
+                        reader.onload = () => resolve(reader.result);
+                        
+                        reader.readAsArrayBuffer(file);
+                    } else {
+                        reject(new Error("File is empty"));
+                    }
                 } else {
-                    reject(new Error("File is empty"));
+                    reject(new DOMException);
                 }
             }
         ).then(
@@ -162,7 +164,9 @@ export class CartConnector {
         );
     }
     unload() {
-        this.reset();
+        this.cartridge = new Cartridge;
+        this.isLoaded = false;
+        this.isValid = false;
         
         return Promise.resolve(this);
     }

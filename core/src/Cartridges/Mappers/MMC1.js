@@ -91,11 +91,17 @@ export class MMC1 extends Cartridge {
     
     //== CIRAM A10 (Pin22) ==========================================//
     ciramA10(address) {
-        if (this.mirroring === 3)
-            return address & 0x800;
-        else if (this.mirroring === 2)
-            return address & 0x400;
-        else
+        if (this.mirroring === 3) {
+            if (address < 0x800)
+                return 0;
+            else
+                return address & 0x800;
+        } else if (this.mirroring === 2) {
+            if (address < 0x400)
+                return 0;
+            else
+                return address & 0x400;
+        } else
             return this.mirroring;
     }
 }

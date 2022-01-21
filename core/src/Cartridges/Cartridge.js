@@ -8,23 +8,19 @@ export class Cartridge {
         this.PRGRAM = new Uint8Array(0x4000);
         this.CHRRAM = new Uint8Array(0x2000);
         
-        this.horiMirroring = false;
-        this.vertMirroring = false;
-        
-        this.battery = false;
-        
-        this.reset();
-    }
-    
-    get empty()   { return this.mapperNumber < 0; }
-    get present() { return this.mapperNumber >= 0; }
-    
-    reset() {
         this.PRGROM = [];
         this.CHRROM = [];
         this.PRGBank = [this.PRGRAM, this.PRGRAM];
         this.CHRBank = [this.CHRRAM, this.CHRRAM];
+        
+        this.horiMirroring = false;
+        this.vertMirroring = false;
+        
+        this.battery = false;
     }
+    
+    get empty()   { return this.mapperNumber < 0; }
+    get present() { return this.mapperNumber >= 0; }
     
     init() {
         if (this.PRGROM.length > 0)
@@ -40,35 +36,52 @@ export class Cartridge {
     //== Memory access from CPU =====================================//
     cpuRead(address) {
         if (address >= 0xC000) {
-            return this.PRGBank[1][address & 0x3FFF];
+            return this.PRGBank[1][address - 0xC000];
         } else if (address >= 0x8000) {
-            return this.PRGBank[0][address & 0x3FFF];
+            return this.PRGBank[0][address - 0x8000];
         } else {
-            return this.PRGRAM[address & 0x1FFF];
+            if (address >= 0x6000)   address -= 0x6000;
+            while (address > 0x1FFF) address -= 0x2000;
+            return this.PRGRAM[address];
         }
     }
     cpuWrite(address, data) {
-        this.PRGRAM[address & 0x1FFF] = data;
+        if (address >= 0x6000)   address -= 0x6000;
+        while (address > 0x1FFF) address -= 0x2000;
+        this.PRGRAM[address] = data;
     }
     
     //== Memory access from PPU =====================================//
     ppuRead(address) {
-        if (address >= 0x1000)
-            return this.CHRBank[1][address & 0x0FFF];
-        else
-            return this.CHRBank[0][address & 0x0FFF];
+        if (address < 0x1000)
+            return this.CHRBank[0][address];
+        else if (address < 0x2000)
+            return this.CHRBank[1][address - 0x1000];
+        else {
+            address -= 0x2000;
+            while (address > 0x0FFF) address -= 0x1000;
+            return this.CHRBank[1][address];
+        }
     }
     ppuWrite(address, data) {
-        this.CHRRAM[address & 0x1FFF] = data;
+        while (address > 0x1FFF) address -= 0x2000;
+        this.CHRRAM[address] = data;
     }
     
     //== CIRAM A10 (Pin22) ==========================================//
-    ciramA10(address) {
-        return address & 0x0000; //Not connected
+    ciramA10(address) { /* eslint-disable-line no-unused-vars */
+        //Not connected by default
+        return 0x0000;
     }
     //== CIRAM /CE (Pin57) ==========================================//
     ciramEnabled(address) {
-        return address & 0x2000; //Connected to PPU /A13 by default
+        //Connected to PPU /A13 (0x2000) by default
+        if (address < 0x2000)
+            return 0x0000;
+        else if (address < 0x4000)
+            return 0x2000;
+        else
+            return address & 0x2000;
     }
 }
 
