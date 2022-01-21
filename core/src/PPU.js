@@ -38,9 +38,7 @@ export class PPU {
         this.isPowered = false;
     }
     
-    powerOn() {        
-        this.isPowered = true;
-        
+    powerOn() {
         this.control    = null; //$2000 Control
         this.mask       = null; //$2001 Mask
         this.status     = null; //$2002 Status
@@ -49,6 +47,12 @@ export class PPU {
         this.scroll     = null; //$2005 Scroll
         this.address    = null; //$2006 Address
         this.data       = null; //$2007 Data
+        
+        this.ntsc = (this.bus.cartConnector.tvSystem === "NTSC");
+        
+        this.bus.videoOutput.fill(cssColors[this.backdrop]);
+        
+        this.isPowered = true;
     }
     powerOff() {
         this.isPowered = false;
@@ -537,9 +541,6 @@ export class PPU {
         output.draw(this.sprInFrontLayer); // Sprites in front of background
         
         this.sprite0Layer.clear();
-    }
-    clearFrame() {
-        this.bus.videoOutput.fill(cssColors[this.backdrop]);
     }
 }
 

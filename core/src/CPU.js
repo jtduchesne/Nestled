@@ -15,10 +15,8 @@ export function signByte(value) { return value>=0x80 ? value-0x100 : value; }
 export class CPU {
     constructor(nes) {
         this.bus = nes;
-        this.apu = new APU(this);
         
-        this.cycle = 0;
-        this.cycleOffset = 0;
+        this.apu = new APU(this);
         
         this.ram   = new Uint8Array(0x800);
         this.stack = this.ram.subarray(0x100, 0x200);

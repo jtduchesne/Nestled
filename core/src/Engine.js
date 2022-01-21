@@ -15,19 +15,16 @@ export class Engine {
     constructor(nes) {
         this.bus = nes;
         
-        this.init();
-        
         this.firstLoop = this.firstLoop.bind(this);
         this.mainLoop  = this.mainLoop.bind(this);
+        
+        this.init();
+        
+        this.isPowered = false;
+        this.isPaused = false;
     }
     
     init() {
-        this.cpu = this.bus.cpu;
-        this.ppu = this.bus.ppu;
-        
-        this.isRunning = false;
-        this.isPaused = false;
-        
         this.frame = 0;
         this.dropped = 0;
         
@@ -43,23 +40,32 @@ export class Engine {
     
     //=======================================================================================//
     
-    start() {
-        if (!this.isRunning) {
-            this.init();
-            this.coldBoot();
-        }
-        this.runningLoop = window.requestAnimationFrame(this.firstLoop);
-        this.isRunning = true;
+    powerOn() {
+        this.cpu = this.bus.cpu;
+        this.ppu = this.bus.ppu;
+        
+        this.init();
+        this.coldBoot();
+        
+        this.isPowered = true;
+        this.isPaused = false;
     }
-    stop() {
+    powerOff() {
         window.cancelAnimationFrame(this.runningLoop);
-        this.isRunning = false;
+        
+        this.isPowered = false;
         this.isPaused = false;
     }
     
     pause() {
-        window.cancelAnimationFrame(this.runningLoop);
-        this.isPaused = this.isRunning;
+        if (this.isPaused) {
+            this.runningLoop = window.requestAnimationFrame(this.mainLoop);
+            this.isPaused = false;
+        } else {
+            window.cancelAnimationFrame(this.runningLoop);
+            this.isPaused = this.isPowered;
+        }
+        return this.isPaused;
     }
     
     //=======================================================================================//
@@ -69,8 +75,6 @@ export class Engine {
         let ppu = this.ppu;
         
         cpu.cycleOffset = 0;
-        
-        ppu.clearFrame();
         
         cpu.doInstructions(2279); // 1.275ms after boot
         ppu.vblank = true;
@@ -83,6 +87,8 @@ export class Engine {
         ppu.endVBlank();
         
         this.doPreFetch(cpu, ppu, 261);
+        
+        this.runningLoop = window.requestAnimationFrame(this.firstLoop);
     }
     
     firstLoop(timestamp) {
