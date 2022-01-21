@@ -69,7 +69,7 @@
     }
 
     function showStats() {
-        statusOutput.innerText = nes.mainLoop.fps + " FPS (" + nes.mainLoop.performance.toFixed(2) +"x)";
+        statusOutput.innerText = nes.engine.fps + " FPS (" + nes.engine.performance.toFixed(2) +"x)";
     }
 
   //-------------------------------------------------------------------------------------------//

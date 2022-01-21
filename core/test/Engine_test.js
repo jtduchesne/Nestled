@@ -1,6 +1,6 @@
-describe("MainLoop", function() {
+describe("Engine", function() {
     def('nes', () => new Nestled.NES());
-    subject(() => $nes.mainLoop);
+    subject(() => $nes.engine);
     
     its('frame',   () => is.expected.to.equal(0));
     its('dropped', () => is.expected.to.equal(0));

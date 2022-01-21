@@ -1,6 +1,6 @@
 import CPU from './CPU.js';
 import PPU from './PPU.js';
-import MainLoop from './MainLoop.js';
+import Engine from './Engine.js';
 import CartConnector from './Cartridges';
 import CtrlConnector from './Controllers';
 import VideoOutput from './Video';
@@ -12,7 +12,7 @@ export class NES {
         
         this.cpu = new CPU(this);
         this.ppu = new PPU(this);
-        this.mainLoop = new MainLoop(this);
+        this.engine = new Engine(this);
         
         this.cartConnector = new CartConnector;
         this.ctrlConnector = new CtrlConnector;
@@ -45,27 +45,27 @@ export class NES {
     //== Emulation ==========================================================================//
     startEmulation() {
         if (!this.isRunning) {
-            this.mainLoop.start();
+            this.engine.start();
         }
     }
     stopEmulation() {
         if (this.isRunning) {
-            this.mainLoop.stop();
+            this.engine.stop();
         }
     }
-    get isRunning() { return this.mainLoop.isRunning; }
+    get isRunning() { return this.engine.isRunning; }
     
     pauseEmulation() {
         if (this.isRunning && !this.isPaused) {
-            this.mainLoop.pause();
+            this.engine.pause();
         }
     }
     resumeEmulation() {
         if (this.isPaused) {
-            this.mainLoop.start();
+            this.engine.start();
         }
     }
-    get isPaused() { return this.mainLoop.isPaused; }
+    get isPaused() { return this.engine.isPaused; }
     
     pause() {
         if (this.isPaused)

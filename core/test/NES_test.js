@@ -109,7 +109,7 @@ describe("NES", function() {
         afterEach(function() { $subject.stopEmulation(); });
         
         context("if already running", function() {
-            beforeEach(function() { $subject.mainLoop.runningLoop = 1234; });
+            beforeEach(function() { $subject.engine.runningLoop = 1234; });
             
             it("does not change #isRunning", function() {
                 expect(() => $action).not.to.change($subject, 'isRunning');
@@ -117,7 +117,7 @@ describe("NES", function() {
             });
         });
         context("if not running", function() {
-            beforeEach(function() { $subject.mainLoop.runningLoop = -1; });
+            beforeEach(function() { $subject.engine.runningLoop = -1; });
             
             it("sets #isRunning to -true-", function() {
                 expect(() => $action).to.change($subject, 'isRunning');
@@ -130,7 +130,7 @@ describe("NES", function() {
         def('action', () => $subject.stopEmulation());
         
         context("if running", function() {
-            beforeEach(function() { $subject.mainLoop.runningLoop = 1234; });
+            beforeEach(function() { $subject.engine.runningLoop = 1234; });
             
             it("sets #isRunning to -false-", function() {
                 expect(() => $action).to.change($subject, 'isRunning');
@@ -138,7 +138,7 @@ describe("NES", function() {
             });
         });
         context("if not running", function() {
-            beforeEach(function() { $subject.mainLoop.runningLoop = -1; });
+            beforeEach(function() { $subject.engine.runningLoop = -1; });
         
             it("does not change #isRunning", function() {
                 expect(() => $action).not.to.change($subject, 'isRunning');
@@ -151,7 +151,7 @@ describe("NES", function() {
         def('action', () => $subject.pauseEmulation());
         
         context("if running and not paused", function() {
-            beforeEach(function() { $subject.mainLoop.runningLoop = 1234; });
+            beforeEach(function() { $subject.engine.runningLoop = 1234; });
             
             it("sets #isPaused to -true-", function() {
                 expect(() => $action).to.change($subject, 'isPaused');
@@ -159,7 +159,7 @@ describe("NES", function() {
             });
         });
         context("if already paused", function() {
-            beforeEach(function() { $subject.mainLoop.runningLoop = 0; });
+            beforeEach(function() { $subject.engine.runningLoop = 0; });
             
             it("does not change #isPaused", function() {
                 expect(() => $action).not.to.change($subject, 'isPaused');
@@ -167,7 +167,7 @@ describe("NES", function() {
             });
         });
         context("if not running", function() {
-            beforeEach(function() { $subject.mainLoop.runningLoop = -1; });
+            beforeEach(function() { $subject.engine.runningLoop = -1; });
             
             it("does not change #isPaused", function() {
                 expect(() => $action).not.to.change($subject, 'isPaused');
@@ -181,7 +181,7 @@ describe("NES", function() {
         afterEach(function() { $subject.stopEmulation(); });
         
         context("if running and not paused", function() {
-            beforeEach(function() { $subject.mainLoop.runningLoop = 1234; });
+            beforeEach(function() { $subject.engine.runningLoop = 1234; });
             
             it("does not change #isPaused", function() {
                 expect(() => $action).not.to.change($subject, 'isPaused');
@@ -189,7 +189,7 @@ describe("NES", function() {
             });
         });
         context("if running and paused", function() {
-            beforeEach(function() { $subject.mainLoop.runningLoop = 0; });
+            beforeEach(function() { $subject.engine.runningLoop = 0; });
             
             it("sets #isPaused to -false-", function() {
                 expect(() => $action).to.change($subject, 'isPaused');
@@ -197,7 +197,7 @@ describe("NES", function() {
             });
         });
         context("if not running", function() {
-            beforeEach(function() { $subject.mainLoop.runningLoop = -1; });
+            beforeEach(function() { $subject.engine.runningLoop = -1; });
             
             it("does not change #isPaused", function() {
                 expect(() => $action).not.to.change($subject, 'isPaused');

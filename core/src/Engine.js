@@ -11,7 +11,7 @@ const cyclesBeforeVBlankStart   = vblankStart * cyclesPerScanline;
 const cyclesBeforeVBlankEnd     = vblankEnd * cyclesPerScanline - 8;
 const cyclesBeforePreRenderLine = 261*cyclesPerScanline;
 
-export class MainLoop {
+export class Engine {
     constructor(nes) {
         this.bus = nes;
         
@@ -258,4 +258,4 @@ export class MainLoop {
     }
 }
 
-export default MainLoop;
+export default Engine;
