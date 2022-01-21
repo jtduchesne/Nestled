@@ -15,66 +15,58 @@ export class MainLoop {
     constructor(nes) {
         this.bus = nes;
         
-        this.reset();
-        this.runningLoop = -1;
+        this.init();
+        
+        this.firstLoop = this.firstLoop.bind(this);
+        this.mainLoop  = this.mainLoop.bind(this);
     }
     
-    reset() {
+    init() {
+        this.cpu = this.bus.cpu;
+        this.ppu = this.bus.ppu;
+        
+        this.isRunning = false;
+        this.isPaused = false;
+        
         this.frame = 0;
         this.dropped = 0;
         
         this.fps = 60;
-        this.frameTime = 0.0;
         this.performance = 1.0;
         
-        this.delta = 0.0;
-        this.lastFrameTime = 0.0;
-        this.framesThisSecond = 0;
+        this._delta = 0.0;
+        this._lastTimestamp = 0.0;
+        this._frameTimeThisSecond = 0.0;
+        this._framesThisSecond = 0;
+        this._fps = 60;
     }
     
     //=======================================================================================//
     
     start() {
-        if (this.frame === 0) {
-            this.reset();
-            this.initialize();
+        if (!this.isRunning) {
+            this.init();
+            this.coldBoot();
         }
-        
-        if (window)
-            this.runningLoop = window.requestAnimationFrame(this.loop.bind(this));
-        else
-            this.runningLoop = setTimeout(this.loop.bind(this, Date.now()), 0);
+        this.runningLoop = window.requestAnimationFrame(this.firstLoop);
+        this.isRunning = true;
     }
     stop() {
-        if (window)
-            window.cancelAnimationFrame(this.runningLoop);
-        else
-            clearTimeout(this.runningLoop);
-        this.frame = 0;
-        
-        this.runningLoop = -1;
+        window.cancelAnimationFrame(this.runningLoop);
+        this.isRunning = false;
+        this.isPaused = false;
     }
     
     pause() {
-        if (window)
-            window.cancelAnimationFrame(this.runningLoop);
-        else
-            clearTimeout(this.runningLoop);
-        this.lastFrameTime = 0.0;
-        
-        this.runningLoop = 0;
+        window.cancelAnimationFrame(this.runningLoop);
+        this.isPaused = this.isRunning;
     }
-    
-    get isRunning() {
-        return this.runningLoop >= 0 || (typeof this.runningLoop === 'object');
-    }
-    get isPaused() { return this.runningLoop === 0; }
     
     //=======================================================================================//
     
-    initialize() {
-        let cpu = this.bus.cpu;
-        let ppu = this.bus.ppu;
+    coldBoot() {
+        let cpu = this.cpu;
+        let ppu = this.ppu;
         
         cpu.cycleOffset = 0;
         
@@ -93,59 +85,54 @@ export class MainLoop {
         this.doPreFetch(cpu, ppu, 261);
     }
     
-    loop(timestamp) {
-        let cpu = this.bus.cpu;
-        let ppu = this.bus.ppu;
+    firstLoop(timestamp) {
+        this._lastTimestamp = timestamp;
         
-        let lastFrameTime = this.lastFrameTime;
-        let delta = lastFrameTime ? this.delta + (timestamp - lastFrameTime) : this.delta;
+        let cpu = this.cpu;
+        let ppu = this.ppu;
         
-        if (delta > 2000) {
-            this.cancelPendingFrames();
-            this.bus.pauseEmulation();
-        } else {
-            if (delta >= frameTime) {
-                while ((delta -= frameTime) >= frameTime) {
-                    this.cancelFrame(cpu, ppu);
-                    this.fps--;
-                    this.frameTime += frameTime;
-                }
-                this.doFrame(cpu, ppu);
-                this.framesThisSecond++;
-            }
-            
-            if (window) {
-                this.frameTime += (window.performance.now() - timestamp);
-                this.runningLoop = window.requestAnimationFrame(this.loop.bind(this));
-            } else {
-                let timestampArray = global.process.hrtime();
-                let timestampNow = Math.round(timestampArray[0]*1e3 + timestampArray[1]/1e6);
-                this.frameTime += (timestampNow - timestamp);
-                this.runningLoop = 0;
-            }
-            
-            if (this.framesThisSecond >= 60) {
-                this.performance = 1000 / this.frameTime;
-                
-                this.fps = 60;
-                this.frameTime = 0.0;
-                this.framesThisSecond = 0;
-            } else {
-                this.performance = (1000*this.framesThisSecond / 60) / this.frameTime;
-            }
-        }
+        this.doFrame(cpu, ppu);
         
-        this.delta = delta;
-        this.lastFrameTime = timestamp;
+        this.updateStats(window.performance.now() - timestamp);
+        
+        this.runningLoop = window.requestAnimationFrame(this.mainLoop);
     }
     
-    cancelPendingFrames() {
-        let cpu = this.bus.cpu;
-        let ppu = this.bus.ppu;
+    mainLoop(timestamp) {
+        this._delta += (timestamp - this._lastTimestamp);
+        this._lastTimestamp = timestamp;
         
-        while (this.delta >= frameTime) {
-            this.cancelFrame(cpu, ppu);
-            this.delta -= frameTime;
+        let cpu = this.cpu;
+        let ppu = this.ppu;
+        
+        if (this._delta > 1000) {
+            this.pause();
+        } else {
+            while ((this._delta -= frameTime) >= frameTime) {
+                this.skipFrame(cpu, ppu);
+                this._fps--;
+            }
+            this.doFrame(cpu, ppu);
+            
+            this.updateStats(window.performance.now() - timestamp);
+            
+            this.runningLoop = window.requestAnimationFrame(this.mainLoop);
+        }
+    }
+    
+    updateStats(frameTime) {
+        this._frameTimeThisSecond += frameTime;
+        this._framesThisSecond++;
+        
+        if (this._framesThisSecond >= this._fps) {
+            this.performance = 1000 / this._frameTimeThisSecond;
+            this.fps = this._fps;
+            
+            console.log(`FPS: ${this.fps} - Performance: ${(this.performance*100).toFixed(1)}%`);
+            
+            this._frameTimeThisSecond = 0.0;
+            this._framesThisSecond = 0;
+            this._fps = 60;
         }
     }
     
@@ -154,7 +141,7 @@ export class MainLoop {
     doFrame(cpu, ppu) {
         cpu.cycleOffset = this.frame * cyclesPerFrame;
         
-        for (var scanline = 0; scanline <= renderLines; scanline++)
+        for (let scanline = 0; scanline <= renderLines; scanline++)
             this.doScanline(cpu, ppu, scanline);
         
         cpu.doInstructions(cyclesBeforeVBlankStart);
@@ -172,9 +159,22 @@ export class MainLoop {
         this.frame++;
     }
     
+    skipFrame(cpu, ppu) {
+        cpu.cycleOffset = this.frame * cyclesPerFrame;
+        
+        cpu.doInstructions(cyclesBeforeVBlankStart);
+        ppu.doVBlank();
+        cpu.doInstructions(cyclesBeforeVBlankEnd);
+        ppu.endVBlank();
+        cpu.doInstructions(cyclesPerFrame);
+        
+        this.frame++;
+        this.dropped++;
+    }
+    
     doScanline(cpu, ppu, scanline) {
         let cyclesBeforeScanline = scanline*cyclesPerScanline;
-        var dot = 0;
+        let dot = 0;
         
         ppu.clearSecondaryOAM();
         while (dot < 64) {
@@ -213,7 +213,7 @@ export class MainLoop {
     
     doPreRenderLine(cpu, ppu) {
         let cyclesBeforeScanline = cyclesBeforePreRenderLine;
-        var dot = 0;
+        let dot = 0;
         
         while (dot < 256) {
             cpu.doInstructions(cyclesBeforeScanline + dot/3);
@@ -245,7 +245,7 @@ export class MainLoop {
     
     doPreFetch(cpu, ppu, scanline) {
         let cyclesBeforeScanline = scanline*cyclesPerScanline;
-        var dot = 320;
+        let dot = 320;
         
         while (dot < 336) {
             cpu.doInstructions(cyclesBeforeScanline + dot/3);
@@ -255,19 +255,6 @@ export class MainLoop {
             dot += 8;
         }
         ppu.fetchNullNTs();
-    }
-    
-    cancelFrame(cpu, ppu) {
-        cpu.cycleOffset = this.frame * cyclesPerFrame;
-        
-        cpu.doInstructions(cyclesBeforeVBlankStart);
-        ppu.doVBlank();
-        cpu.doInstructions(cyclesBeforeVBlankEnd);
-        ppu.endVBlank();
-        cpu.doInstructions(cyclesPerFrame);
-        
-        this.frame++;
-        this.dropped++;
     }
 }
 
