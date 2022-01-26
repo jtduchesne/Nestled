@@ -1,13 +1,17 @@
 import { VideoBuffer, Colors } from './Video';
 const { pxlColors, cssColors } = Colors;
 
-//                      0x0000, 0x8000,   0x0080, 0x8080
-const bitplaneLookup = {0: 0,   32768: 1, 128: 2, 32896: 3};
+const bitplaneLookup = {
+    0:     0, // 0x0000
+    32768: 1, // 0x8000
+    128:   2, // 0x0080
+    32896: 3, // 0x8080
+};
 
 export class PPU {
     constructor(nes) {
         this.bus = nes;
-                
+        
         this.vblank = false;
         
         //Internal Video RAM (or Character Internal RAM (CI-RAM) )
@@ -28,12 +32,13 @@ export class PPU {
         this.sprPixelsBuffer = new Uint32Array(8);
         
         //Layers
+        this.bkgLayer        = new VideoBuffer(264, 256);
         this.sprBehindLayer  = new VideoBuffer(264, 256);
         this.sprInFrontLayer = new VideoBuffer(264, 256);
-        this.sprite0Layer = new VideoBuffer(264, 256);
+        this.sprLayer        = this.sprInFrontLayer;
         
-        this.bkgLayer = new VideoBuffer(264, 256);
-        this.sprLayer = this.sprInFrontLayer;
+        //Used for Sprite0 hit detection
+        this.sprite0Layer = new Uint32Array(264);
         
         this.isPowered = false;
     }
@@ -50,7 +55,12 @@ export class PPU {
         
         this.ntsc = (this.bus.cartConnector.tvSystem === "NTSC");
         
-        this.bus.videoOutput.fill(cssColors[this.backdrop]);
+        //Bus access optimizations
+        this.doNMI  = this.bus.cpu.doNMI.bind(this.bus.cpu);
+        this.cart   = this.bus.cartConnector.cartridge;
+        this.output = this.bus.videoOutput;
+        
+        this.output.fill(cssColors[this.backdrop]);
         
         this.isPowered = true;
     }
@@ -68,12 +78,10 @@ export class PPU {
     //== Vertical Blank =============================================//
     doVBlank() {
         this.vblank = true;
-        this.renderingEnabled = false;
-        if (this.nmiEnabled) this.bus.cpu.doNMI();
+        if (this.nmiEnabled) this.doNMI();
     }
     endVBlank() {
         this.status = null;
-        this.renderingEnabled = (this.showBackground || this.showSprites);
     }
     
     //== Registers ==================================================//
@@ -82,7 +90,7 @@ export class PPU {
         if (value !== null) {
             this.addressBuffer &= ~0x0C00; // b1111.0011.1111.1111
             this.addressBuffer |= (value & 0x3)<<10;
-        
+            
             this.addressIncrement = (value & 0x04) ? 32 : 1;
             this.sprPatternTable =  (value & 0x08) ? 0x1000 : 0x0000;
             this.bkgPatternTable =  (value & 0x10) ? 0x1000 : 0x0000;
@@ -95,6 +103,7 @@ export class PPU {
             this.sprite8x16 = false;
             this.nmiEnabled = false;
         }
+        this.spriteHeight = this.sprite8x16 ? 16 : 8;
     }
     
     //= 0x2001 Mask =//
@@ -158,8 +167,8 @@ export class PPU {
     //= 0x2005 Scroll =//
     set scroll(value) {
         if (value !== null) {
-            const toggle = this.writeToggle;
-            var addressBuffer = this.addressBuffer;
+            let toggle = this.writeToggle;
+            let addressBuffer = this.addressBuffer;
             if (toggle) {
                 // Vertical scroll
                 addressBuffer &= 0x0C1F; // b0000.1100.0001.1111
@@ -171,7 +180,7 @@ export class PPU {
                 // Horizontal scroll
                 addressBuffer &= 0x7FE0; // b0111.1111.1110.0000
                 addressBuffer |= (value >>> 3);
-            
+                
                 this.fineScrollX = value & 0x07;
             }
             this.addressBuffer = addressBuffer;
@@ -231,33 +240,37 @@ export class PPU {
     
     //== Registers access ===========================================//
     readRegister(address) {
-        switch (address & 0x7) {
-        case 0x2: return this.status;
-        case 0x4: return this.OAMData;
-        case 0x7: return this.data;
+        if (address > 0x2007) address &= 0x2007;
+        switch (address) {
+        case 0x2002: return this.status;
+        case 0x2004: return this.OAMData;
+        case 0x2007: return this.data;
+        default:     return 0x00;
         }
     }
     writeRegister(address, data) {
-        switch (address & 0x7) {
-        case 0x0: this.control    = data; break;
-        case 0x1: this.mask       = data; break;
-        case 0x3: this.OAMAddress = data; break;
-        case 0x4: this.OAMData    = data; break;
-        case 0x5: this.scroll     = data; break;
-        case 0x6: this.address    = data; break;
-        case 0x7: this.data       = data; break;
+        if (address > 0x2007) address &= 0x2007;
+        switch (address) {
+        case 0x2000: this.control    = data; break;
+        case 0x2001: this.mask       = data; break;
+        case 0x2003: this.OAMAddress = data; break;
+        case 0x2004: this.OAMData    = data; break;
+        case 0x2005: this.scroll     = data; break;
+        case 0x2006: this.address    = data; break;
+        case 0x2007: this.data       = data; break;
         }
     }
     
+    //== Data =======================================================//
     read(address) {
-        let cartridge = this.bus.cartConnector.cartridge;
+        let cartridge = this.cart;
         if (cartridge.ciramEnabled(address))
             return this.vramBank[cartridge.ciramA10(address) ? 1 : 0][address & 0x3FF];
         else
             return cartridge.ppuRead(address);
     }
     write(address, data) {
-        let cartridge = this.bus.cartConnector.cartridge;
+        let cartridge = this.cart;
         if (cartridge.ciramEnabled(address))
             this.vramBank[cartridge.ciramA10(address) ? 1 : 0][address & 0x3FF] = data;
         else
@@ -287,7 +300,7 @@ export class PPU {
     incrementX() {
         if (!this.renderingEnabled) return;
         
-        var addressBus = this.addressBus;
+        let addressBus = this.addressBus;
         if ((addressBus & 0x001F) === 31) {
             addressBus &= 0x7FE0; // b0111.1111.1110.0000
             addressBus ^= 0x0400; // b0000.0100.0000.0000
@@ -299,13 +312,13 @@ export class PPU {
     incrementY() {
         if (!this.renderingEnabled) return;
         
-        var addressBus = this.addressBus;
+        let addressBus = this.addressBus;
         if (addressBus < 0x7000) {
             addressBus += 0x1000;
             this.fineScrollY++;
         } else {
             addressBus -= 0x7000; 
-
+            
             let coarseY = (addressBus & 0x03E0);
             if (coarseY === 0x03A0) { // 29 << 5
                 addressBus &= 0x0C1F;
@@ -324,7 +337,7 @@ export class PPU {
     resetX() {
         if (!this.renderingEnabled) return;
         
-        var addressBus = this.addressBus;            //  _yyy.nnYY.YYYX.XXXX
+        let addressBus = this.addressBus;            //  _yyy.nnYY.YYYX.XXXX
         addressBus &= 0x7BE0;                        // b0111.1011.1110.0000
         addressBus |= (this.addressBuffer & 0x041F); // b0000.0100.0001.1111
         this.addressBus = addressBus;
@@ -332,7 +345,7 @@ export class PPU {
     resetY() {
         if (!this.renderingEnabled) return;
         
-        var addressBus = this.addressBus;            //  _yyy.nnYY.YYYX.XXXX
+        let addressBus = this.addressBus;            //  _yyy.nnYY.YYYX.XXXX
         addressBus &= 0x041F;                        // b0000.0100.0001.1111
         addressBus |= (this.addressBuffer & 0x7BE0); // b0111.1011.1110.0000
         this.addressBus = addressBus;
@@ -347,7 +360,7 @@ export class PPU {
     }
     fetchAttributeTable(bus) {
         let address = 0x23C0 | (bus & 0x0C00) | (bus>>>4 & 0x0038) | (bus>>>2 & 0x0007);
-        var offset = 0;
+        let offset = 0;
         if (bus & 0x0002) offset += 2;
         if (bus & 0x0040) offset += 4;
         return (this.read(address) >>> offset) & 0x3;
@@ -366,9 +379,8 @@ export class PPU {
         let paletteIndex = this.fetchAttributeTable(addressBus);
         let pattern      = this.fetchBkgPatternTable(patternIndex, this.fineScrollY);
         
-        let pixels = this.getPatternPixels(pattern, this.bkgPalette, paletteIndex);
         this.bkgPixelsBuffer.copyWithin(0, 8);
-        this.bkgPixelsBuffer.set(pixels, 8);
+        this.setPatternPixels(this.bkgPixelsBuffer.subarray(8), pattern, this.bkgPalette, paletteIndex);
     }
     
     fetchNullTile() {
@@ -394,7 +406,7 @@ export class PPU {
         let pixels = this.bkgPixelsBuffer.subarray(offset, offset+8);
         
         if (this.sprite0 && !this.sprite0Hit) {
-            if (this.sprite0Layer.getPixels(dot, scanline).some((e,i) => (e & pixels[i])))
+            if (this.sprite0Layer.subarray(dot, dot+8).some((e,i) => (e && pixels[i])))
                 this.sprite0Hit = true;
         }
         
@@ -410,12 +422,12 @@ export class PPU {
         let spritesList = this.oamPrimary;
         let sprites     = this.oamSecondary;
         
-        let height = this.sprite8x16 ? 16 : 8;
+        let height = this.spriteHeight;
         
         while (this.oamAddress < 256) {
             let y = spritesList[this.oamAddress];
             
-            let top = Math.max(0, y + height);
+            let top    = y + height; //Sprite's coordinates are bottom-left
             let bottom = y;
             
             if (this.oamIndex === 32) {
@@ -428,7 +440,7 @@ export class PPU {
                     if (this.oamIndex < 32) {
                         if (this.oamAddress === 0)
                             this.sprite0 = true;
-                        for (var i=1; i<4; i++)
+                        for (let i=1; i<4; i++)
                             sprites[this.oamIndex+i] = spritesList[this.oamAddress+i];
                         this.oamIndex += 4;
                     } else {
@@ -443,7 +455,7 @@ export class PPU {
     }
     
     fetchSprPatternTable(patternIndex, row) {
-        var offset = this.sprPatternTable;
+        let offset = this.sprPatternTable;
         if (this.sprite8x16) {
             offset = (patternIndex & 0x1) << 12;
             patternIndex &= 0xFE;
@@ -464,37 +476,42 @@ export class PPU {
         let sprites = this.oamSecondary;
         
         if (this.sprite0)
-            this.sprite0 = this.sprite0 && !this.oamIndex;
+            this.sprite0 = (this.oamIndex === 0);
         
         let y = sprites[this.oamIndex++];
-        var row = scanline - y;
+        let row = scanline - y;
         
         let patternIndex = sprites[this.oamIndex++];
         let attributes   = sprites[this.oamIndex++];
         
-        let vertFlip = attributes & 0x80;
-        if (vertFlip)
-            row = (this.sprite8x16 ? 16 : 8) - row - 1;
+        // Vertical Flip
+        if (attributes >= 0x80) {
+            row = this.spriteHeight - row - 1;
+            attributes -= 0x80;
+        }
+        
+        let flip;
+        // Horizontal Flip
+        if (attributes >= 0x40) {
+            flip = true;
+            attributes -= 0x40;
+        }
+        
+        // Behind Background
+        if (attributes >= 0x20) {
+            this.sprLayer = this.sprBehindLayer;
+            attributes -= 0x20;
+        } else
+            this.sprLayer = this.sprInFrontLayer;
+        
+        // 8x16 Sprites
         if (row >= 8) {
             row -= 8;
             patternIndex++;
         }
         
         let pattern = this.fetchSprPatternTable(patternIndex, row);
-        
-        if (y < 240) {
-            let paletteIndex = attributes & 0x03;
-            this.sprPixelsBuffer = this.getPatternPixels(pattern, this.sprPalette, paletteIndex);
-            
-            let horiFlip = attributes & 0x40;
-            if (horiFlip) this.sprPixelsBuffer.reverse();
-            
-            let isBehind = attributes & 0x20;
-            if (isBehind)
-                this.sprLayer = this.sprBehindLayer;
-            else
-                this.sprLayer = this.sprInFrontLayer;
-        }
+        this.setPatternPixels(this.sprPixelsBuffer, pattern, this.sprPalette, attributes, flip);
     }
         
     fetchNullSprite() {
@@ -504,7 +521,7 @@ export class PPU {
         this.fetchNameTable(addressBus);
         this.fetchAttributeTable(addressBus);
         
-        this.fetchSprPatternTable(this.sprPatternTable, 0xFF, 3);
+        this.fetchSprPatternTable(this.sprPatternTable, 0xFF);
     }
     
     renderSprite(scanline) {
@@ -514,31 +531,28 @@ export class PPU {
         let pixels = this.sprPixelsBuffer;
         
         if (this.sprite0)
-            this.sprite0Layer.setPixels(x, scanline+1, pixels);
+            this.sprite0Layer.fill(0).set(pixels, x);
         
         this.sprLayer.setPixels(x, scanline+1, pixels);
     }
     
     //== Pixels Rendering ===========================================//
-    getPatternPixels(pattern, palette, paletteIndex) {
+    setPatternPixels(target, pattern, palette, paletteIndex, flip) {
+        if (paletteIndex >= 4) paletteIndex %= 4;
         let paletteOffset = paletteIndex * 4;
         
-        let pixels = new Uint32Array(8);
-        for (var offset = 0; offset < 8; offset++) {
+        for (let offset = 0; offset < 8; offset++) {
             let colorIndex = bitplaneLookup[(pattern << offset) & 0x8080];
-            pixels[offset] = colorIndex ? pxlColors[palette[paletteOffset + colorIndex]] : 0x00000000;
+            target[flip ? 7-offset : offset] = colorIndex ? pxlColors[palette[paletteOffset + colorIndex]] : 0x00000000;
         }
-        return pixels;
     }
     //== Output =====================================================//
     printFrame() {
-        let output = this.bus.videoOutput;
+        this.output.fill(cssColors[this.backdrop]); // Backdrop
         
-        output.fill(cssColors[this.backdrop]); // Backdrop
-        
-        output.draw(this.sprBehindLayer);  // Sprites behind background
-        output.draw(this.bkgLayer);        // Background
-        output.draw(this.sprInFrontLayer); // Sprites in front of background
+        this.output.draw(this.sprBehindLayer);  // Sprites behind background
+        this.output.draw(this.bkgLayer);        // Background
+        this.output.draw(this.sprInFrontLayer); // Sprites in front of background
         
         this.sprite0Layer.clear();
     }
