@@ -73,9 +73,18 @@ export class DMC {
         return this.timerPeriod;
     }
     set rate(value) {
-        this.irqEnabled  = (value & 0x80) !== 0;
-        this.sampleLoop  = (value & 0x40) !== 0;
-        this.timerPeriod = timerPeriods[value & 0x0F];
+        if (value >= 0x40) {
+            this.irqEnabled  = (value & 0x80) !== 0;
+            this.sampleLoop  = (value & 0x40) !== 0;
+            this.timerPeriod = timerPeriods[value & 0x0F];
+        } else {
+            this.irqEnabled = false;
+            this.sampleLoop = false;
+            if (value > 0x0F)
+                this.timerPeriod = timerPeriods[value & 0x0F];
+            else
+                this.timerPeriod = timerPeriods[value];
+        }
         
         if (!this.irqEnabled)
             this.irq = false;
@@ -85,7 +94,8 @@ export class DMC {
         return this.output;
     }
     set load(value) {
-        this.output = (value & 0x7F);
+        if (value >= 0x80) value -= 0x80;
+        this.output = value;
     }
     
     get address() {
@@ -104,11 +114,11 @@ export class DMC {
     
     //== Registers access ===========================================//
     writeRegister(address, data) {
-        switch (address & 0x3) {
-        case 0x0: this.rate    = data; break;
-        case 0x1: this.load    = data; break;
-        case 0x2: this.address = data; break;
-        case 0x3: this.length  = data; break;
+        switch (address) {
+        case 0x4010: this.rate    = data; break;
+        case 0x4011: this.load    = data; break;
+        case 0x4012: this.address = data; break;
+        case 0x4013: this.length  = data; break;
         }
     }
     

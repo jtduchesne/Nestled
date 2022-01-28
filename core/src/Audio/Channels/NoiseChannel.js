@@ -43,9 +43,15 @@ export class NoiseChannel extends Channel {
         return this.envelopeEnabled ? this.envelopeVolume : this.constantVolume;
     }
     set volume(value) {
-        this.constantVolume    = (value & 0x0F);
-        this.envelopeEnabled   = (value & 0x10) === 0;
-        this.lengthCounterHalt = (value & 0x20) !== 0;
+        if (value > 0x0F) {
+            this.lengthCounterHalt = (value & 0x20) !== 0;
+            this.envelopeEnabled   = (value & 0x10) === 0;
+            this.constantVolume    = (value & 0x0F);
+        } else {
+            this.lengthCounterHalt = false;
+            this.envelopeEnabled   = true;
+            this.constantVolume    = value;
+        }
         
         this.envelopeLoop   = this.lengthCounterHalt;
         this.envelopePeriod = this.constantVolume;
@@ -55,8 +61,13 @@ export class NoiseChannel extends Channel {
         return this.timerPeriod;
     }
     set timer(value) {
-        this.timerMode   = (value & 0x80) !== 0;
-        this.timerPeriod = timerPeriods[value & 0x0F];
+        if (value > 0x0F) {
+            this.timerMode   = (value >= 0x80);
+            this.timerPeriod = timerPeriods[value & 0x0F];
+        } else {
+            this.timerMode   = false;
+            this.timerPeriod = timerPeriods[value];
+        }
     }
     
     get length() {
@@ -70,10 +81,10 @@ export class NoiseChannel extends Channel {
     
     //== Registers access ===========================================//
     writeRegister(address, data) {
-        switch (address & 0x3) {
-        case 0x0: this.volume = data; break;
-        case 0x2: this.timer  = data; break;
-        case 0x3: this.length = data; break;
+        switch (address) {
+        case 0x400C: this.volume = data; break;
+        case 0x400E: this.timer  = data; break;
+        case 0x400F: this.length = data; break;
         }
     }
     
@@ -82,7 +93,7 @@ export class NoiseChannel extends Channel {
         if (--this.timerCycle <= 0) {
             this.timerCycle = this.timerPeriod;
             
-            var feedback = (this.shiftRegister & 1);
+            let feedback = (this.shiftRegister & 1);
             if (this.timerMode)
                 feedback ^= ((this.shiftRegister >>> 6) & 1);
             else

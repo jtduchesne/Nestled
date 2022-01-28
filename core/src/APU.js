@@ -31,6 +31,7 @@ export class APU {
         this.bus.audioOutput.start();
         this.audioBuffer = new AudioBuffer(this.bus.audioOutput);
         this.cyclesPerSample = this.audioBuffer.cyclesPerSample;
+        this.cyclesUntilSample = this.cyclesPerSample;
     }
     powerOff() {
         this.bus.audioOutput.stop();
@@ -51,8 +52,7 @@ export class APU {
     //== Interrupt ==================================================//
     doIRQ() {
         this.irq = true;
-        if (!this.irqDisabled)
-            this.cpu.doIRQ();
+        this.cpu.doIRQ();
     }
     
     //== Registers ==================================================//
@@ -95,7 +95,7 @@ export class APU {
             if (this.irqDisabled)
                 this.irq = false;
             
-            this.resetDelay = (this.cycle & 1) ? 3 : 4;
+            this.resetDelay = this.tick ? 3 : 4;
             
             if (this.counterMode === 1) {
                 this.doQuarter();
@@ -112,6 +112,8 @@ export class APU {
     readRegister(address) {
         if (address === 0x4015)
             return this.status;
+        else
+            return 0;
     }
     writeRegister(address, data) {
         if (address <= 0x4003)
@@ -132,8 +134,8 @@ export class APU {
     
     //== Execution ==================================================//
     doCycles(count) {
+        let tick = this.tick;
         while (count--) {
-            let tick = this.tick;
             if (tick) {
                 if (this.resetDelay > 0) {
                     if (--this.resetDelay === 0)
@@ -141,8 +143,9 @@ export class APU {
                 }
                 this.doCycle();
             }
-            this.tick = !tick;
+            tick = !tick;
         }
+        this.tick = tick;
     }
     
     doCycle() {
@@ -160,17 +163,15 @@ export class APU {
             if (cycle === 22371) {
                 this.doQuarter();
             }
-        } else {
-            if (this.counterMode === 0) {
-                if (cycle === 29828) {
-                    this.doQuarter();
-                    this.doHalf();
-                    
-                    if (!this.irqDisabled)
-                        this.doIRQ();
-                    
-                    this.cycle = 0;
-                }
+        } else if (cycle >= 29828) {
+            if (cycle === 29828 && this.counterMode === 0) {
+                this.doQuarter();
+                this.doHalf();
+                
+                if (!this.irqDisabled)
+                    this.doIRQ();
+                
+                this.cycle = 0;
             } else if (cycle === 37281) {
                 this.doQuarter();
                 this.doHalf();
@@ -184,18 +185,9 @@ export class APU {
         this.noise.doCycle();
         this.dmc.doCycle();
         
-        if (this.cycle >= this.cyclesPerSample) {
-            var sample = 0;
-            
-            let pulses = this.pulse1.output + this.pulse2.output;
-            sample += pulsesSamples[pulses];
-            
-            let others = 3*this.triangle.output + 2*this.noise.output + this.dmc.output;
-            sample += othersSamples[others];
-            
-            this.audioBuffer.writeSample(sample);
-            
-            this.cycle -= this.cyclesPerSample;
+        if (--this.cyclesUntilSample <= 0) {
+            this.doSample();
+            this.cyclesUntilSample = this.cyclesPerSample;
         }
     }
     
@@ -211,6 +203,14 @@ export class APU {
         this.pulse2.doHalf();
         this.triangle.doHalf();
         this.noise.doHalf();
+    }
+
+    //== Output =====================================================//
+    doSample() {
+        let pulses = this.pulse1.output + this.pulse2.output;
+        let others = 3*this.triangle.output + 2*this.noise.output + this.dmc.output;
+        
+        this.audioBuffer.writeSample(pulsesSamples[pulses] + othersSamples[others]);
     }
 }
 

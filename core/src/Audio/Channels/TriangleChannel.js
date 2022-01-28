@@ -33,8 +33,13 @@ export class TriangleChannel extends Channel {
     
     //== Registers ==================================================//
     set counter(value) {
-        this.lengthCounterHalt = (value & 0x80) !== 0;
-        this.linearCounterMax  = (value & 0x7F);
+        if (value >= 0x80) {
+            this.lengthCounterHalt = true;
+            this.linearCounterMax  = (value - 0x80);
+        } else {
+            this.lengthCounterHalt = false;
+            this.linearCounterMax  = value;
+        }
         this.linearCounterControl = this.lengthCounterHalt;
     }
     
@@ -42,7 +47,7 @@ export class TriangleChannel extends Channel {
         return this.timerPeriod;
     }
     set timer(value) {
-        this.timerPeriod = (this.timerPeriod & 0x700) | (value & 0xFF);
+        this.timerPeriod = (this.timerPeriod & 0x700) + value;
     }
     
     get length() {
@@ -58,10 +63,10 @@ export class TriangleChannel extends Channel {
     
     //== Registers access ===========================================//
     writeRegister(address, data) {
-        switch (address & 0x3) {
-        case 0x0: this.counter = data; break;
-        case 0x2: this.timer   = data; break;
-        case 0x3: this.length  = data; break;
+        switch (address) {
+        case 0x4008: this.counter = data; break;
+        case 0x400A: this.timer   = data; break;
+        case 0x400B: this.length  = data; break;
         }
     }
     

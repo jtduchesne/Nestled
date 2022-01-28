@@ -59,9 +59,15 @@ export class PulseChannel extends Channel {
     set volume(value) {
         this.duty = duties[(value & 0xC0) >>> 6];
         
-        this.constantVolume    = (value & 0x0F);
-        this.envelopeEnabled   = (value & 0x10) === 0;
-        this.lengthCounterHalt = (value & 0x20) !== 0;
+        if (value > 0x0F) {
+            this.lengthCounterHalt = (value & 0x20) !== 0;
+            this.envelopeEnabled   = (value & 0x10) === 0;
+            this.constantVolume    = (value & 0x0F);
+        } else {
+            this.lengthCounterHalt = false;
+            this.envelopeEnabled   = true;
+            this.constantVolume    = value;
+        }
         
         this.envelopePeriod   = this.constantVolume;
         this.envelopeLoop     = this.lengthCounterHalt;
@@ -83,7 +89,7 @@ export class PulseChannel extends Channel {
         return this.timerPeriod;
     }
     set timer(value) {
-        this.timerPeriod = (this.timerPeriod & 0x700) | (value & 0xFF);
+        this.timerPeriod = (this.timerPeriod & 0x700) + value;
     }
     
     get length() {
@@ -100,11 +106,11 @@ export class PulseChannel extends Channel {
     
     //== Registers access ===========================================//
     writeRegister(address, data) {
-        switch (address & 0x3) {
-        case 0x0: this.volume = data; break;
-        case 0x1: this.sweep  = data; break;
-        case 0x2: this.timer  = data; break;
-        case 0x3: this.length = data; break;
+        switch (address) {
+        case 0x4000: case 0x4004: this.volume = data; break;
+        case 0x4001: case 0x4005: this.sweep  = data; break;
+        case 0x4002: case 0x4006: this.timer  = data; break;
+        case 0x4003: case 0x4007: this.length = data; break;
         }
     }
     
@@ -157,8 +163,7 @@ export class PulseChannel extends Channel {
     
     //== Output =====================================================//
     get output() {
-        let timer = this.timer;
-        if (this.length > 0 && timer >= 0x008 && timer+this.sweep < 0x800) {
+        if (this.length > 0 && this.timer >= 0x008 && this.timer+this.sweep < 0x800) {
             return this.volume;
         } else {
             return 0;
