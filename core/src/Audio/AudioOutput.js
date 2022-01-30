@@ -1,11 +1,7 @@
 export class AudioOutput {
-    constructor(element) {
+    constructor() {
         this.context  = null;
         this.gainNode = null;
-        
-        this.next = 0.0;
-        
-        this.connect(element);
     }
     
     get connected()    { return !!this.element; }
@@ -49,10 +45,9 @@ export class AudioOutput {
         this.gainNode.gain.value = this.value / this.max;
         this.gainNode.connect(this.context.destination);
         
-        this.next = 1 / 60;
+        this.next = 0.0;
     }
     stop() {
-        clearTimeout(this.scheduled);
         this.gainNode = null;
         
         if (this.context)
@@ -69,11 +64,11 @@ export class AudioOutput {
         
         let bufferDuration = source.buffer.duration;
         if (this.next < this.context.currentTime) {
-            source.start();
             this.next = this.context.currentTime + bufferDuration;
+            source.start();
         } else {
-            source.start(this.next, 0, bufferDuration);
             this.next += bufferDuration;
+            source.start(this.next, 0, bufferDuration);
         }
     }
 }

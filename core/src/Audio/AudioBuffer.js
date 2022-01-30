@@ -5,17 +5,12 @@ export class AudioBuffer {
         this.sampleRate   = this.context.sampleRate;
         this.bufferLength = this.sampleRate / 30;
         
-        this.cyclesPerSample = 1789772.727 / 2 / this.sampleRate;
-        
-        this.buffers = [];
-        this.createBuffer();
+        this.createNewBuffer();
     }
     
-    createBuffer() {
-        let buffer = this.context.createBuffer(1, this.bufferLength, this.sampleRate);
-        this.data  = buffer.getChannelData(0);
-        
-        this.buffers.push(buffer);
+    createNewBuffer() {
+        this.buffer = this.context.createBuffer(1, this.bufferLength, this.sampleRate);
+        this.data   = this.buffer.getChannelData(0);
         
         this.index = 0;
     }
@@ -25,8 +20,8 @@ export class AudioBuffer {
         this.data[this.index++] = value;
         
         if (this.index === this.bufferLength) {
-            this.createBuffer();
-            this.output.schedule(this.buffers.shift());
+            this.output.schedule(this.buffer);
+            this.createNewBuffer();
         }
     }
 }

@@ -6,6 +6,8 @@ import {
     DMC
 } from './Audio/Channels';
 
+const cyclesFrequency = 1789772.727 / 2;
+
 export class APU {
     constructor(cpu) {
         this.bus = cpu.bus;
@@ -30,7 +32,8 @@ export class APU {
     powerOn() {
         this.bus.audioOutput.start();
         this.audioBuffer = new AudioBuffer(this.bus.audioOutput);
-        this.cyclesPerSample = this.audioBuffer.cyclesPerSample;
+        
+        this.cyclesPerSample   = cyclesFrequency / this.audioBuffer.sampleRate;
         this.cyclesUntilSample = this.cyclesPerSample;
     }
     powerOff() {
