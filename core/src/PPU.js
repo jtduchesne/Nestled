@@ -60,11 +60,16 @@ export class PPU {
         this.cart   = this.bus.cartConnector.cartridge;
         this.output = this.bus.videoOutput;
         
-        this.output.fill(cssColors[this.backdrop]);
+        this.output.addLayer(this.sprBehindLayer);
+        this.output.addLayer(this.bkgLayer);
+        this.output.addLayer(this.sprInFrontLayer);
+        this.output.start();
         
         this.isPowered = true;
     }
     powerOff() {
+        this.output.stop();
+        
         this.isPowered = false;
     }
     
@@ -410,7 +415,7 @@ export class PPU {
                 this.sprite0Hit = true;
         }
         
-        this.bkgLayer.setPixels(dot, scanline, pixels);
+        this.bkgLayer.writePixels(dot, scanline, pixels);
     }
     
     //== Sprites ====================================================//
@@ -533,7 +538,7 @@ export class PPU {
         if (this.sprite0)
             this.sprite0Layer.fill(0).set(pixels, x);
         
-        this.sprLayer.setPixels(x, scanline+1, pixels);
+        this.sprLayer.writePixels(x, scanline+1, pixels);
     }
     
     //== Pixels Rendering ===========================================//
@@ -548,13 +553,7 @@ export class PPU {
     }
     //== Output =====================================================//
     printFrame() {
-        this.output.fill(cssColors[this.backdrop]); // Backdrop
-        
-        this.output.draw(this.sprBehindLayer);  // Sprites behind background
-        this.output.draw(this.bkgLayer);        // Background
-        this.output.draw(this.sprInFrontLayer); // Sprites in front of background
-        
-        this.sprite0Layer.clear();
+        this.output.schedule(cssColors[this.backdrop]);
     }
 }
 

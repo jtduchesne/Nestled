@@ -1,6 +1,9 @@
 export class VideoOutput {
-    constructor(output) {
-        this.connect(output);
+    constructor() {
+        this.canvas  = null;
+        this.context = null;
+        
+        this.layers = [];
     }
     
     get connected()    { return !!this.canvas; }
@@ -10,20 +13,8 @@ export class VideoOutput {
         if (output && output.nodeName === 'CANVAS') {
             this.canvas = output;
             
-            let context = output.getContext('2d', {alpha: false});
-            context.imageSmoothingEnabled = false;
-            
-            let width  = output.width;
-            let height = output.height;
-            
-            this.draw = function(videoBuffer) {
-                context.drawImage(videoBuffer.frame, 0, 0, 256, 240, 0, 0, width, height);
-                videoBuffer.clear();
-            };
-            this.fill = function(cssColor) {
-                context.fillStyle = cssColor;
-                context.fillRect(0, 0, width, height);
-            };
+            this.width  = output.width;
+            this.height = output.height;
             
             return output;
         } else {
@@ -31,12 +22,51 @@ export class VideoOutput {
         }
     }
     disconnect() {
-        this.canvas  = null;
+        return this.canvas = null;
+    }
+    
+    //===============================================================//
+    
+    addLayer(videoBuffer) {
+        this.layers.push(videoBuffer);
+    }
+    
+    start() {
+        this.context = this.canvas.getContext('2d', {alpha: false});
+        this.context.imageSmoothingEnabled = false;
         
-        this.draw = function() { return; };
-        this.fill = function() { return; };
+        this.offCanvas = document.createElement('canvas');
+        this.offCanvas.width  = 256;
+        this.offCanvas.height = 240;
+        this.offContext = this.offCanvas.getContext('2d', {alpha: true});
+        this.offContext.imageSmoothingEnabled = false;
+    }
+    
+    stop() {
+        window.cancelAnimationFrame(this.scheduled);
         
-        return null;
+        this.layers = [];
+        
+        this.context = null;
+        
+        this.offCanvas.remove();
+        this.offContext = null;
+    }
+    
+    //===============================================================//
+    
+    schedule(cssBackdrop) {
+        const layers = this.layers.map((layer) => layer.getFrame());
+        
+        this.scheduled = window.requestAnimationFrame(() => {
+            this.context.fillStyle = cssBackdrop;
+            this.context.fillRect(0, 0, this.width, this.height);
+            
+            layers.forEach((layer) => {
+                this.offContext.putImageData(layer, 0, 0);
+                this.context.drawImage(this.offCanvas, 0, 0, 256, 240, 0, 0, this.width, this.height);
+            });
+        });
     }
 }
 

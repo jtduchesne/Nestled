@@ -51,7 +51,7 @@ export class Engine {
         this.isPaused = false;
     }
     powerOff() {
-        window.cancelAnimationFrame(this.runningLoop);
+        clearTimeout(this.runningLoop);
         
         this.isPowered = false;
         this.isPaused = false;
@@ -59,10 +59,10 @@ export class Engine {
     
     pause() {
         if (this.isPaused) {
-            this.runningLoop = window.requestAnimationFrame(this.mainLoop);
+            this.runningLoop = setTimeout(this.mainLoop, 0);
             this.isPaused = false;
         } else {
-            window.cancelAnimationFrame(this.runningLoop);
+            clearTimeout(this.runningLoop);
             this.isPaused = this.isPowered;
         }
         return this.isPaused;
@@ -88,11 +88,11 @@ export class Engine {
         
         this.doPreFetch(cpu, ppu, 261);
         
-        this.runningLoop = window.requestAnimationFrame(this.firstLoop);
+        this.runningLoop = setTimeout(this.firstLoop, 0);
     }
     
-    firstLoop(timestamp) {
-        this._lastTimestamp = timestamp;
+    firstLoop() {
+        let timestamp = window.performance.now();
         
         let cpu = this.cpu;
         let ppu = this.ppu;
@@ -101,19 +101,23 @@ export class Engine {
         
         this.updateStats(window.performance.now() - timestamp);
         
-        this.runningLoop = window.requestAnimationFrame(this.mainLoop);
-    }
-    
-    mainLoop(timestamp) {
-        this._delta += (timestamp - this._lastTimestamp);
         this._lastTimestamp = timestamp;
         
-        let cpu = this.cpu;
-        let ppu = this.ppu;
+        this.runningLoop = setTimeout(this.mainLoop, 0);
+    }
+    
+    mainLoop() {
+        let timestamp = window.performance.now();
         
-        if (this._delta > 1000) {
-            this.pause();
-        } else {
+        this._delta = (timestamp - this._lastTimestamp);
+        
+        if (this._delta >= frameTime) {
+            if (this._delta > 1000)
+                return this.pause();
+            
+            let cpu = this.cpu;
+            let ppu = this.ppu;
+            
             while ((this._delta -= frameTime) >= frameTime) {
                 this.skipFrame(cpu, ppu);
                 this._fps--;
@@ -122,8 +126,10 @@ export class Engine {
             
             this.updateStats(window.performance.now() - timestamp);
             
-            this.runningLoop = window.requestAnimationFrame(this.mainLoop);
+            this._lastTimestamp = timestamp;
         }
+        
+        this.runningLoop = setTimeout(this.mainLoop, 0);
     }
     
     updateStats(frameTime) {

@@ -1,33 +1,25 @@
 export class VideoBuffer {
     constructor(width, height) {
-        this.canvas = document.createElement('canvas');
-        this.canvas.width = width;
-        this.canvas.height = height;
+        this.width  = width;
+        this.height = height;
         
-        this.context = this.canvas.getContext('2d', {alpha: true});
-        this.context.imageSmoothingEnabled = false;
-        
-        this.imageData = this.context.createImageData(width, height);
-        const buffer = new Uint32Array(this.imageData.data.buffer);
-        
-        this.getPixels = function(x, y) {
-            let offset = y*width + x;
-            return buffer.subarray(offset, offset+8);
-        };
-        this.setPixels = function(x, y, values) {
-            let offset = y*width + x;
-            buffer.set(values, offset);
-        };
+        this.createNewBuffer();
     }
     
-    get frame() {
-        this.context.putImageData(this.imageData, 0, 0);
-        return this.canvas;
+    createNewBuffer() {
+        this.image = new ImageData(this.width, this.height);
+        this.data  = new Uint32Array(this.image.data.buffer);
     }
     
-    clear() {
-        this.imageData.data.fill(0);
-        this.context.putImageData(this.imageData, 0, 0);
+    //===============================================================//
+    writePixels(x, y, values) {
+        this.data.set(values, y*this.width + x);
+    }
+    
+    getFrame() {
+        let frame = this.image;
+        this.createNewBuffer();
+        return frame;
     }
 }
 
