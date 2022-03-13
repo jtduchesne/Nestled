@@ -7,7 +7,25 @@
     "parserOptions": {
         "sourceType": "module"
     },
+    "globals": {
+        "def": "readonly",
+        "its": "readonly",
+        "is": "readonly",
+        "subject": "readonly",
+        "expect": "readonly",
+        "$subject": "writable",
+        "$action": "writable",
+        "$argument": "writable",
+        "$arguments": "writable"
+    },
     "rules": {
-        "no-undef": "off"
+        "indent": ["error", 4, {
+            "ignoreComments": true,
+            "MemberExpression": "off",
+            "FunctionDeclaration": { "parameters": "first" },
+            "FunctionExpression": { "parameters": "first" },
+            "ArrayExpression": "first",
+            "ObjectExpression": "first"
+        }]
     }
 }
