@@ -1,5 +1,5 @@
-import NROM from './NROM';
-import MMC1 from './MMC1';
+import NROM from './Mappers/NROM.js';
+import MMC1 from './Mappers/MMC1.js';
 
 const constructors = Object.freeze([NROM, MMC1]);
 const supported = (number) => typeof constructors[number] !== 'undefined';

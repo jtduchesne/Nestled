@@ -1,4 +1,4 @@
-import { VideoBuffer, Colors } from './Video';
+import { VideoBuffer, Colors } from './Video.js';
 const { pxlColors, cssColors } = Colors;
 
 const bitplaneLookup = {

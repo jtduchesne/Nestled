@@ -1,4 +1,4 @@
-export { NES } from './NES';
+export { NES } from './NES.js';
 
-export * from './Cartridges';
-export * from './Controllers';
+export * from './Cartridges.js';
+export * from './Controllers.js';

@@ -1,4 +1,4 @@
-import Cartridge from '../Cartridge';
+import Cartridge from '../Cartridge.js';
 
 export class MMC1 extends Cartridge {
     constructor(number) {

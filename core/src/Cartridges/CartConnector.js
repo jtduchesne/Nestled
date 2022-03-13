@@ -1,5 +1,5 @@
-import Cartridge from './Cartridge';
-import Mapper, * as Mappers from "./Mappers";
+import Cartridge from './Cartridge.js';
+import Mapper, * as Mappers from "./Mappers.js";
 
 export class CartConnector {
     constructor() {

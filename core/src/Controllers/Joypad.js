@@ -1,4 +1,4 @@
-import Controller from "./Controller";
+import Controller from "./Controller.js";
 
 const BUTTONS = Object.freeze({
     a: 0, b: 1, select: 2, start: 3, up: 4, down: 5, left: 6, right: 7
