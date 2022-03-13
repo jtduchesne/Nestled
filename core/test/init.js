@@ -1,10 +1,12 @@
-global.expect = require('chai').expect;
-global.Nestled = require('../../public/javascripts/nestled.cjs.js');
+import { expect } from "chai";
+global.expect = expect;
+
+import Canvas from "canvas";
 
 global.window = undefined;
 global.document = {
     createElement: (name) => {
-        if (name === 'canvas') return require('canvas').createCanvas();
+        if (name === 'canvas') return Canvas.createCanvas();
     }
 };
 
