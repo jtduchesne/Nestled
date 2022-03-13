@@ -1,6 +1,8 @@
+import { NES } from "../src/main.js";
+
 describe("Engine", function() {
-    def('nes', () => new Nestled.NES());
-    subject(() => $nes.engine);
+    def('nes', () => new NES()); /*global $nes */
+    subject(() => $nes.mainLoop);
     
     its('frame',   () => is.expected.to.equal(0));
     its('dropped', () => is.expected.to.equal(0));
@@ -167,6 +169,7 @@ describe("Engine", function() {
     });
     
     describe(".loop()", function() {
+        /*global $timestampArray, $timestamp */
         def('timestampArray', () => process.hrtime());
         def('timestamp',      () => Math.round($timestampArray[0]*1e3 + $timestampArray[1]/1e6));
         def('action', () => $subject.loop($timestamp));

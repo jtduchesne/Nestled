@@ -1,6 +1,9 @@
+import { NES, NESFile, Cartridge, NoCartridge } from "../src/main.js";
+
 describe("NES", function() {
-    subject(() => new Nestled.NES);
+    subject(() => new NES);
     
+    /*global $powerOn, $powerOff */
     def('powerOn',  () => { $subject.powerOn(); });
     def('powerOff', () => { $subject.powerOff(); });
     
@@ -225,16 +228,20 @@ describe("NES", function() {
     
     //-------------------------------------------------------------------------------//
     //- NESFile Fixture
-    def('validNESFile', () => Object.assign(new Nestled.NESFile, {
+
+    /*global $validNESFile, $invalidNESFile */
+    def('validNESFile', () => Object.assign(new NESFile, {
         name: "Valid", isValid: true,
         data: new Uint8Array([0x4E,0x45,0x53,0x1A, 0,0,0,0,0,0,0,0,0,0,0,0]).buffer
     }));
-    def('invalidNESFile', () => Object.assign(new Nestled.NESFile, {
+    def('invalidNESFile', () => Object.assign(new NESFile, {
         name: "Invalid", isValid: false
     }));
     //-------------------------------------------------------------------------------//
     //- Cartridge Fixture
-    def('cartridge', () => new Nestled.Cartridge($validNESFile));
+
+    /*global $cartridge */
+    def('cartridge', () => new Cartridge($validNESFile));
     //-------------------------------------------------------------------------------//
     
     describe(".insertCartridge(argument)", function() {
@@ -245,10 +252,10 @@ describe("NES", function() {
             
             it("sets #cartridge to -NoCartridge-", function() {
                 expect(() => $action).to.change($subject, 'cartridge');
-                expect($subject.cartridge).to.be.an.instanceof(Nestled.NoCartridge);
+                expect($subject.cartridge).to.be.an.instanceof(NoCartridge);
             });
             it("returns a -NoCartridge-", function() {
-                expect($action).to.be.an.instanceof(Nestled.NoCartridge);
+                expect($action).to.be.an.instanceof(NoCartridge);
             });
         });
         
@@ -284,7 +291,7 @@ describe("NES", function() {
         
         it("sets #cartridge to -NoCartridge-", function() {
             expect(() => $action).to.change($subject, 'cartridge');
-            expect($subject.cartridge).to.be.an.instanceof(Nestled.NoCartridge);
+            expect($subject.cartridge).to.be.an.instanceof(NoCartridge);
         });
         it("returns the removed cartridge", function() {
             expect($action).to.equal($cartridge);
@@ -295,7 +302,7 @@ describe("NES", function() {
     
     describe(".insertController(controller)", function() {
         def('action', () => $subject.insertController($joypad));
-        def('joypad', () => 'Joypad');
+        def('joypad', () => 'Joypad'); /*global $joypad */
         
         context("if no controllers are connected", function() {
             it("sets #controllers[0]", function() {

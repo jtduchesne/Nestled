@@ -1,9 +1,14 @@
+import { NES, NESFile, Cartridge, NoCartridge, APU } from "../src/main.js";
+
 describe("Cpu", function() {
     //------------------------------------------------------------------------------------//
     //- NESFile Fixture
+    
+    /*global $PRGROMData, $NMIvector, $RESETvector, $IRQvector */
     def('PRGROMData', () => 0xA5); // b10100101
     def(['NMIvector','RESETvector','IRQvector']);
-    def('NESFile', () => Object.assign(new Nestled.NESFile, {
+    /*global $NESFile */
+    def('NESFile', () => Object.assign(new NESFile, {
         name: "Whatever", isValid: true, 
         data: new Uint8Array([0x4E,0x45,0x53,0x1A, 1, 0, 0, 0, 0,0,0,0,0,0,0,0]
                               .concat(new Array(0x4000-6).fill($PRGROMData))
@@ -13,11 +18,13 @@ describe("Cpu", function() {
     }));
     //------------------------------------------------------------------------------------//
     
-    def('cartridge', () => new Nestled.Cartridge($NESFile));
-    def('nes',       () => new Nestled.NES($cartridge));
+    /*global $cartridge, $nes */
+    def('cartridge', () => new Cartridge($NESFile));
+    def('nes',       () => new NES($cartridge));
     
     subject(() => $nes.cpu);
     
+    /*global $PRGRAMData, $RAMData */
     def('PRGRAMData', () => 0xC3); // b11000011
     def('RAMData',    () => 0x99); // b10011001
     beforeEach("fill RAM", function() {
@@ -28,7 +35,7 @@ describe("Cpu", function() {
     
     //-------------------------------------------------------------------------------//
     
-    its('apu', () => is.expected.to.be.an.instanceOf(Nestled.APU));
+    its('apu', () => is.expected.to.be.an.instanceOf(APU));
     
     //-------------------------------------------------------------------------------//
     
@@ -152,7 +159,7 @@ describe("Cpu", function() {
             });
         
             context("if there is no Cartridge", function() {
-                def('cartridge', () => new Nestled.NoCartridge);
+                def('cartridge', () => new NoCartridge);
                 it("returns zero when address is between [0x8000-FFFF]", function() {
                     expect($subject.read(0x8000)).to.equal(0);
                     expect($subject.read(0xFFF0)).to.equal(0);
@@ -204,6 +211,8 @@ describe("Cpu", function() {
     //-------------------------------------------------------------------------------//
     
     context("Stack", function() {
+        /*global $pushOnce, $pushTwice, $pullOnce, $pullTwice */
+        
         // The stack pointer always needs to be initialized
         beforeEach(function() { $subject.SP = 0xFF; });
         
@@ -393,6 +402,8 @@ describe("Cpu", function() {
     //-------------------------------------------------------------------------------//
     
     context("Registers", function() {
+        /*global $value */
+        
         describe("Accumulator", function() {
             def('action', () => { $subject.A = $value; });
             beforeEach(function() { $action; });
@@ -485,6 +496,8 @@ describe("Cpu", function() {
             $subject.PC = 0x0010;
             $subject.ram.set([0x34,0x12,0x78,0x56,0xBC,0x9A,0xF0,0xDE], 0x0010);
         });
+        //The first byte is read in the main loop just before invoking the addressing mode
+        def('byteOperand', () => $subject.read($subject.PC)); /*global $byteOperand */
         
         describe(".imp(operand)", function() {
             it("returns the operand", function() {
@@ -1513,9 +1526,9 @@ describe("Cpu", function() {
                     $action;
                 });
                 it("sets A to 0x60",       function() { expect($subject.A).to.equal(0x60); });
-                it("clears Carry flag",    function() { expect($subject.Carry).not.to.be.ok });
-                it("clears Negative flag", function() { expect($subject.Negative).not.to.be.ok });
-                it("clears oVerflow flag", function() { expect($subject.Overflow).not.to.be.ok });
+                it("clears Carry flag",    function() { expect($subject.Carry).not.to.be.ok; });
+                it("clears Negative flag", function() { expect($subject.Negative).not.to.be.ok; });
+                it("clears oVerflow flag", function() { expect($subject.Overflow).not.to.be.ok; });
             });
             context("80 - -80 = [** -96 **]", function() {
                 beforeEach(function() {
@@ -1525,9 +1538,9 @@ describe("Cpu", function() {
                     $action;
                 });
                 it("sets A to 0xA0",     function() { expect($subject.A).to.equal(0xA0); });
-                it("clears Carry flag",  function() { expect($subject.Carry).not.to.be.ok });
-                it("sets Negative flag", function() { expect($subject.Negative).to.be.ok });
-                it("sets oVerflow flag", function() { expect($subject.Overflow).to.be.ok });
+                it("clears Carry flag",  function() { expect($subject.Carry).not.to.be.ok; });
+                it("sets Negative flag", function() { expect($subject.Negative).to.be.ok; });
+                it("sets oVerflow flag", function() { expect($subject.Overflow).to.be.ok; });
             });
             context("80 - 112 = -32", function() {
                 beforeEach(function() {
@@ -1537,9 +1550,9 @@ describe("Cpu", function() {
                     $action;
                 });
                 it("sets A to 0xE0",       function() { expect($subject.A).to.equal(0xE0); });
-                it("clears Carry flag",    function() { expect($subject.Carry).not.to.be.ok });
-                it("sets Negative flag",   function() { expect($subject.Negative).to.be.ok });
-                it("clears oVerflow flag", function() { expect($subject.Overflow).not.to.be.ok });
+                it("clears Carry flag",    function() { expect($subject.Carry).not.to.be.ok; });
+                it("sets Negative flag",   function() { expect($subject.Negative).to.be.ok; });
+                it("clears oVerflow flag", function() { expect($subject.Overflow).not.to.be.ok; });
             });
             context("80 - 48 = 32", function() {
                 beforeEach(function() {
@@ -1549,9 +1562,9 @@ describe("Cpu", function() {
                     $action;
                 });
                 it("sets A to 0x20",       function() { expect($subject.A).to.equal(0x20); });
-                it("sets Carry flag",      function() { expect($subject.Carry).to.be.ok });
-                it("clears Negative flag", function() { expect($subject.Negative).not.to.be.ok });
-                it("clears oVerflow flag", function() { expect($subject.Overflow).not.to.be.ok });
+                it("sets Carry flag",      function() { expect($subject.Carry).to.be.ok; });
+                it("clears Negative flag", function() { expect($subject.Negative).not.to.be.ok; });
+                it("clears oVerflow flag", function() { expect($subject.Overflow).not.to.be.ok; });
             });
             context("-48 - -16 = -32", function() {
                 beforeEach(function() {
@@ -1561,9 +1574,9 @@ describe("Cpu", function() {
                     $action;
                 });
                 it("sets A to 0xE0",       function() { expect($subject.A).to.equal(0xE0); });
-                it("clears Carry flag",    function() { expect($subject.Carry).not.to.be.ok });
-                it("sets Negative flag",   function() { expect($subject.Negative).to.be.ok });
-                it("clears oVerflow flag", function() { expect($subject.Overflow).not.to.be.ok });
+                it("clears Carry flag",    function() { expect($subject.Carry).not.to.be.ok; });
+                it("sets Negative flag",   function() { expect($subject.Negative).to.be.ok; });
+                it("clears oVerflow flag", function() { expect($subject.Overflow).not.to.be.ok; });
             });
             context("-48 - -80 = 32", function() {
                 beforeEach(function() {
@@ -1573,9 +1586,9 @@ describe("Cpu", function() {
                     $action;
                 });
                 it("sets A to 0x20",       function() { expect($subject.A).to.equal(0x20); });
-                it("sets Carry flag",      function() { expect($subject.Carry).to.be.ok });
-                it("clears Negative flag", function() { expect($subject.Negative).not.to.be.ok });
-                it("clears oVerflow flag", function() { expect($subject.Overflow).not.to.be.ok });
+                it("sets Carry flag",      function() { expect($subject.Carry).to.be.ok; });
+                it("clears Negative flag", function() { expect($subject.Negative).not.to.be.ok; });
+                it("clears oVerflow flag", function() { expect($subject.Overflow).not.to.be.ok; });
             });
             context("208 - 112 = 96", function() {
                 beforeEach(function() {
@@ -1585,9 +1598,9 @@ describe("Cpu", function() {
                     $action;
                 });
                 it("sets A to 0x60",       function() { expect($subject.A).to.equal(0x60); });
-                it("sets Carry flag",      function() { expect($subject.Carry).to.be.ok });
-                it("clears Negative flag", function() { expect($subject.Negative).not.to.be.ok });
-                it("sets oVerflow flag",   function() { expect($subject.Overflow).to.be.ok });
+                it("sets Carry flag",      function() { expect($subject.Carry).to.be.ok; });
+                it("clears Negative flag", function() { expect($subject.Negative).not.to.be.ok; });
+                it("sets oVerflow flag",   function() { expect($subject.Overflow).to.be.ok; });
             });
             context("-48 - 48 = -96", function() {
                 beforeEach(function() {
@@ -1597,9 +1610,9 @@ describe("Cpu", function() {
                     $action;
                 });
                 it("sets A to 0xA0",       function() { expect($subject.A).to.equal(0xA0); });
-                it("sets Carry flag",      function() { expect($subject.Carry).to.be.ok });
-                it("sets Negative flag",   function() { expect($subject.Negative).to.be.ok });
-                it("clears oVerflow flag", function() { expect($subject.Overflow).not.to.be.ok });
+                it("sets Carry flag",      function() { expect($subject.Carry).to.be.ok; });
+                it("sets Negative flag",   function() { expect($subject.Negative).to.be.ok; });
+                it("clears oVerflow flag", function() { expect($subject.Overflow).not.to.be.ok; });
             });
         });
         

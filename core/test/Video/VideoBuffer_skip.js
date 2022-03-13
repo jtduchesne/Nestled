@@ -1,8 +1,12 @@
+import VideoBuffer from "../../src/Video/VideoBuffer.js";
+
 describe("VideoBuffer", function() {
+    /*global $width, $height */
     def('width',  () => 256);
     def('height', () => 240);
-    subject(() => new Nestled.VideoBuffer($width, $height));
+    subject(() => new VideoBuffer($width, $height));
     
+    /*global $data */
     def('data', () => Uint32Array.from([0x11111,0x22222,0x33333,0x44444,
                                         0x55555,0x66666,0x77777,0x88888]));
     

@@ -1,7 +1,10 @@
+import { Keyboard } from "../../src/main.js";
+
 describe("Keyboard", function() {
-    subject(() => new Nestled.Keyboard);
+    subject(() => new Keyboard);
     
     describe(".assignKey(buttonName, keyCode)", function() {
+        /*global $buttonName, $keyCode */
         def('action', () => $subject.assignKey($buttonName, $keyCode));
         def('keyCode', () => 13);
         
@@ -30,6 +33,7 @@ describe("Keyboard", function() {
     });
     
     describe(".assignKeys(opts)", function() {
+        /*global $opts */
         def('action', () => $subject.assignKeys($opts));
         
         context("if all the names are valid", function() {
@@ -52,6 +56,7 @@ describe("Keyboard", function() {
     });
     
     describe(".pressKey(event, keyDown)", function() {
+        /*global $event, $keyDown */
         def('action', () => $subject.pressKey($event, $keyDown));
         beforeEach(function() {
             $subject.assignKey('start', 13);

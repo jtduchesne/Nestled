@@ -1,6 +1,9 @@
+import { APU, CPU } from "../src/main.js";
+import AudioBuffer from "../src/Audio/AudioBuffer.js";
+
 describe("APU", function() {
-    subject(() => new Nestled.APU($cpu));
-    def('cpu', () => new Nestled.CPU);
+    subject(() => new APU($cpu));
+    def('cpu', () => new CPU); /*global $cpu*/
     
     its('cpu', () => is.expected.to.equal($cpu));
     
@@ -14,7 +17,7 @@ describe("APU", function() {
         
         it("initializes #audio", function() {
             expect(() => $action).to.change($subject, 'audio');
-            expect($subject.audio).to.be.an.instanceOf(Nestled.AudioBuffer);
+            expect($subject.audio).to.be.an.instanceOf(AudioBuffer);
         });
         it("sets #cyclesPerSample", function() {
             expect(() => $action).to.change($subject, 'cyclesPerSample');
@@ -98,6 +101,8 @@ describe("APU", function() {
     
     //-------------------------------------------------------------------------------//
     
+    /*global $value*/
+    
     describe("#status = value", function() {
         def('action', () => { $subject.status = $value; });
         
@@ -127,6 +132,8 @@ describe("APU", function() {
     });
     
     //-------------------------------------------------------------------------------//
+    
+    /*global $address, $data*/
     
     describe(".readRegister(address)", function() {
         def('action', () => $subject.readRegister($address));
@@ -224,6 +231,8 @@ describe("APU", function() {
     });
     
     //-------------------------------------------------------------------------------//
+    
+    /*global $count*/
     
     describe(".doCycles(count)", function() {
         def('action', () => $subject.doCycles($count));

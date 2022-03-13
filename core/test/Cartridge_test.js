@@ -1,12 +1,20 @@
+import { Cartridge, NoCartridge, NESFile } from "../src/main.js";
+import { NROM } from '../src/Mappers/NROM.js';
+
 describe("Cartridge", function() {
     //----------------------------------------------------------------------------------------------------//
     //- NESFile Fixtures
+    
+    /*global $filename */
     def('filename', () => $name ? $name.replace(/[\W ]+/g, " ")+" (U)[!].nes" : "A Game Name (Unk)[b].nes");
     
+    /*global $numPRG, $numCHR, $flags6, $flags7, $trainerData, $name */
     def(['numPRG','numCHR','flags6','flags7','trainerData','name']);
+    /*global $PRGROMData, $CHRROMData */
     def('PRGROMData', () => 0xA5); // b10100101
     def('CHRROMData', () => 0xC3); // b11000011
-    def('validNESFile', () => Object.assign(new Nestled.NESFile, {
+    /*global $validNESFile, $invalidNESFile */
+    def('validNESFile', () => Object.assign(new NESFile, {
         name: $filename, isValid: true, 
         data: new Uint8Array([0x4E,0x45,0x53,0x1A, $numPRG, $numCHR, $flags6, $flags7, 0,0,0,0,0,0,0,0]
                               .concat(new Array($flags6&0x4 ? 0x200 : 0).fill($trainerData))
@@ -14,13 +22,13 @@ describe("Cartridge", function() {
                               .concat(new Array(($numCHR || 0)*0x2000).fill($CHRROMData))
                               .concat($name ? Array.from($name, v => v.charCodeAt(0)) : [])).buffer
     }));
-    def('invalidNESFile', () => Object.assign(new Nestled.NESFile, { 
+    def('invalidNESFile', () => Object.assign(new NESFile, {
         name: $filename, isValid: false
     }));
     //----------------------------------------------------------------------------------------------------//
     
-    def('opts', () => $validNESFile);
-    subject(() => new Nestled.Cartridge($opts));
+    def('opts', () => $validNESFile);  /*global $opts */
+    subject(() => new Cartridge($opts));
     
     describe("constructor(opts)", function() {
         context("given an invalid -NESFile- object in opts['file']", function() {
@@ -29,7 +37,7 @@ describe("Cartridge", function() {
             its('isValid', () => is.expected.to.be.false);
             
             it("returns a new -NoCartridge- object", function() {
-                expect($subject).to.be.an.instanceof(Nestled.NoCartridge);
+                expect($subject).to.be.an.instanceof(NoCartridge);
             });
         });
         
@@ -39,8 +47,8 @@ describe("Cartridge", function() {
             its('isValid', () => is.expected.to.be.true);
             
             it("returns a new -Cartridge- object", function() {
-                expect($subject).to.be.an.instanceof(Nestled.Cartridge);
-                expect($subject).not.to.be.an.instanceof(Nestled.NoCartridge);
+                expect($subject).to.be.an.instanceof(Cartridge);
+                expect($subject).not.to.be.an.instanceof(NoCartridge);
             });
         });
         
@@ -50,8 +58,8 @@ describe("Cartridge", function() {
             its('isValid', () => is.expected.to.be.true);
             
             it("returns a new -Cartridge- object", function() {
-                expect($subject).to.be.an.instanceof(Nestled.Cartridge);
-                expect($subject).not.to.be.an.instanceof(Nestled.NoCartridge);
+                expect($subject).to.be.an.instanceof(Cartridge);
+                expect($subject).not.to.be.an.instanceof(NoCartridge);
             });
         });
     });
@@ -72,7 +80,7 @@ describe("Cartridge", function() {
             its('file', () => is.expected.to.be.null);
             
             it("returns a -NoCartridge- object", function() {
-                expect($action).to.be.an.instanceof(Nestled.NoCartridge);
+                expect($action).to.be.an.instanceof(NoCartridge);
             });
         });
         
@@ -179,7 +187,7 @@ describe("Cartridge", function() {
                 def('flags6', () => (0 << 4));
                 
                 its('isValid', () => is.expected.to.be.true);
-                its('mapper',  () => is.expected.to.be.an.instanceOf(Nestled.NROM));
+                its('mapper',  () => is.expected.to.be.an.instanceOf(NROM));
                 
                 it("sets #mapper's number", function() {
                     expect($subject.mapper.number).to.equal(0);
@@ -189,7 +197,7 @@ describe("Cartridge", function() {
                 def('flags6', () => (15 << 4));
                 
                 its('isValid', () => is.expected.to.be.false);
-                its('mapper',  () => is.expected.to.be.an.instanceOf(Nestled.NROM));
+                its('mapper',  () => is.expected.to.be.an.instanceOf(NROM));
                 
                 it("sets #mapper's number", function() {
                     expect($subject.mapper.number).to.equal(15);
@@ -197,8 +205,8 @@ describe("Cartridge", function() {
             });
             
             it("returns a -Cartridge- object", function() {
-                expect($action).to.be.an.instanceof(Nestled.Cartridge);
-                expect($action).not.to.be.an.instanceof(Nestled.NoCartridge);
+                expect($action).to.be.an.instanceof(Cartridge);
+                expect($action).not.to.be.an.instanceof(NoCartridge);
             });
             it("returns -this-", function() {
                 expect($action).to.equal($subject);
@@ -220,7 +228,7 @@ describe("Cartridge", function() {
         its('CHRROM', () => is.expected.to.be.empty);
         
         it("returns a -NoCartridge- object", function() {
-            expect($action).to.be.an.instanceof(Nestled.NoCartridge);
+            expect($action).to.be.an.instanceof(NoCartridge);
         });
     });
     

@@ -1,26 +1,35 @@
+import { NES, NESFile, Cartridge } from "../src/main.js";
+
 describe("Ppu", function() {
     //------------------------------------------------------------------------------------//
     //- NESFile Fixture
+
+    /*global $CHRROMData, $horiMirroring, $vertMirroring, $flags6 */
     def('CHRROMData', () => 0xA5); // b10100101
     def('horiMirroring', () => false);
     def('vertMirroring', () => false);
     def('flags6', () => ($vertMirroring ? $horiMirroring ? 0x08 : 0x01 : 0x00));
-    def('NESFile', () => Object.assign(new Nestled.NESFile, {
+    /*global $NESFile */
+    def('NESFile', () => Object.assign(new NESFile, {
         name: "Whatever", isValid: true, 
         data: new Uint8Array([0x4E,0x45,0x53,0x1A, 0, 1, $flags6, 0, 0,0,0,0,0,0,0,0]
                               .concat(new Array(0x2000).fill($CHRROMData))).buffer
     }));
     //------------------------------------------------------------------------------------//
     
-    def('cartridge', () => new Nestled.Cartridge($NESFile));
-    def('nes', () => new Nestled.NES($cartridge));
+    /*global $cartridge, $nes */
+    def('cartridge', () => new Cartridge($NESFile));
+    def('nes', () => new NES($cartridge));
     
     subject(() => $nes.ppu);
     
+    /*global $VRAMData, $VRAM0Data, $VRAM1Data */
     def('VRAMData', () => 0xC3); // b11000011
     def(['VRAM0Data','VRAM1Data']);
+    /*global $PalData, $bkgPalData, $sprPalData */
     def('PalData', () => 0x33); // b00110011
     def(['bkgPalData','sprPalData']);
+    /*global $CHRROMPattern1, $CHRROMPattern2 */
     def('CHRROMPattern1'); //If set, this pattern is set in CHR-ROM[0]
     def('CHRROMPattern2'); //If set, this pattern is set in CHR-ROM[1]
     beforeEach(function() {
@@ -193,6 +202,7 @@ describe("Ppu", function() {
     //-------------------------------------------------------------------------------//
     
     describe(".readRegister(address)", function() {
+        /*global $actionTwice, $address */
         def('action', () => $subject.readRegister($address));
         def('actionTwice', () => ($action || true) && $subject.readRegister($address));
         
@@ -311,6 +321,7 @@ describe("Ppu", function() {
     });
     
     describe(".writeRegister(address, data)", function() {
+        /*global $actionAgain, $data */
         def('action', () => $subject.writeRegister($address, $data));
         def('actionAgain', () => $subject.writeRegister($address, $data));
         def('actionTwice', () => $action || $actionAgain);
@@ -393,7 +404,7 @@ describe("Ppu", function() {
             def('address', () => 0x2004);
             def('data', () => 0xAA);
             
-            def('oamAddress', () => 0x80);
+            def('oamAddress', () => 0x80); /*global $oamAddress */
             beforeEach(function() { $subject.oamAddress = $oamAddress; });
             
             it("writes data to oamPrimary[oamAddress]", function() {
@@ -896,7 +907,7 @@ describe("Ppu", function() {
     
     describe(".fetchBkgPatternTable(patternIndex, row)", function() {
         def('action', () => $subject.fetchBkgPatternTable(0, 0));
-        def('CHRROMPattern1', () => [ 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15,16,
+        def('CHRROMPattern1', () => [1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15,16,
                                      17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32]);
         def('CHRROMPattern2', () => [33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48]);
         
@@ -990,8 +1001,9 @@ describe("Ppu", function() {
     
     describe(".evaluateSprites(scanline)", function() {
         def('action', () => $subject.evaluateSprites($scanline));
-        def('scanline', () => 2);
+        def('scanline', () => 2); /*global $scanline */
         
+        /*global $y, $patternIndex, $attributes, $x, $count */
         def('y', () => 1);
         def('patternIndex', () => 0xAA);
         def('attributes',   () => 0xBB);
@@ -1145,7 +1157,7 @@ describe("Ppu", function() {
     
     describe(".fetchSprPatternTable(patternIndex, row)", function() {
         def('action', () => $subject.fetchSprPatternTable(0, 0));
-        def('CHRROMPattern1', () => [ 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15,16,
+        def('CHRROMPattern1', () => [1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15,16,
                                      17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32]);
         def('CHRROMPattern2', () => [33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48]);
         

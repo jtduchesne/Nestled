@@ -1,13 +1,19 @@
+import { Mapper } from "../../src/Mappers/Mapper.js";
+
 describe("Mapper", function() {
     //----------------------------------------------------------------------------------------------------//
     //- Cartridge Fixtures
+
+    /*global $numPRG, $PRGROM */
     def('numPRG', () => 2);
     def('PRGROM', () => new Array($numPRG).fill(0).map(() => new Uint8Array(0x4000)));
     
+    /*global $numCHR, $CHRROM */
     def('numCHR', () => 1);
     def('CHRROM', () => new Array($numCHR*2).fill(0).map(() => new Uint8Array(0x1000)));
     
-    def('PRGRAMData','CHRRAMData')
+    /*global $PRGRAMData, $CHRRAMData, $vertMirroring, $horiMirroring, $cartridge */
+    def('PRGRAMData','CHRRAMData');
     def('vertMirroring','horiMirroring');
     def('cartridge', () => ({
         PRGRAM: new Uint8Array(0x4000).fill($PRGRAMData),
@@ -17,6 +23,7 @@ describe("Mapper", function() {
         horiMirroring: $horiMirroring || false,
     }));
     
+    /*global $PRGROMData0, $PRGROMData1, $CHRROMData0, $CHRROMData1 */
     def('PRGROMData0','PRGROMData1');
     def('CHRROMData0','CHRROMData1');
     beforeEach(function() {
@@ -28,8 +35,8 @@ describe("Mapper", function() {
         }
     });
     //----------------------------------------------------------------------------------------------------//
-    subject(() => new Nestled.Mapper($number, $cartridge));
-    def('number', () => 123);
+    subject(() => new Mapper($number, $cartridge));
+    def('number', () => 123); /*global $number */
     
     its('number', () => is.expected.to.equal($number));
             

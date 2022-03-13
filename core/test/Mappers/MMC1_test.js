@@ -1,12 +1,18 @@
+import { MMC1 } from "../../src/Mappers/MMC1.js";
+
 describe("MMC1", function() {
     //----------------------------------------------------------------------------------------------------//
     //- Cartridge Fixtures
+
+    /*global $numPRG, $PRGROM */
     def('numPRG', () => 2);
     def('PRGROM', () => new Array($numPRG).fill(0).map(() => new Uint8Array(0x4000)));
     
+    /*global $numCHR, $CHRROM */
     def('numCHR', () => 1);
     def('CHRROM', () => new Array($numCHR*2).fill(0).map(() => new Uint8Array(0x2000)));
     
+    /*global $vertMirroring, $horiMirroring, $cartridge */
     def('vertMirroring', () => true);
     def('horiMirroring', () => true);
     def('cartridge', () => ({
@@ -17,6 +23,7 @@ describe("MMC1", function() {
         horiMirroring: $horiMirroring || false,
     }));
     
+    /*global $PRGROMData0, $PRGROMData1, $CHRROMData0, $CHRROMData1 */
     def('PRGROMData0','PRGROMData1');
     def('CHRROMData0','CHRROMData1');
     beforeEach(function() {
@@ -28,8 +35,8 @@ describe("MMC1", function() {
         }
     });
     //----------------------------------------------------------------------------------------------------//
-    subject(() => new Nestled.MMC1($number, $cartridge));
-    def('number', () => 0);
+    subject(() => new MMC1($number, $cartridge));
+    def('number', () => 0); /*global $number */
     
     its('number', () => is.expected.to.equal($number));
     

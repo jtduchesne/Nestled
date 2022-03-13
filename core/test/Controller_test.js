@@ -1,5 +1,7 @@
+import { Controller, NoController } from "../src/main.js";
+
 describe("Controller", function() {
-    subject(() => new Nestled.Controller);
+    subject(() => new Controller);
     
     function press(buttonName) {
         $subject.getButtonHandler(buttonName)(true);
@@ -19,6 +21,7 @@ describe("Controller", function() {
     its('strobing', () => is.expected.to.be.false);
     
     describe(".read()", function() {
+        /*global $halfStrobe, $fullStrobe */
         def('halfStrobe', () => {
             $subject.write(1);
         });
@@ -109,6 +112,7 @@ describe("Controller", function() {
     });
     
     describe(".write(data)", function() {
+        /*global $data */
         def('action', () => $subject.write($data));
         beforeEach(function() {
             press('a');
@@ -161,6 +165,7 @@ describe("Controller", function() {
     //-------------------------------------------------------------------------------//
     
     describe(".getButtonHandler(name)", function() {
+        /*global $name */
         def('action', () => $subject.getButtonHandler($name));
         
         context("if a name is valid", function() {
@@ -181,7 +186,7 @@ describe("Controller", function() {
 });
 
 describe("NoController", function() {
-    subject(() => new Nestled.NoController);
+    subject(() => new NoController);
     
     describe(".read()", function() {
         def('action', () => $subject.read());
