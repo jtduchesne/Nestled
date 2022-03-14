@@ -7,8 +7,13 @@ export class VideoBuffer {
     }
     
     createNewBuffer() {
-        this.image = new ImageData(this.width, this.height);
-        this.data  = new Uint32Array(this.image.data.buffer);
+        if (typeof ImageData === 'function') {
+            this.image = new ImageData(this.width, this.height);
+            this.data  = new Uint32Array(this.image.data.buffer);
+        } else {
+            this.image = null;
+            this.data  = new Uint32Array(this.width * this.height);
+        }
     }
     
     //===============================================================//
