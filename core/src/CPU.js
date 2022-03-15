@@ -23,6 +23,10 @@ export class CPU {
         this.ram   = new Uint8Array(0x800);
         this.stack = this.ram.subarray(0x100, 0x200);
         
+        this.nmiVector   = () => 0x0000;
+        this.resetVector = () => 0x0000;
+        this.irqVector   = () => 0x0000;
+
         //Addressing modes lookup table
         this.addressLookup = [
             this.imp, this.indX, this.imp, this.indX, this.zero,  this.zero,  this.zero,  this.zero,  this.imp, this.imm,  this.imp, this.imm,  this.abs,  this.abs,  this.abs,  this.abs,

@@ -9,6 +9,7 @@ import AudioOutput from './Audio.js';
 export class NES {
     constructor() {
         this.cpu = new CPU(this);
+        this.apu = this.cpu.apu;
         this.ppu = new PPU(this);
         this.engine = new Engine(this);
         
