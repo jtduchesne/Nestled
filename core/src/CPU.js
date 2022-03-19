@@ -18,6 +18,9 @@ export class CPU {
     constructor(nes) {
         this.bus = nes;
         
+        this.cycle = -1;
+        this.cycleOffset = -1;
+        
         this.apu = new APU(this);
         
         this.ram   = new Uint8Array(0x800);
@@ -26,7 +29,14 @@ export class CPU {
         this.nmiVector   = () => 0x0000;
         this.resetVector = () => 0x0000;
         this.irqVector   = () => 0x0000;
-
+        
+        this.A = 0xFF;
+        this.X = 0xFF;
+        this.Y = 0xFF;
+        this.P = 0xFF;
+        this.SP = 0xFF;
+        this.PC = 0xFFFF;
+        
         //Addressing modes lookup table
         this.addressLookup = [
             this.imp, this.indX, this.imp, this.indX, this.zero,  this.zero,  this.zero,  this.zero,  this.imp, this.imm,  this.imp, this.imm,  this.abs,  this.abs,  this.abs,  this.abs,
