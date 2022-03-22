@@ -32,25 +32,29 @@ export class VideoOutput {
     }
     
     start() {
-        this.context = this.canvas.getContext('2d', {alpha: false});
-        this.context.imageSmoothingEnabled = false;
-        
-        this.offCanvas = document.createElement('canvas');
-        this.offCanvas.width  = 256;
-        this.offCanvas.height = 240;
-        this.offContext = this.offCanvas.getContext('2d', {alpha: true});
-        this.offContext.imageSmoothingEnabled = false;
+        if (this.canvas) {
+            this.context = this.canvas.getContext('2d', {alpha: false});
+            this.context.imageSmoothingEnabled = false;
+            
+            this.offCanvas = document.createElement('canvas');
+            this.offCanvas.width  = 256;
+            this.offCanvas.height = 240;
+            this.offContext = this.offCanvas.getContext('2d', {alpha: true});
+            this.offContext.imageSmoothingEnabled = false;
+        }
     }
     
     stop() {
-        window.cancelAnimationFrame(this.scheduled);
-        
-        this.layers = [];
-        
-        this.context = null;
-        
-        this.offCanvas.remove();
-        this.offContext = null;
+        if (this.canvas) {
+            window.cancelAnimationFrame(this.scheduled);
+            
+            this.layers = [];
+            
+            this.context = null;
+            
+            this.offCanvas.remove();
+            this.offContext = null;
+        }
     }
     
     //===============================================================//
