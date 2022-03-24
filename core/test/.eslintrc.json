@@ -16,7 +16,8 @@
         "$subject": "writable",
         "$action": "writable",
         "$argument": "writable",
-        "$arguments": "writable"
+        "$arguments": "writable",
+        "isSet": "readonly"
     },
     "rules": {
         "indent": ["error", 4, {

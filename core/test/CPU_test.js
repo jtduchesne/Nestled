@@ -1,7 +1,5 @@
 import { NES, APU, Cartridge } from "../src";
 
-const isSet = (v) => (typeof v !== 'undefined');
-
 describe("Cpu", function() {
     def('nes', () => new NES); /*global $nes*/
 

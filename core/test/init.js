@@ -1,6 +1,8 @@
 import { expect } from "chai";
 global.expect = expect;
 
+global.isSet = (v) => (typeof v !== 'undefined');
+
 global.File = class {
     constructor(name, content) {
         this.name = name;
