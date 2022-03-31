@@ -1,5 +1,5 @@
 import Cartridge from './Cartridge.js';
-import Mapper, * as Mappers from "./Mappers.js";
+import Mapper from "./Mapper.js";
 
 export class CartConnector {
     constructor() {
@@ -15,6 +15,27 @@ export class CartConnector {
     get empty()   { return this.cartridge.empty; }
     get present() { return this.cartridge.present; }
     
+    parseFilename(filename) {
+        this.tvSystem = "NTSC";
+        const countryCodes = /\((U|E|Unk|Unl|1|4|A|J|B|K|C|NL|PD|F|S|FC|SW|FN|G|UK|GR|HK|I|H)+\)/.exec(filename);
+        if (countryCodes) {
+            if (countryCodes[0].search(/A|B|[^F]C|NL|E|S|SW|FN|G|UK|GR|I|H/) > 0)
+                this.tvSystem = "PAL";
+            else if (countryCodes[0].search(/F[^C]/) > 0)
+                this.tvSystem = "SECAM"; //wtf la France ?
+        }
+        
+        this.name = filename.replace(
+            /\.[A-Za-z0-9_]+$/, ""
+        ).replace(
+            /\s?\((U|E|Unk|Unl|1|4|A|J|B|K|C|NL|PD|F|S|FC|SW|FN|G|UK|GR|HK|I|H)+\)|\s?\[(!|a|p|b|t|f|T[+-]|h|o)+\]/g, ""
+        ).replace(
+            /_+/g, " "
+        ).trim();
+        
+        this.name = this.name && (this.name[0].toUpperCase() + this.name.slice(1));
+    }
+    
     parseData(data) {
         let header = new DataView(data, 0, 0x10);
         var offset = 0x10;
@@ -29,14 +50,14 @@ export class CartConnector {
         let flags7 = header.getUint8(7);
         
         let mapperNumber = (flags6 >> 4) | (flags7 & 0xF0);
-        if (Mappers.supported(mapperNumber)) {
+        if (Mapper.supported(mapperNumber)) {
             this.statuses.push(
-                `Mapper #${mapperNumber}: ${Mappers.name(mapperNumber)}`
+                `Mapper #${mapperNumber}: ${Mapper.name(mapperNumber)}`
             );
             this.isValid = true;
         } else {
             this.statuses.push(
-                `Unsupported mapper (#${mapperNumber}: ${Mappers.name(mapperNumber)})`
+                `Unsupported mapper (#${mapperNumber}: ${Mapper.name(mapperNumber)})`
             );
             this.isValid = false;
         }
@@ -97,26 +118,6 @@ export class CartConnector {
         }
         
         this.cartridge.init();
-    }
-    parseFilename(filename) {
-        this.tvSystem = "NTSC";
-        const countryCodes = /\((U|E|Unk|Unl|1|4|A|J|B|K|C|NL|PD|F|S|FC|SW|FN|G|UK|GR|HK|I|H)+\)/.exec(filename);
-        if (countryCodes) {
-            if (countryCodes[0].search(/A|B|[^F]C|NL|E|S|SW|FN|G|UK|GR|I|H/) > 0)
-                this.tvSystem = "PAL";
-            else if (countryCodes[0].search(/F[^C]/) > 0)
-                this.tvSystem = "SECAM"; //wtf la France ?
-        }
-        
-        this.name = filename.replace(
-            /\.[A-Za-z0-9_]+$/, ""
-        ).replace(
-            /\s?\((U|E|Unk|Unl|1|4|A|J|B|K|C|NL|PD|F|S|FC|SW|FN|G|UK|GR|HK|I|H)+\)|\s?\[(!|a|p|b|t|f|T[+-]|h|o)+\]/g, ""
-        ).replace(
-            /_+/g, " "
-        ).trim();
-        
-        this.name = this.name && (this.name[0].toUpperCase() + this.name.slice(1));
     }
     
     load(file) {

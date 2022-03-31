@@ -1,10 +1,7 @@
-import NROM from './Mappers/NROM.js';
-import MMC1 from './Mappers/MMC1.js';
+export { NROM } from './Mappers/NROM.js';
+export { MMC1 } from './Mappers/MMC1.js';
 
-const constructors = Object.freeze([NROM, MMC1]);
-const supported = (number) => typeof constructors[number] !== 'undefined';
-
-const names = Object.freeze([
+export default Object.freeze([
     //0x00
     "NROM","Nintendo MMC1","UNROM","CNROM","Nintendo MMC3","Nintendo MMC5","FFE Rev. A","ANROM",
     "","Nintendo MMC2","Nintendo MMC4","Color Dreams","REX DBZ 5","CPROM","REX SL-1632","100-in-1",
@@ -36,30 +33,21 @@ const names = Object.freeze([
     "AGCI 50282","SA72007","SA0161M","TCU01","SA0037","SA0036","S74LS374N","",
     "","BANDAI SRAM","","","","BANDAI BARCODE","","BANDAI 24C01",
     //0xA0
-    "SA009","","","","","","SUBOR Rev. A","SUBOR Rev. B","","","","","","","","",
+    "SA009","","","","","","SUBOR Rev. A","SUBOR Rev. B",
+    "","","","","","","","",
     //0xB0
-    "BMCFK23C","","","","","","","","","","","","","","","",
+    "BMCFK23C","","","","","","","",
+    "","","","","","","","",
     //0xC0
     "TW MMC3+VRAM Rev. B","NTDEC TC-112","TW MMC3+VRAM Rev. C","TW MMC3+VRAM Rev. D","","","TW MMC3+VRAM Rev. E","",
     "","","","","","","NAMCOT 108 Rev. C","TAITO X1-005 Rev. B",
     //0xD0
-    "","","","","","","","","","","","UNLA9746","Debug Mapper","UNLN625092","","",
+    "","","","","","","","",
+    "","","","UNLA9746","Debug Mapper","UNLN625092","","",
     //0xE0
     "","","BMC 22+20-in-1","","","","BMC Contra+22-in-1","",
     "BMC QUATTRO","BMC 22+20-in-1 RST","BMC MAXI","","","","UNL6035052","",
     //0xF0
-    "","","","S74LS374NA","DECATHLON","","FONG SHEN BANG","","","","","","SAN GUO ZHI PIRATE","DRAGON BALL PIRATE","","",
+    "","","","S74LS374NA","DECATHLON","","FONG SHEN BANG","",
+    "","","","","SAN GUO ZHI PIRATE","DRAGON BALL PIRATE","","",
 ]);
-const name = (number) => names[number] || "Unknown";
-
-export default class {
-    constructor(number) {
-        return new (constructors[number] || NROM)(number);
-    }
-}
-
-export {
-    constructors,
-    supported, name,
-    NROM, MMC1,
-};
