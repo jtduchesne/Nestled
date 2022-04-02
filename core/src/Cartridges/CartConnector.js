@@ -3,23 +3,30 @@ import Mapper from "./Mapper.js";
 
 export class CartConnector {
     constructor() {
-        this.name = "No Cartridge";
+        this.reset();
+    }
+    
+    reset() {
         this.cartridge = new Cartridge;
+        
+        this.name = "No Cartridge";
+        this.tvSystem = "NTSC";
         
         this.statuses = [];
         
-        this.isLoaded = false;
-        this.isValid = false;
+        this.fileLoaded    = false;
+        this.fileValid     = false;
+        this.fileSupported = false;
     }
     
-    get empty()   { return this.cartridge.empty; }
-    get present() { return this.cartridge.present; }
+    //=======================================================================================//
     
     parseFilename(filename) {
-        this.tvSystem = "NTSC";
         const countryCodes = /\((U|E|Unk|Unl|1|4|A|J|B|K|C|NL|PD|F|S|FC|SW|FN|G|UK|GR|HK|I|H)+\)/.exec(filename);
         if (countryCodes) {
-            if (countryCodes[0].search(/A|B|[^F]C|NL|E|S|SW|FN|G|UK|GR|I|H/) > 0)
+            if (countryCodes[0].search(/U[^Kn]|1|4|J|[^U]K|PD|FC|HK/) > 0)
+                this.tvSystem = "NTSC";
+            else if (countryCodes[0].search(/E|A|B|[^F]C|NL|S|SW|FN|G|UK|GR|I|H/) > 0)
                 this.tvSystem = "PAL";
             else if (countryCodes[0].search(/F[^C]/) > 0)
                 this.tvSystem = "SECAM"; //wtf la France ?
@@ -28,7 +35,9 @@ export class CartConnector {
         this.name = filename.replace(
             /\.[A-Za-z0-9_]+$/, ""
         ).replace(
-            /\s?\((U|E|Unk|Unl|1|4|A|J|B|K|C|NL|PD|F|S|FC|SW|FN|G|UK|GR|HK|I|H)+\)|\s?\[(!|a|p|b|t|f|T[+-]|h|o)+\]/g, ""
+            /\s?\((U|E|Unk|Unl|1|4|A|J|B|K|C|NL|PD|F|S|FC|SW|FN|G|UK|GR|HK|I|H)+\)/g, ""
+        ).replace(
+            /\s?\[(!|a|p|b|t|f|T[+-]|h|o)+\]/g, ""
         ).replace(
             /_+/g, " "
         ).trim();
@@ -42,7 +51,9 @@ export class CartConnector {
         
         if (header.getUint32(0) === 0x4E45531A) { //"NES" + MS-DOS end-of-file
             this.statuses.push("iNES format");
+            this.fileValid = true;
         } else {
+            this.fileValid = false;
             throw new Error("Invalid format");
         }
         
@@ -54,12 +65,12 @@ export class CartConnector {
             this.statuses.push(
                 `Mapper #${mapperNumber}: ${Mapper.name(mapperNumber)}`
             );
-            this.isValid = true;
+            this.fileSupported = true;
         } else {
             this.statuses.push(
                 `Unsupported mapper (#${mapperNumber}: ${Mapper.name(mapperNumber)})`
             );
-            this.isValid = false;
+            this.fileSupported = false;
         }
         this.cartridge = new Mapper(mapperNumber);
         
@@ -120,10 +131,10 @@ export class CartConnector {
         this.cartridge.init();
     }
     
+    //=======================================================================================//
+    
     load(file) {
-        this.statuses = [];
-        this.isLoaded = false;
-        this.isValid = false;
+        this.reset();
         
         return new Promise(
             (resolve, reject) => {
@@ -146,8 +157,8 @@ export class CartConnector {
             }
         ).then(
             (data) => {
+                this.fileLoaded = true;
                 this.parseData(data);
-                this.isLoaded = true;
                 return this;
             }
         ).catch(
@@ -165,9 +176,7 @@ export class CartConnector {
         );
     }
     unload() {
-        this.cartridge = new Cartridge;
-        this.isLoaded = false;
-        this.isValid = false;
+        this.reset();
         
         return Promise.resolve(this);
     }

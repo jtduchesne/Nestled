@@ -17,3 +17,7 @@ global.FileReader = class {
         this.onload();
     }
 };
+
+global.DOMException = class DOMException extends Error {
+    get [Symbol.toStringTag]() { return 'DOMException'; }
+};
