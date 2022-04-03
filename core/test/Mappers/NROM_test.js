@@ -1,108 +1,117 @@
-import { NROM } from "../../src/Mappers/NROM.js";
+import { NROM } from "../../src/Cartridges/Mappers";
 
 describe("NROM", function() {
-    //----------------------------------------------------------------------------------------------------//
-    //- Cartridge Fixtures
-
-    /*global $numPRG, $PRGROM */
-    def('numPRG', () => 2);
-    def('PRGROM', () => new Array($numPRG).fill(0).map(() => new Uint8Array(0x4000)));
+    subject(() => new NROM);
     
-    /*global $numCHR, $CHRROM */
-    def('numCHR', () => 1);
-    def('CHRROM', () => new Array($numCHR*2).fill(0).map(() => new Uint8Array(0x1000)));
+    its('mapperNumber', () => is.expected.to.equal(0));
     
-    /*global $vertMirroring, $horiMirroring, $cartridge */
-    def('vertMirroring', () => true);
-    def('horiMirroring', () => true);
-    def('cartridge', () => ({
-        PRGRAM: new Uint8Array(0),
-        CHRRAM: new Uint8Array(0),
-        PRGROM: $PRGROM, CHRROM: $CHRROM,
-        vertMirroring: $vertMirroring || false,
-        horiMirroring: $horiMirroring || false,
-    }));
+    its('PRGBank', () => is.expected.to.be.an('array').and.have.lengthOf(2));
+    its('CHRBank', () => is.expected.to.be.an('array').and.have.lengthOf(2));
     
-    /*global $PRGROMData0, $PRGROMData1, $CHRROMData0, $CHRROMData1 */
-    def('PRGROMData0','PRGROMData1');
-    def('CHRROMData0','CHRROMData1');
-    beforeEach(function() {
-        if ($PRGROMData0 && $numPRG > 0) $PRGROM[0].fill($PRGROMData0);
-        if ($PRGROMData1 && $numPRG > 1) $PRGROM[1].fill($PRGROMData1);
-        if ($CHRROMData0 && $numCHR > 0) {
-            $CHRROM[0].fill($CHRROMData0);
-            $CHRROM[1].fill($CHRROMData1);
-        }
-    });
-    //----------------------------------------------------------------------------------------------------//
-    subject(() => new NROM($number, $cartridge));
-    def('number', () => 0); /*global $number */
+    its('empty',   () => is.expected.to.be.false);
+    its('present', () => is.expected.to.be.true);
     
-    its('number', () => is.expected.to.equal($number));
-    
-    its('vertMirroring', () => is.expected.to.equal($vertMirroring));
-    its('horiMirroring', () => is.expected.to.equal($horiMirroring));
-            
     //-------------------------------------------------------------------------------//
     
-    describe(".cpuRead(address)", function() {
-        def('PRGROMData0', () => 0x34);
-        def('PRGROMData1', () => 0x56);
+    describe(".init()", function() {
+        def('action', () => $subject.init());
         
-        context("if there is no PRG-ROM data", function() {
-            def('numPRG', () => 0);
-        
-            it("does not throw any errors", function() {
-                expect(() => $subject.cpuRead(0x8000)).to.not.throw();
-                expect(() => $subject.cpuRead(0xFFFF)).to.not.throw();
+        context("PRG", function() {
+            /*global $PRGROM */
+            beforeEach(() => { $subject.PRGROM = $PRGROM; });
+            
+            context("with only 1 bank", function() {
+                def('PRGROM', () => ( [[1]] ));
+                
+                it("sets both PRGBanks to that bank", function() {
+                    expect(() => $action).to.change($subject, 'PRGBank');
+                    expect($subject.PRGBank[0]).to.equal($subject.PRGROM[0]);
+                    expect($subject.PRGBank[1]).to.equal($subject.PRGROM[0]);
+                });
+            });
+            context("with 2 banks", function() {
+                def('PRGROM', () => ( [[1],[2]] ));
+                
+                it("sets PRGBanks to those banks", function() {
+                    expect(() => $action).to.change($subject, 'PRGBank');
+                    expect($subject.PRGBank[0]).to.equal($subject.PRGROM[0]);
+                    expect($subject.PRGBank[1]).to.equal($subject.PRGROM[1]);
+                });
             });
         });
-        context("if there is only 1 PRG-ROM bank", function() {
-            def('numPRG', () => 1);
         
-            it("always reads from the same bank", function() {
-                expect($subject.cpuRead(0x8000)).to.equal($PRGROMData0);
-                expect($subject.cpuRead(0xFFFF)).to.equal($PRGROMData0);
-            });
-        });
-        context("if there are 2 PRG-ROM banks", function() {
-            def('numPRG', () => 2);
-        
-            it("reads from both banks", function() {
-                expect($subject.cpuRead(0x8000)).to.equal($PRGROMData0);
-                expect($subject.cpuRead(0xFFFF)).to.equal($PRGROMData1);
+        context("CHR", function() {
+            /*global $CHRROM */
+            beforeEach(() => { $subject.CHRROM = $CHRROM; });
+            
+            context("with only 1 bank (of 8kb, which mean 2x 4kb banks...)", function() {
+                def('CHRROM', () => ( [[1],[2]] ));
+                
+                it("sets CHRBanks to that bank", function() {
+                    expect(() => $action).to.change($subject, 'CHRBank');
+                    expect($subject.CHRBank[0]).to.equal($subject.CHRROM[0]);
+                    expect($subject.CHRBank[1]).to.equal($subject.CHRROM[1]);
+                });
             });
         });
     });
     
     //-------------------------------------------------------------------------------//
     
-    describe(".ppuRead(address)", function() {
-        def('CHRROMData0', () => 0x34);
-        def('CHRROMData1', () => 0x56);
+    context("Memory Access", function() {
+        /*global $PRGROMData1, $PRGROMData2 */
+        def(['PRGROMData1','PRGROMData2']);
+        beforeEach(() => {
+            if ($PRGROMData1) $subject.PRGROM.push(new Uint8Array(0x4000).fill($PRGROMData1));
+            if ($PRGROMData2) $subject.PRGROM.push(new Uint8Array(0x4000).fill($PRGROMData2));
+            //$subject.init();
+        });
         
-        context("if there is no CHR-ROM data", function() {
-            def('numCHR', () => 0);
+        describe(".cpuRead(address)", function() {
+            context("with only 1 PRG bank", function() {
+                def('PRGROMData1', () => 0xA5); // b10100101
+                
+                it("always reads from the same bank", function() {
+                    expect($subject.cpuRead(0x8000)).to.equal($PRGROMData1);
+                    expect($subject.cpuRead(0xFFFF)).to.equal($PRGROMData1);
+                });
+            });
             
-            it("does not throw any errors", function() {
-                expect(() => $subject.ppuRead(0x0000)).to.not.throw();
-                expect(() => $subject.ppuRead(0x1FFF)).to.not.throw();
+            context("with 2 PRG banks", function() {
+                def('PRGROMData1', () => 0xA5); // b10100101
+                def('PRGROMData2', () => 0xC3); // b11000011
+                
+                it("reads from both banks", function() {
+                    expect($subject.cpuRead(0x8000)).to.equal($PRGROMData1);
+                    expect($subject.cpuRead(0xFFFF)).to.equal($PRGROMData2);
+                });
             });
         });
-        context("if there is 1 CHR-ROM bank", function() {
-            def('numCHR', () => 1);
-            
-            it("always reads from the first banks", function() {
-                expect($subject.ppuRead(0x0000)).to.equal($CHRROMData0);
-                expect($subject.ppuRead(0x1FFF)).to.equal($CHRROMData1);
-            });
-        });
-        context("if there is more than 1 CHR-ROM bank", function() {
-            def('numCHR', () => 2);
         
-            it("always reads from the first banks", function() {
-                expect($subject.ppuRead(0x0000)).to.equal($CHRROMData0);
-                expect($subject.ppuRead(0x1FFF)).to.equal($CHRROMData1);
+        /*global $CHRROMData1, $CHRROMData2 */
+        def(['CHRROMData1','CHRROMData2']);
+        beforeEach(() => {
+            if ($CHRROMData1) $subject.CHRROM.push(new Uint8Array(0x1000).fill($CHRROMData1));
+            if ($CHRROMData2) $subject.CHRROM.push(new Uint8Array(0x1000).fill($CHRROMData2));
+            $subject.init();
+        });
+        
+        describe(".ppuRead(address)", function() {
+            context("without CHR data", function() {
+                it("always returns -0-", function() {
+                    expect($subject.ppuRead(0x0000)).to.equal(0);
+                    expect($subject.ppuRead(0x1FFF)).to.equal(0);
+                });
+            });
+            
+            context("with 1 CHR bank (of 8kb, which mean 2x 4kb banks...)", function() {
+                def('CHRROMData1', () => 0xA5); // b10100101
+                def('CHRROMData2', () => 0xC3); // b11000011
+                
+                it("reads from those banks", function() {
+                    expect($subject.ppuRead(0x0000)).to.equal($CHRROMData1);
+                    expect($subject.ppuRead(0x1FFF)).to.equal($CHRROMData2);
+                });
             });
         });
     });
@@ -110,35 +119,26 @@ describe("NROM", function() {
     //-------------------------------------------------------------------------------//
     
     describe(".ciramA10(address)", function() {
-        context("with vertical mirroring", function() {
-            def('vertMirroring', () => true);
-            def('horiMirroring', () => false);
-            
-            it("is set when address & 0x400", function() {
-                expect($subject.ciramA10(0x5555)).to.be.ok;
-            });
-            it("is not set when address & 0x800", function() {
+        context("with no mirroring", function() {
+            it("is never set", function() {
+                expect($subject.ciramA10(0x5555)).to.not.be.ok;
                 expect($subject.ciramA10(0xAAAA)).to.not.be.ok;
             });
         });
         context("with horizontal mirroring", function() {
-            def('vertMirroring', () => false);
-            def('horiMirroring', () => true);
+            beforeEach(() => { $subject.horiMirroring = true; });
             
-            it("is not set when address & 0x400", function() {
-                expect($subject.ciramA10(0x5555)).to.not.be.ok;
-            });
             it("is set when address & 0x800", function() {
-                expect($subject.ciramA10(0xAAAA)).to.be.ok;
+                expect($subject.ciramA10(0x8888)).to.be.ok;
+                expect($subject.ciramA10(0x7777)).to.not.be.ok;
             });
         });
-        context("with no mirroring", function() {
-            def('vertMirroring', () => false);
-            def('horiMirroring', () => false);
+        context("with vertical mirroring", function() {
+            beforeEach(() => { $subject.vertMirroring = true; });
             
-            it("is never set", function() {
-                expect($subject.ciramA10(0x5555)).to.not.be.ok;
-                expect($subject.ciramA10(0xAAAA)).to.not.be.ok;
+            it("is set when address & 0x400", function() {
+                expect($subject.ciramA10(0x4444)).to.be.ok;
+                expect($subject.ciramA10(0xBBBB)).to.not.be.ok;
             });
         });
     });
