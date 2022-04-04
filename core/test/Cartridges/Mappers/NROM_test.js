@@ -1,4 +1,4 @@
-import { NROM } from "../../src/Cartridges/Mappers";
+import { NROM } from "../../../src/Cartridges/Mappers";
 
 describe("NROM", function() {
     subject(() => new NROM);

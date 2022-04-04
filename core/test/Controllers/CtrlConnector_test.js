@@ -1,4 +1,4 @@
-import CtrlConnector, { Controller } from "../src/Controllers";
+import CtrlConnector, { Controller } from "../../src/Controllers";
 
 describe("CtrlConnector", function() {
     subject(() => new CtrlConnector);

@@ -1,4 +1,4 @@
-import { Controller } from "../src/Controllers";
+import { Controller } from "../../src/Controllers";
 
 describe("Controller", function() {
     subject(() => new Controller);

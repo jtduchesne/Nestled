@@ -1,4 +1,4 @@
-import CartConnector, { Cartridge } from "../src/Cartridges";
+import CartConnector, { Cartridge } from "../../src/Cartridges";
 
 describe("CartConnector", function() {
     subject(() => new CartConnector);

@@ -1,4 +1,4 @@
-import { Keyboard } from "../../src/Controllers/Devices";
+import { Keyboard } from "../../../src/Controllers/Devices";
 
 describe("Keyboard", function() {
     subject(() => new Keyboard);

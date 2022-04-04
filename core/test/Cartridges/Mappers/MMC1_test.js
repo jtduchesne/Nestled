@@ -1,4 +1,4 @@
-import { MMC1 } from "../../src/Cartridges/Mappers";
+import { MMC1 } from "../../../src/Cartridges/Mappers";
 
 describe("MMC1", function() {
     subject(() => new MMC1);

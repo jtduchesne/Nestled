@@ -1,4 +1,4 @@
-import { Cartridge } from "../src";
+import { Cartridge } from "../../src";
 
 describe("Cartridge", function() {
     subject(() => new Cartridge);

@@ -1,4 +1,4 @@
-import { Joypad } from "../src/Controllers/Joypad";
+import { Joypad } from "../../src/Controllers/Joypad";
 
 describe("Joypad", function() {
     subject(() => new Joypad);
