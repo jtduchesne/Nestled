@@ -1,4 +1,4 @@
-import { Keyboard } from "../../src/main.js";
+import { Keyboard } from "../../src/Controllers/Devices";
 
 describe("Keyboard", function() {
     subject(() => new Keyboard);
@@ -68,18 +68,18 @@ describe("Keyboard", function() {
             context("and keyDown=true", function() {
                 def('keyDown', () => true);
                 
-                it("press that button", function() {
-                    expect(() => $action).to.change($subject, 'start');
-                    expect($subject.start).to.equal(true);
+                it("presses that button", function() {
+                    expect(() => $action).to.change($subject.states, '3');
+                    expect($subject.states[3]).to.equal(1);
                 });
             });
             context("and keyDown=false", function() {
                 def('keyDown', () => false);
-                beforeEach(function() { $subject.start = 1; });
+                beforeEach(function() { $subject.states = [1,1,1,1,1,1,1,1]; });
                 
                 it("releases that button", function() {
-                    expect(() => $action).to.change($subject, 'start');
-                    expect($subject.start).to.equal(false);
+                    expect(() => $action).to.change($subject.states, '3');
+                    expect($subject.states[3]).to.equal(0);
                 });
             });
         });

@@ -25,7 +25,7 @@ export class Keyboard extends Joypad {
         this.keyMap = {};
         if (opts) this.assignKeys(opts);
         
-        if (window) {
+        if (typeof window !== 'undefined') {
             window.addEventListener('keydown', (e) => this.pressKey(e, true));
             window.addEventListener('keyup',   (e) => this.pressKey(e, false));
         }
