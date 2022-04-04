@@ -1,4 +1,4 @@
-import Joypad from '../Joypad';
+import Joypad from '../Joypad.js';
 
 const KEYS = Object.freeze({
     8: 'Backspace', 9: 'Tab', 13: 'Enter', 16: 'Shift', 17: 'Ctrl', 18: 'Alt', 19: 'Pause',
@@ -25,7 +25,7 @@ export class Keyboard extends Joypad {
         this.keyMap = {};
         if (opts) this.assignKeys(opts);
         
-        if (window) {
+        if (typeof window !== 'undefined') {
             window.addEventListener('keydown', (e) => this.pressKey(e, true));
             window.addEventListener('keyup',   (e) => this.pressKey(e, false));
         }

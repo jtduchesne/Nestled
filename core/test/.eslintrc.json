@@ -4,7 +4,29 @@
         "mocha": true,
         "es6": true
     },
+    "parserOptions": {
+        "sourceType": "module"
+    },
+    "globals": {
+        "def": "readonly",
+        "its": "readonly",
+        "is": "readonly",
+        "subject": "readonly",
+        "expect": "readonly",
+        "$subject": "writable",
+        "$action": "writable",
+        "$argument": "writable",
+        "$arguments": "writable",
+        "isSet": "readonly"
+    },
     "rules": {
-        "no-undef": "off"
+        "indent": ["error", 4, {
+            "ignoreComments": true,
+            "MemberExpression": "off",
+            "FunctionDeclaration": { "parameters": "first" },
+            "FunctionExpression": { "parameters": "first" },
+            "ArrayExpression": "first",
+            "ObjectExpression": "first"
+        }]
     }
 }

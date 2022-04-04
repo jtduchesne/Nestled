@@ -1,9 +1,8 @@
-import { Controller } from "./Controller";
+import Controller from "./Controller.js";
 
 export class CtrlConnector {
-    constructor(...controllers) {
+    constructor() {
         this.controllers = [new Controller, new Controller];
-        controllers.forEach((controller) => this.insert(controller));
     }
     
     insert(controller) {

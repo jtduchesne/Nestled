@@ -39,12 +39,13 @@ export class AudioOutput {
     //===============================================================//
     
     start() {
-        this.context = new AudioContext();
-        
-        this.gainNode = this.context.createGain();
-        this.gainNode.gain.value = this.value / this.max;
-        this.gainNode.connect(this.context.destination);
-        
+        if (typeof AudioContext === 'function') {
+            this.context = new AudioContext();
+            
+            this.gainNode = this.context.createGain();
+            this.gainNode.gain.value = this.value / this.max;
+            this.gainNode.connect(this.context.destination);
+        }
         this.next = 0.0;
     }
     stop() {
@@ -58,17 +59,19 @@ export class AudioOutput {
     //===============================================================//
     
     schedule(buffer) {
-        let source = this.context.createBufferSource();
-        source.buffer = buffer;
-        source.connect(this.gainNode);
-        
-        let bufferDuration = source.buffer.duration;
-        if (this.next < this.context.currentTime) {
-            this.next = this.context.currentTime + bufferDuration;
-            source.start();
-        } else {
-            this.next += bufferDuration;
-            source.start(this.next, 0, bufferDuration);
+        if (this.context) {
+            let source = this.context.createBufferSource();
+            source.buffer = buffer;
+            source.connect(this.gainNode);
+            
+            let bufferDuration = source.buffer.duration;
+            if (this.next < this.context.currentTime) {
+                this.next = this.context.currentTime + bufferDuration;
+                source.start();
+            } else {
+                this.next += bufferDuration;
+                source.start(this.next, 0, bufferDuration);
+            }
         }
     }
 }

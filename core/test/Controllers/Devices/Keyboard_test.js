@@ -1,7 +1,10 @@
+import { Keyboard } from "../../../src/Controllers/Devices";
+
 describe("Keyboard", function() {
-    subject(() => new Nestled.Keyboard);
+    subject(() => new Keyboard);
     
     describe(".assignKey(buttonName, keyCode)", function() {
+        /*global $buttonName, $keyCode */
         def('action', () => $subject.assignKey($buttonName, $keyCode));
         def('keyCode', () => 13);
         
@@ -30,6 +33,7 @@ describe("Keyboard", function() {
     });
     
     describe(".assignKeys(opts)", function() {
+        /*global $opts */
         def('action', () => $subject.assignKeys($opts));
         
         context("if all the names are valid", function() {
@@ -52,6 +56,7 @@ describe("Keyboard", function() {
     });
     
     describe(".pressKey(event, keyDown)", function() {
+        /*global $event, $keyDown */
         def('action', () => $subject.pressKey($event, $keyDown));
         beforeEach(function() {
             $subject.assignKey('start', 13);
@@ -63,18 +68,18 @@ describe("Keyboard", function() {
             context("and keyDown=true", function() {
                 def('keyDown', () => true);
                 
-                it("press that button", function() {
-                    expect(() => $action).to.change($subject, 'start');
-                    expect($subject.start).to.equal(true);
+                it("presses that button", function() {
+                    expect(() => $action).to.change($subject.states, '3');
+                    expect($subject.states[3]).to.equal(1);
                 });
             });
             context("and keyDown=false", function() {
                 def('keyDown', () => false);
-                beforeEach(function() { $subject.start = 1; });
+                beforeEach(function() { $subject.states = [1,1,1,1,1,1,1,1]; });
                 
                 it("releases that button", function() {
-                    expect(() => $action).to.change($subject, 'start');
-                    expect($subject.start).to.equal(false);
+                    expect(() => $action).to.change($subject.states, '3');
+                    expect($subject.states[3]).to.equal(0);
                 });
             });
         });

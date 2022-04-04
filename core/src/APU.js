@@ -4,7 +4,7 @@ import {
     TriangleChannel,
     NoiseChannel,
     DMC
-} from './Audio/Channels';
+} from './Audio/Channels.js';
 
 const cyclesFrequency = 1789772.727 / 2;
 
@@ -19,14 +19,18 @@ export class APU {
         this.noise    = new NoiseChannel;
         this.dmc      = new DMC(cpu);
         
-        this.tick  = false;
-        this.cycle = 0;
+        this.audioBuffer       = null;
+        this.cyclesPerSample   = 0;
+        this.cyclesUntilSample = 0;
         
         this.irqDisabled = false;
         this.irq         = false;
         
         this.status  = null;
         this.counter = null;
+        
+        this.carry = 0;
+        this.cycle = 0;
     }
     
     powerOn() {
@@ -61,15 +65,15 @@ export class APU {
     //== Registers ==================================================//
     //= 0x4015 Status =//
     get status() {
-        let value = (this.pulse1.length   && 0x01) |
-                    (this.pulse2.length   && 0x02) |
-                    (this.triangle.length && 0x04) |
-                    (this.noise.length    && 0x08) |
-                    (this.dmc.sampleLeft  && 0x10) |
-                    (this.dmc.irq         && 0x80) |
+        let value = (this.pulse1.length   && 0x01) +
+                    (this.pulse2.length   && 0x02) +
+                    (this.triangle.length && 0x04) +
+                    (this.noise.length    && 0x08) +
+                    (this.dmc.sampleLeft  && 0x10) +
+                    (this.dmc.irq         && 0x80) +
                     (this.irq             && 0x40);
-        this.dmc.irq  = false;
-        this.irq      = false;
+        this.dmc.irq = false;
+        this.irq     = false;
         
         return value;
     }
@@ -92,13 +96,18 @@ export class APU {
     //= 0x4017 Frame counter =//
     set counter(value) {
         if (value !== null) {
-            this.counterMode = (value & 0x80) >>> 7;
-            this.irqDisabled = !!(value & 0x40);
+            if (value >= 0x80) {
+                this.counterMode = 1;
+                this.irqDisabled = (value >= 0xC0);
+            } else {
+                this.counterMode = 0;
+                this.irqDisabled = (value >= 0x40);
+            }
             
             if (this.irqDisabled)
                 this.irq = false;
             
-            this.resetDelay = this.tick ? 3 : 4;
+            this.resetDelay = this.carry ? 3 : 4;
             
             if (this.counterMode === 1) {
                 this.doQuarter();
@@ -137,18 +146,16 @@ export class APU {
     
     //== Execution ==================================================//
     doCycles(count) {
-        let tick = this.tick;
-        while (count--) {
-            if (tick) {
-                if (this.resetDelay > 0) {
-                    if (--this.resetDelay === 0)
-                        this.cycle = 0;
-                }
-                this.doCycle();
+        let cycle = count + this.carry;
+        this.carry = cycle % 2;
+        cycle = (cycle - this.carry) / 2;
+        while (cycle--) {
+            if (this.resetDelay > 0) {
+                if (--this.resetDelay === 0)
+                    this.cycle = 0;
             }
-            tick = !tick;
+            this.doCycle();
         }
-        this.tick = tick;
     }
     
     doCycle() {
@@ -190,7 +197,7 @@ export class APU {
         
         if (--this.cyclesUntilSample <= 0) {
             this.doSample();
-            this.cyclesUntilSample = this.cyclesPerSample;
+            this.cyclesUntilSample += this.cyclesPerSample;
         }
     }
     

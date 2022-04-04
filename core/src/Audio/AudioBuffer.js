@@ -2,15 +2,20 @@ export class AudioBuffer {
     constructor(output) {
         this.output       = output;
         this.context      = output.context;
-        this.sampleRate   = this.context.sampleRate;
+        this.sampleRate   = this.context ? this.context.sampleRate : 44100;
         this.bufferLength = this.sampleRate / 30;
         
         this.createNewBuffer();
     }
     
     createNewBuffer() {
-        this.buffer = this.context.createBuffer(1, this.bufferLength, this.sampleRate);
-        this.data   = this.buffer.getChannelData(0);
+        if (this.context) {
+            this.buffer = this.context.createBuffer(1, this.bufferLength, this.sampleRate);
+            this.data   = this.buffer.getChannelData(0);
+        } else {
+            this.buffer = null;
+            this.data   = new Uint8Array(this.bufferLength);
+        }
         
         this.index = 0;
     }

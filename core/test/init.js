@@ -1,12 +1,7 @@
-global.expect = require('chai').expect;
-global.Nestled = require('../../public/javascripts/nestled.cjs.js');
+import { expect } from "chai";
+global.expect = expect;
 
-global.window = undefined;
-global.document = {
-    createElement: (name) => {
-        if (name === 'canvas') return require('canvas').createCanvas();
-    }
-};
+global.isSet = (v) => (typeof v !== 'undefined');
 
 global.File = class {
     constructor(name, content) {
@@ -23,8 +18,6 @@ global.FileReader = class {
     }
 };
 
-global.AudioContext = class {
-    createBuffer(channels, bufferLength, sampleRate) {
-        return new Float32Array(channels * bufferLength);
-    }
+global.DOMException = class DOMException extends Error {
+    get [Symbol.toStringTag]() { return 'DOMException'; }
 };

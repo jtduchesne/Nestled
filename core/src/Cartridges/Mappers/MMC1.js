@@ -1,4 +1,4 @@
-import Cartridge from '../Cartridge';
+import Cartridge from '../Cartridge.js';
 
 export class MMC1 extends Cartridge {
     constructor(number) {
@@ -15,16 +15,15 @@ export class MMC1 extends Cartridge {
     init() {
         super.init();
         
-        this.lastPRGBank = this.PRGROM[this.PRGROM.length-1];
+        this.firstPRGBank = this.PRGROM[0];
+        this.lastPRGBank  = this.PRGROM[this.PRGROM.length-1];
         
-        this.PRGBank[0] = this.PRGROM[0];
+        this.PRGBank[0] = this.firstPRGBank;
         this.PRGBank[1] = this.lastPRGBank;
     }
     
     //== Internal registers =========================================//
     set control(value) {
-        this.flags = value;
-        
         this.mirroring   = (value & 0x03);
         this.PRGBankMode = (value & 0x0C) >> 2;
         this.CHRBankMode = (value & 0x10) >> 4;
@@ -46,12 +45,12 @@ export class MMC1 extends Cartridge {
     }
     
     set PRG(value) {
-        if (value >= 0x10) value -= 0x10;
+        while (value >= 0x10) value -= 0x10;
         if (this.PRGBankMode === 3) {
             this.PRGBank[0] = this.PRGROM[value];
             this.PRGBank[1] = this.lastPRGBank;
         } else if (this.PRGBankMode === 2) {
-            this.PRGBank[0] = this.PRGROM[0];
+            this.PRGBank[0] = this.firstPRGBank;
             this.PRGBank[1] = this.PRGROM[value];
         } else {
             let bank = value & ~1;
@@ -61,23 +60,25 @@ export class MMC1 extends Cartridge {
     }
     
     write(address, data) {
-        switch (address & 0x6000) {
+        switch (address - 0x8000) {
         case 0x0000: this.control = data; break;
         case 0x2000: this.CHR0    = data; break;
         case 0x4000: this.CHR1    = data; break;
         case 0x6000: this.PRG     = data; break;
+        default: this.write(address & 0xE000, data);
         }
     }
     
     //== Memory access from CPU =====================================//
     cpuWrite(address, data) {
         if (address >= 0x8000) {
-            if (data & 0x80) {
+            if (data >= 0x80) {
                 this.buffer = 0;
                 this.index = 0;
-                this.control = (this.flags | 0xC);
+                this.mirroring = 0;
+                this.CHRBankMode = 0;
             } else {
-                this.buffer |= ((data & 0x1) << this.index);
+                this.buffer += ((data & 0x1) << this.index);
                 if (++this.index === 5) {
                     this.write(address, this.buffer);
                     this.buffer = 0;

@@ -1,14 +1,15 @@
 import CPU from './CPU.js';
 import PPU from './PPU.js';
 import Engine from './Engine.js';
-import CartConnector from './Cartridges';
-import CtrlConnector from './Controllers';
-import VideoOutput from './Video';
-import AudioOutput from './Audio';
+import CartConnector from './Cartridges.js';
+import CtrlConnector from './Controllers.js';
+import VideoOutput from './Video.js';
+import AudioOutput from './Audio.js';
 
 export class NES {
     constructor() {
         this.cpu = new CPU(this);
+        this.apu = this.cpu.apu;
         this.ppu = new PPU(this);
         this.engine = new Engine(this);
         

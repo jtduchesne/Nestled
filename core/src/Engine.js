@@ -18,6 +18,8 @@ export class Engine {
         this.firstLoop = this.firstLoop.bind(this);
         this.mainLoop  = this.mainLoop.bind(this);
         
+        this.runningLoop = null;
+        
         this.init();
         
         this.isPowered = false;
@@ -52,6 +54,7 @@ export class Engine {
     }
     powerOff() {
         clearTimeout(this.runningLoop);
+        this.runningLoop = null;
         
         this.isPowered = false;
         this.isPaused = false;
@@ -59,10 +62,11 @@ export class Engine {
     
     pause() {
         if (this.isPaused) {
-            this.runningLoop = setTimeout(this.mainLoop, 0);
+            this.runningLoop = setTimeout(this.firstLoop, 0);
             this.isPaused = false;
         } else {
             clearTimeout(this.runningLoop);
+            this.runningLoop = null;
             this.isPaused = this.isPowered;
         }
         return this.isPaused;
@@ -92,6 +96,8 @@ export class Engine {
     }
     
     firstLoop() {
+        if (typeof window === 'undefined') return;
+        
         let timestamp = window.performance.now();
         
         let cpu = this.cpu;

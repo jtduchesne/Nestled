@@ -1,24 +1,22 @@
-describe("Controller", function() {
-    subject(() => new Nestled.Controller);
+import { Joypad } from "../../src/Controllers/Joypad";
+
+describe("Joypad", function() {
+    subject(() => new Joypad);
     
     function press(buttonName) {
         $subject.getButtonHandler(buttonName)(true);
     }
     
-    its('a',      () => is.expected.to.equal(false));
-    its('b',      () => is.expected.to.equal(false));
-    its('select', () => is.expected.to.equal(false));
-    its('start',  () => is.expected.to.equal(false));
-    its('up',     () => is.expected.to.equal(false));
-    its('down',   () => is.expected.to.equal(false));
-    its('left',   () => is.expected.to.equal(false));
-    its('right',  () => is.expected.to.equal(false));
+    its('type', () => is.expected.to.equal("Joypad"));
     
-    its('empty',  () => is.expected.to.equal(1));
-    
+    its('states',   () => is.expected.to.be.an('array').and.have.lengthOf(8));
     its('strobing', () => is.expected.to.be.false);
     
+    its('empty',   () => is.expected.to.be.false);
+    its('present', () => is.expected.to.be.true);
+    
     describe(".read()", function() {
+        /*global $halfStrobe, $fullStrobe */
         def('halfStrobe', () => {
             $subject.write(1);
         });
@@ -109,6 +107,7 @@ describe("Controller", function() {
     });
     
     describe(".write(data)", function() {
+        /*global $data */
         def('action', () => $subject.write($data));
         beforeEach(function() {
             press('a');
@@ -161,6 +160,7 @@ describe("Controller", function() {
     //-------------------------------------------------------------------------------//
     
     describe(".getButtonHandler(name)", function() {
+        /*global $name */
         def('action', () => $subject.getButtonHandler($name));
         
         context("if a name is valid", function() {
@@ -176,26 +176,6 @@ describe("Controller", function() {
             it("throws an error containing the invalid name", function() {
                 expect(() => $action).to.throw($name);
             });
-        });
-    });
-});
-
-describe("NoController", function() {
-    subject(() => new Nestled.NoController);
-    
-    describe(".read()", function() {
-        def('action', () => $subject.read());
-        
-        it("returns -0-", function() {
-            expect($action).to.equal(0);
-        });
-    });
-    
-    describe(".write(data)", function() {
-        def('action', () => $subject.write(1));
-        
-        it("does nothing", function() {
-            expect(() => $action).not.to.change($subject, 'strobe');
         });
     });
 });

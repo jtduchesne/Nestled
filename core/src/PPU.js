@@ -1,4 +1,4 @@
-import { VideoBuffer, Colors } from './Video';
+import { VideoBuffer, Colors } from './Video.js';
 const { pxlColors, cssColors } = Colors;
 
 const bitplaneLookup = {
@@ -56,7 +56,7 @@ export class PPU {
         this.ntsc = (this.bus.cartConnector.tvSystem === "NTSC");
         
         //Bus access optimizations
-        this.doNMI  = this.bus.cpu.doNMI.bind(this.bus.cpu);
+        this.cpu    = this.bus.cpu;
         this.cart   = this.bus.cartConnector.cartridge;
         this.output = this.bus.videoOutput;
         
@@ -83,7 +83,7 @@ export class PPU {
     //== Vertical Blank =============================================//
     doVBlank() {
         this.vblank = true;
-        if (this.nmiEnabled) this.doNMI();
+        if (this.nmiEnabled) this.cpu.doNMI();
     }
     endVBlank() {
         this.status = null;

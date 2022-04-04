@@ -1,6 +1,9 @@
-import Cartridge from '../Cartridge';
+import Cartridge from '../Cartridge.js';
 
 export class NROM extends Cartridge {
+    constructor(number) {
+        super(number || 0);
+    }
     
     //== CIRAM A10 (Pin22) ==========================================//
     ciramA10(address) {
