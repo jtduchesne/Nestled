@@ -549,105 +549,118 @@ describe("Cpu", function() {
         //(They must return the address of the next read)
         
         def('PC', () => 0x0010); /*global $PC */
+        def('operand');          /*global $operand */
         
         beforeEach(function() {
             $subject.powerOn();
             $subject.PC = $PC;
+            if ($operand != null)
+                $subject.operand = $operand;
         });
         
-        //The first byte is read in the main loop just before invoking the addressing mode
-        def('firstByte', () => $subject.read($subject.PC++)); /*global $firstByte */
-        
-        describe(".imp(operand)", function() {
-            it("returns the operand", function() {
-                expect($subject.imp(null)).to.be.null;
-                expect($subject.imp(0xFF)).to.equal(0xFF);
-            });
+        describe(".imp(implied)", function() {
+            it("returns the given implied value", function() {
+                expect($subject.imp(0xAA)).to.equal(0xAA); });
             it("decrements PC", function() {
                 expect(() => $subject.imp(0x00)).to.decrease($subject, 'PC').by(1); });
         });
         describe(".imm()", function() {
-            it("returns PC-1", function() {
+            it("returns operand's address (PC-1)", function() {
                 expect($subject.imm()).to.equal($PC-1); });
             it("does not actually decrement PC", function() {
                 expect(() => $subject.imm()).not.to.change($subject, 'PC'); });
         });
         
-        describe(".rel(operand)", function() {
-            it("returns PC plus the operand when positive", function() {
-                expect($subject.rel(1)).to.equal($PC +1);
-                expect($subject.rel(0x01)).to.equal($PC +1); });
-            it("returns PC minus the operand when negative", function() {
-                expect($subject.rel(-1)).to.equal($PC -1);
-                expect($subject.rel(0xFF)).to.equal($PC -1); });
+        describe(".rel()", function() {
+            it("returns the signed operand", function() {
+                $subject.operand = +1;
+                expect($subject.rel()).to.equal(+1);
+                $subject.operand = 0x01;
+                expect($subject.rel()).to.equal(+1);
+                $subject.operand = -1;
+                expect($subject.rel()).to.equal(-1);
+                $subject.operand = 0xFF;
+                expect($subject.rel()).to.equal(-1);
+            });
+            it("takes 1 cycle", function() {
+                expect(() => $subject.rel()).to.increase($subject, 'cycle').by(1);
+            });
         });
         
         context("Zero Page", function() {
-            beforeEach(function() {
-                $subject.ram.set([0x80], $PC);
-            });
+            def('operand', () => 0x80);
             
-            describe(".zero(operand)", function() {
+            describe(".zero()", function() {
                 it("returns the operand", function() {
-                    expect($subject.zero($firstByte)).to.equal(0x0080); });
+                    expect($subject.zero()).to.equal(0x0080); });
             });
-            describe(".zeroX(operand)", function() {
+            describe(".zeroX()", function() {
                 it("returns the operand + X", function() {
                     $subject.X = 0x18;
-                    expect($subject.zeroX($firstByte)).to.equal(0x0098); });
+                    expect($subject.zeroX()).to.equal(0x0098); });
                 it("cannot go out of memory page 0 (0x0000-00FF)", function() {
                     $subject.X = 0x88;
-                    expect($subject.zeroX($firstByte)).to.equal(0x0008); });
+                    expect($subject.zeroX()).to.equal(0x0008); });
             });
-            describe(".zeroY(operand)", function() {
+            describe(".zeroY()", function() {
                 it("returns the operand + Y", function() {
                     $subject.Y = 0x18;
-                    expect($subject.zeroY($firstByte)).to.equal(0x0098); });
+                    expect($subject.zeroY()).to.equal(0x0098); });
                 it("cannot go out of memory page 0 (0x0000-00FF)", function() {
                     $subject.Y = 0x88;
-                    expect($subject.zeroY($firstByte)).to.equal(0x0008); });
+                    expect($subject.zeroY()).to.equal(0x0008); });
             });
         });
         
         context("Absolute", function() {
             beforeEach(function() {
                 $subject.ram.set([0x34,0x12], $PC);
+                $subject.operand = $subject.read($subject.PC++);
             });
             
-            describe(".abs(operand)", function() {
+            describe(".abs()", function() {
                 it("returns the operand(word)", function() {
-                    expect($subject.abs($firstByte)).to.equal(0x1234); });
+                    expect($subject.abs()).to.equal(0x1234); });
             });
-            describe(".absX(operand)", function() {
+            describe(".absX()", function() {
                 it("returns the operand(word) + X", function() {
                     $subject.X = 0x11;
-                    expect($subject.absX($firstByte)).to.equal(0x1245); });
+                    expect($subject.absX()).to.equal(0x1245); });
+                it("takes 1 cycle if it crosses a memory page", function() {
+                    $subject.X = 0xDD;
+                    expect(() => $subject.absX()).to.increase($subject, 'cycle').by(1);
+                    expect($subject.absX()).to.equal(0x1311); });
             });
-            describe(".absY(operand)", function() {
+            describe(".absY()", function() {
                 it("returns the operand(word) + Y", function() {
                     $subject.Y = 0x22;
-                    expect($subject.absY($firstByte)).to.equal(0x1256); });
+                    expect($subject.absY()).to.equal(0x1256); });
+                it("takes 1 cycle if it crosses a memory page", function() {
+                    $subject.Y = 0xEE;
+                    expect(() => $subject.absY()).to.increase($subject, 'cycle').by(1);
+                    expect($subject.absY()).to.equal(0x1322); });
             });
         });
         
         context("Indirect", function() {
             beforeEach(function() {
                 $subject.ram.set([$PC+2,0x00,0xDC,0xFE,0x98,0xBA], $PC);
+                $subject.operand = $subject.read($subject.PC++);
             });
             
-            describe(".ind(operand)", function() {
-                it("returns the value read at [operand(word)]", function() {
-                    expect($subject.ind($firstByte)).to.equal(0xFEDC); });
+            describe(".ind()", function() {
+                it("returns the address read at [operand(word)]", function() {
+                    expect($subject.ind()).to.equal(0xFEDC); });
             });
-            describe(".indX(operand)", function() {
-                it("returns the value read at [operand(byte + X)]", function() {
+            describe(".indX()", function() {
+                it("returns the address read at [operand(byte + X)]", function() {
                     $subject.X = 0x02;
-                    expect($subject.indX($firstByte)).to.equal(0xBA98); });
+                    expect($subject.indX()).to.equal(0xBA98); });
             });
-            describe(".indY(operand)", function() {
-                it("returns (the value read at [operand(byte)]) + Y", function() {
+            describe(".indY()", function() {
+                it("returns (the address read at [operand(byte)]) + Y", function() {
                     $subject.Y = 0x02;
-                    expect($subject.indY($firstByte)).to.equal(0xFEDE); });
+                    expect($subject.indY()).to.equal(0xFEDE); });
             });
         });
     });

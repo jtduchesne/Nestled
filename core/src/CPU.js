@@ -137,9 +137,7 @@ export class CPU {
         this.operand = this.read(this.PC++);
         
         this.instructionLookup[this.opcode](
-            (override) => this.addressLookup[this.opcode](
-                (override !== undefined) ? override : this.operand
-            )
+            (implied) => this.addressLookup[this.opcode](implied)
         );
         let cycles = cyclesLookup[this.opcode];
         this.cycle += cycles;
@@ -278,38 +276,35 @@ export class CPU {
     
     //== Addressing Modes ===========================================//
     
-    imp(operand) { this.PC--; return operand; }                 //Implied
-    /* eslint-disable-next-line no-unused-vars */
-    imm(operand) { return this.PC-1; }                          //Immediate - #00
-    rel(operand) {
-        this.cycle++;
-        return this.PC + signByte(operand); }                   //Relative - ±#00
+    imp(implied) { this.PC--; return implied; }                   //Implied
+    imm() { return this.PC-1; }                                   //Immediate - #00
+    rel() { this.cycle++; return signByte(this.operand); }        //Relative - ±#00
     
-    zero(operand)  { return operand; }                          //Zero Page - $00
-    zeroX(operand) { return wrapByte(operand + this.X); }       //Zero Page indexed X - $00+X
-    zeroY(operand) { return wrapByte(operand + this.Y); }       //Zero Page indexed Y - $00+Y
+    zero()  { return this.operand; }                              //Zero Page - $00
+    zeroX() { return wrapByte(this.operand + this.X); }           //Zero Page indexed X - $00+X
+    zeroY() { return wrapByte(this.operand + this.Y); }           //Zero Page indexed Y - $00+Y
     
-    readWord(operand) { return this.operand = operand + this.read(this.PC++)*256; }
+    readWord() { return this.operand += this.read(this.PC++)*256; }
     
-    abs(operand) {
-        return this.readWord(operand); }                        //Absolute - $0000
-    absX(operand) {
-        if ((operand + this.X) > 0xFF) this.cycle++;
-        return this.readWord(operand) + this.X; }               //Absolute indexed X - $0000+X
-    absY(operand) {
-        if ((operand + this.Y) > 0xFF) this.cycle++;
-        return this.readWord(operand) + this.Y; }               //Absolute indexed Y - $0000+Y
+    abs() {
+        return this.readWord(); }                                 //Absolute - $0000
+    absX() {
+        if ((this.operand + this.X) > 0xFF) this.cycle++;
+        return this.readWord() + this.X; }                        //Absolute indexed X - $0000+X
+    absY() {
+        if ((this.operand + this.Y) > 0xFF) this.cycle++;
+        return this.readWord() + this.Y; }                        //Absolute indexed Y - $0000+Y
     
-    ind(operand) {
-        operand = this.readWord(operand);
-        return this.read(operand) + this.read(operand+1)*256; } //Indirect - ($0000)
-    indX(operand) {
-        operand = wrapByte(operand + this.X);
-        return this.read(operand) + this.read(operand+1)*256; } //Indirect indexed X - ($00+X)
-    indY(operand) {
-        operand = this.read(operand) + this.read(operand+1)*256;
-        if ((wrapByte(operand) + this.Y) > 0xFF) this.cycle++;
-        return operand + this.Y; }                              //Indirect indexed Y - ($00)+Y
+    ind() {
+        let indirect = this.readWord();
+        return this.read(indirect) + this.read(indirect+1)*256; } //Indirect - ($0000)
+    indX() {
+        let indirect = wrapByte(this.operand + this.X);
+        return this.read(indirect) + this.read(indirect+1)*256; } //Indirect indexed X - ($00+X)
+    indY() {
+        let indirect = this.read(this.operand) + this.read(this.operand+1)*256;
+        if ((wrapByte(indirect) + this.Y) > 0xFF) this.cycle++;
+        return indirect + this.Y; }                               //Indirect indexed Y - ($00)+Y
     
     //== OpCodes ====================================================//
     
@@ -338,35 +333,35 @@ export class CPU {
     // Branching
     BPL(fnFetchOperand) { //Branch if Positive
         if (!this.Negative)
-            this.PC = fnFetchOperand();
+            this.PC += fnFetchOperand();
     }
     BMI(fnFetchOperand) { //Branch if Negative
         if (this.Negative)
-            this.PC = fnFetchOperand();
+            this.PC += fnFetchOperand();
     }
     BVC(fnFetchOperand) { //Branch if oVerflow Clear
         if (!this.Overflow)
-            this.PC = fnFetchOperand();
+            this.PC += fnFetchOperand();
     }
     BVS(fnFetchOperand) { //Branch if oVerflow Set
         if (this.Overflow)
-            this.PC = fnFetchOperand();
+            this.PC += fnFetchOperand();
     }
     BCC(fnFetchOperand) { //Branch if Carry Clear
         if (!this.Carry)
-            this.PC = fnFetchOperand();
+            this.PC += fnFetchOperand();
     }
     BCS(fnFetchOperand) { //Branch if Carry Set
         if (this.Carry)
-            this.PC = fnFetchOperand();
+            this.PC += fnFetchOperand();
     }
     BNE(fnFetchOperand) { //Branch if Not Equal
         if (!this.Zero)
-            this.PC = fnFetchOperand();
+            this.PC += fnFetchOperand();
     }
     BEQ(fnFetchOperand) { //Branch if Equal
         if (this.Zero)
-            this.PC = fnFetchOperand();
+            this.PC += fnFetchOperand();
     }
     
     // Stack
