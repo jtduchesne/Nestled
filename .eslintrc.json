@@ -12,5 +12,5 @@
         "no-unused-vars": "warn",
         "eqeqeq": ["warn", "smart"]
     },
-    "ignorePatterns": ["/dist"]
+    "ignorePatterns": ["/dist", "/lib"]
 }
