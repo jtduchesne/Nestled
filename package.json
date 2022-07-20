@@ -27,11 +27,11 @@
     "url": "https://github.com/jtduchesne/Nestled/issues"
   },
   "homepage": "https://github.com/jtduchesne/Nestled#readme",
-  "dependencies": {
-    "@babel/core": "^7.15.8",
-    "@babel/preset-env": "^7.15.8"
-  },
+  "dependencies": {},
   "devDependencies": {
+    "@babel/cli": "^7.18.9",
+    "@babel/core": "^7.18.9",
+    "@babel/preset-env": "^7.18.9",
     "bdd-lazy-var": "^2.6.1",
     "chai": "^4.3.4",
     "eslint": "^7.32.0",
