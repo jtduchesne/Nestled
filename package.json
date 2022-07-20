@@ -3,7 +3,10 @@
   "version": "1.2.0",
   "description": "Javascript NES emulator",
   "type": "module",
-  "private": true,
+  "module": "./src/index.js",
+  "files": [
+    "src"
+  ],
   "scripts": {
     "test": "mocha \"test/**/*_test.js\" || true",
     "debug": "mocha debug \"test/**/*_test.js\" || true",
