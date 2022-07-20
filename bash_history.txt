@@ -46,3 +46,6 @@ npm install mini-css-extract-plugin css-loader sass-loader node-sass
 
 npm uninstall copy-webpack-plugin
 npm install html-loader
+
+npm uninstall babel-loader css-loader html-loader html-webpack-plugin mini-css-extract-plugin node-sass sass-loader
+npm uninstall webpack webpack-cli webpack-dev-server
