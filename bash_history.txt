@@ -52,3 +52,5 @@ npm uninstall webpack webpack-cli webpack-dev-server
 
 npm uninstall @babel/core @babel/preset-env
 npm install --save-dev @babel/cli @babel/core @babel/preset-env
+
+npm install --save-dev rollup rollup-plugin-terser @rollup/plugin-babel
