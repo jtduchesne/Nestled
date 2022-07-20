@@ -2,10 +2,11 @@
   "name": "nestled",
   "version": "1.2.0",
   "description": "Javascript NES emulator",
+  "type": "module",
   "private": true,
   "scripts": {
-    "test": "cd core && mocha \"test/**/*_test.js\" || true",
-    "debug": "cd core && mocha debug \"test/**/*_test.js\" || true",
+    "test": "mocha \"test/**/*_test.js\" || true",
+    "debug": "mocha debug \"test/**/*_test.js\" || true",
     "prepublishOnly": "echo \"Not meant to be published as package...\" && exit 1"
   },
   "repository": {
