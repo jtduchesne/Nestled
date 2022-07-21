@@ -5,6 +5,7 @@
   "type": "module",
   "main": "./lib/index.js",
   "module": "./src/index.js",
+  "types": "./types/index.d.ts",
   "files": [
     "dist",
     "lib",
@@ -14,6 +15,7 @@
     "clean": "rm -rf dist lib",
     "build:cjs": "BABEL_ENV=cjs babel src --out-dir lib --source-maps",
     "build:bundle": "BABEL_ENV=esm rollup -c",
+    "build:types": "tsc",
     "build": "npm run build:cjs && npm run build:bundle",
     "test": "mocha \"test/**/*_test.js\" || true",
     "debug": "mocha debug \"test/**/*_test.js\" || true",
@@ -50,6 +52,7 @@
     "eslint": "^7.32.0",
     "mocha": "^9.1.3",
     "rollup": "^2.77.0",
-    "rollup-plugin-terser": "^7.0.2"
+    "rollup-plugin-terser": "^7.0.2",
+    "typescript": "^4.7.4"
   }
 }
