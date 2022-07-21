@@ -6,11 +6,11 @@ export class TriangleChannel extends Channel {
     timerCycle: number;
     timerPeriod: number;
     dutyPosition: number;
-    set counter(arg: any);
+    set counter(arg: number);
     set timer(arg: number);
     get timer(): number;
     linearCounterControl: boolean;
-    writeRegister(address: any, data: any): void;
+    writeRegister(address: number, data: number): void;
     doCycle(): void;
     doQuarter(): void;
     doHalf(): void;

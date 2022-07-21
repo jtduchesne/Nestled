@@ -3,16 +3,16 @@ export class AudioOutput {
     gainNode: GainNode;
     get connected(): boolean;
     get disconnected(): boolean;
-    connect(element: any): any;
-    element: any;
-    value: any;
+    connect(element: HTMLInputElement): HTMLInputElement | null;
+    element: HTMLInputElement | null;
+    value: number;
     max: number;
-    handleVolumeChange: (e: any) => void;
-    disconnect(): any;
+    handleVolumeChange: (e: InputEvent) => void;
+    disconnect(): null;
     start(): void;
     next: number;
     stop(): void;
-    schedule(buffer: any): void;
+    schedule(buffer: AudioBuffer): void;
 }
 export default AudioOutput;
 //# sourceMappingURL=AudioOutput.d.ts.map

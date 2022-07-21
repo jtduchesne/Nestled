@@ -1,11 +1,11 @@
 export class VideoBuffer {
-    constructor(width: any, height: any);
-    width: any;
-    height: any;
+    constructor(width: number, height: number);
+    width: number;
+    height: number;
     createNewBuffer(): void;
     image: ImageData;
     data: Uint32Array;
-    writePixels(x: any, y: any, values: any): void;
+    writePixels(x: number, y: number, values: ArrayLike<number>): void;
     getFrame(): ImageData;
 }
 export default VideoBuffer;

@@ -4,13 +4,13 @@ export class MMC1 extends Cartridge {
     CHRBankMode: number;
     buffer: number;
     index: number;
-    firstPRGBank: any;
-    lastPRGBank: any;
-    set control(arg: any);
-    set CHR0(arg: any);
-    set CHR1(arg: any);
-    set PRG(arg: any);
-    write(address: any, data: any): void;
+    firstPRGBank: number;
+    lastPRGBank: number;
+    set control(arg: number);
+    set CHR0(arg: number);
+    set CHR1(arg: number);
+    set PRG(arg: number);
+    write(address: number, data: number): void;
 }
 export default MMC1;
 import Cartridge from "../Cartridge.js";

@@ -1,12 +1,12 @@
 export class Channel {
-    set enabled(arg: any);
-    get enabled(): any;
+    set enabled(arg: boolean);
+    get enabled(): boolean;
     lengthCounter: number;
     lengthCounterHalt: boolean;
     reset(): void;
     set length(arg: number);
     get length(): number;
-    _enabled: any;
+    _enabled: boolean;
     updateLength(): void;
 }
 export default Channel;

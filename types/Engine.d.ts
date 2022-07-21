@@ -1,8 +1,8 @@
 export class Engine {
-    constructor(nes: any);
-    bus: any;
+    constructor(nes: NES);
+    bus: NES;
     firstLoop(): void;
-    mainLoop(): boolean;
+    mainLoop(): void;
     runningLoop: NodeJS.Timeout;
     isPowered: boolean;
     isPaused: boolean;
@@ -17,17 +17,13 @@ export class Engine {
     _framesThisSecond: number;
     _fps: number;
     powerOn(): void;
-    cpu: any;
-    ppu: any;
+    cpu: CPU;
+    ppu: PPU;
     powerOff(): void;
     pause(): boolean;
-    coldBoot(): void;
-    updateStats(frameTime: any): void;
-    doFrame(cpu: any, ppu: any): void;
-    skipFrame(cpu: any, ppu: any): void;
-    doScanline(cpu: any, ppu: any, scanline: any): void;
-    doPreRenderLine(cpu: any, ppu: any): void;
-    doPreFetch(cpu: any, ppu: any, scanline: any): void;
 }
 export default Engine;
+import CPU from "./CPU.js";
+import NES from "./NES.js";
+import PPU from "./PPU.js";
 //# sourceMappingURL=Engine.d.ts.map

@@ -1,6 +1,6 @@
 export class PulseChannel extends Channel {
-    constructor(id: any);
-    id: any;
+    constructor(id: 1 | 2);
+    id: 1 | 2;
     constantVolume: number;
     envelopeEnabled: boolean;
     envelopeReset: boolean;
@@ -24,7 +24,7 @@ export class PulseChannel extends Channel {
     get sweep(): number;
     set timer(arg: number);
     get timer(): number;
-    writeRegister(address: any, data: any): void;
+    writeRegister(address: number, data: number): void;
     doCycle(): void;
     doQuarter(): void;
     doHalf(): void;

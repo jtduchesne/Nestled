@@ -1,8 +1,8 @@
 export class DMC {
-    constructor(cpu: any);
-    cpu: any;
-    set enabled(arg: any);
-    get enabled(): any;
+    constructor(cpu: CPU);
+    cpu: CPU;
+    set enabled(arg: boolean);
+    get enabled(): boolean;
     cycle: number;
     output: number;
     timerCycle: number;
@@ -26,13 +26,14 @@ export class DMC {
     get address(): number;
     set length(arg: number);
     get length(): number;
-    _enabled: any;
+    _enabled: boolean;
     doIRQ(): void;
-    writeRegister(address: any, data: any): void;
+    writeRegister(address: number, data: number): void;
     doCycle(): void;
     updateSampleBuffer(): void;
     updateShiftRegister(): void;
     updateOutput(): void;
 }
 export default DMC;
+import CPU from "../../CPU.js";
 //# sourceMappingURL=DMC.d.ts.map

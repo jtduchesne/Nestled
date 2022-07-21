@@ -1,7 +1,7 @@
 export class APU {
-    constructor(cpu: any);
-    bus: any;
-    cpu: any;
+    constructor(cpu: CPU);
+    bus: NES;
+    cpu: CPU;
     pulse1: PulseChannel;
     pulse2: PulseChannel;
     triangle: TriangleChannel;
@@ -14,7 +14,7 @@ export class APU {
     irq: boolean;
     set status(arg: number);
     get status(): number;
-    set counter(arg: any);
+    set counter(arg: number);
     carry: number;
     cycle: number;
     powerOn(): void;
@@ -23,9 +23,9 @@ export class APU {
     doIRQ(): void;
     counterMode: number;
     resetDelay: number;
-    readRegister(address: any): number;
-    writeRegister(address: any, data: any): void;
-    doCycles(count: any): void;
+    readRegister(address: number): number;
+    writeRegister(address: number, data: number): void;
+    doCycles(count: number): void;
     doCycle(): void;
     doQuarter(): void;
     doHalf(): void;
@@ -37,4 +37,6 @@ import { TriangleChannel } from "./Audio/Channels.js";
 import { NoiseChannel } from "./Audio/Channels.js";
 import { DMC } from "./Audio/Channels.js";
 import { AudioBuffer } from "./Audio/AudioBuffer.js";
+import CPU from "./CPU.js";
+import NES from "./NES.js";
 //# sourceMappingURL=APU.d.ts.map

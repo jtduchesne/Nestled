@@ -14,7 +14,7 @@ export class NoiseChannel extends Channel {
     get volume(): number;
     set timer(arg: number);
     get timer(): number;
-    writeRegister(address: any, data: any): void;
+    writeRegister(address: number, data: number): void;
     doCycle(): void;
     doQuarter(): void;
     doHalf(): void;

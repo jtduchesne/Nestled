@@ -118,8 +118,10 @@ export class Engine {
         this._delta = (timestamp - this._lastTimestamp);
         
         if (this._delta >= frameTime) {
-            if (this._delta > 1000)
-                return this.pause();
+            if (this._delta > 1000) {
+                this.pause();
+                return;
+            }
             
             let cpu = this.cpu;
             let ppu = this.ppu;

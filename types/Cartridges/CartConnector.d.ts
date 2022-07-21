@@ -1,15 +1,15 @@
 export class CartConnector {
     reset(): void;
     cartridge: Cartridge | Mapper;
-    name: any;
+    name: string;
     tvSystem: string;
-    statuses: any[];
+    statuses: string[];
     fileLoaded: boolean;
     fileValid: boolean;
     fileSupported: boolean;
-    parseFilename(filename: any): void;
-    parseData(data: any): void;
-    load(file: any): Promise<CartConnector>;
+    parseFilename(filename: string): void;
+    parseData(data: ArrayBufferLike): void;
+    load(file: File): Promise<CartConnector>;
     unload(): Promise<CartConnector>;
 }
 export default CartConnector;

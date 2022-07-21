@@ -209,7 +209,7 @@ export class CPU {
                 this.apu.writeRegister(address, data);
             }
         } else {
-            return this.cart.cpuWrite(address, data);
+            this.cart.cpuWrite(address, data);
         }
     }
     

@@ -15,7 +15,6 @@
     "clean": "rm -rf dist lib",
     "build:cjs": "BABEL_ENV=cjs babel src --out-dir lib --source-maps",
     "build:bundle": "BABEL_ENV=esm rollup -c",
-    "build:types": "tsc",
     "build": "npm run build:cjs && npm run build:bundle",
     "test": "mocha \"test/**/*_test.js\" || true",
     "debug": "mocha debug \"test/**/*_test.js\" || true",

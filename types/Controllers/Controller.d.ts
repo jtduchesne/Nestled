@@ -1,14 +1,14 @@
 export class Controller {
-    constructor(type: any);
-    type: any;
+    constructor(type: string);
+    type: string;
     strobing: boolean;
-    states: any[];
+    states: number[];
     get empty(): boolean;
     get present(): boolean;
     strobe(): void;
-    data: any[];
-    read(): any;
-    write(data: any): void;
+    data: number[];
+    read(): number;
+    write(data: number): void;
 }
 export default Controller;
 //# sourceMappingURL=Controller.d.ts.map
