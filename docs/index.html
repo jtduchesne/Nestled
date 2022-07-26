@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>Nestled</title>
+  <meta name='description' content="Javascript NES emulator">
+  
+  <link href="favicon.ico" rel="icon" type="image/x-icon">
+  <link href="style.css" rel="stylesheet">
+  
+  <script type="application/javascript" src="nestled.umd.min.js"></script>
+  <script type="application/javascript">
+      function showButtons() {
+          document.getElementById('buttons_row').querySelectorAll("object, button").forEach((element, index) =>
+              setTimeout(() => {
+                  element.classList.remove("waiting");
+                  element.classList.add("bounceIn", "animated");
+              }, index * 50)
+          );
+      }
+  </script>
+</head>
+
+<body>
+  <main>
+    <canvas id="screen" width="256" height="240"></canvas>
+    <input type="range" id="audio" min="0" max="100" value="70" />
+    <p id="status">&nbsp;</p>
+    <div id="buttons_row">
+      <object class="off waiting" id="front_led" width="16" height="16" type="image/svg+xml" data="images/LED.svg" onload="showButtons()" onerror="showButtons()"></object>
+      <div>
+        <button class="waiting" id="power_button" disabled="disabled">Power</button>
+        <button class="waiting" id="reset_button" disabled="disabled">Reset</button>
+      </div>
+      <button class="waiting" id="pause_button" disabled="disabled">Pause</button>
+    </div>
+    <div id="file_select_row">
+      <input type="file" accept=".nes" id="file_select_button" disabled="disabled" />
+    </div>
+  </main>
+</body>
+<script type="application/javascript" src="script.js"></script>
+
+</html>
