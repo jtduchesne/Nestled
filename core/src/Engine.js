@@ -146,8 +146,6 @@ export class Engine {
             this.performance = 1000 / this._frameTimeThisSecond;
             this.fps = this._fps;
             
-            console.log(`FPS: ${this.fps} - Performance: ${(this.performance*100).toFixed(1)}%`);
-            
             this._frameTimeThisSecond = 0.0;
             this._framesThisSecond = 0;
             this._fps = 60;
