@@ -1,7 +1,8 @@
 # Nestled
 
 #### Javascript NES emulator
-https://nestled.jtduchesne.com/ *
+
+Demo: [jtduchesne.github.io/Nestled](https://jtduchesne.github.io/Nestled) *
 
 ![image](https://user-images.githubusercontent.com/580063/122583876-b2fa9280-d027-11eb-8345-8eb39645e43e.png)
 ![image](https://user-images.githubusercontent.com/580063/122583955-c9a0e980-d027-11eb-919a-608ddf401cb6.png)
@@ -26,4 +27,4 @@ Fully tested using [Mocha.js](http://mochajs.org/) + [Chai.js](http://chaijs.com
 
 -----
 *Unfortunately, I cannot provide the games for legal reasons, so you have to load your own `.NES` files.  
-There's a lot of places on the internet where you can get that...
+There are lots of places on the internet where you can get that...
