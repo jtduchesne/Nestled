@@ -1,0 +1,17 @@
+{
+  "env": {
+    "cjs": {
+      "presets": [["@babel/preset-env", {
+        "targets": "> 0.25%, not dead",
+        "modules": "commonjs"
+      }]],
+      "sourceMaps": true
+    },
+    "esm": {
+      "presets": [["@babel/preset-env", {
+        "targets": "> 0.25%, not dead, supports es6-module"
+      }]],
+      "sourceMaps": true
+    }
+  }
+}
