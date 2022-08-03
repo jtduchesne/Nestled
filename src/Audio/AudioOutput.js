@@ -39,7 +39,7 @@ export class AudioOutput {
     //===============================================================//
     
     start() {
-        if (typeof AudioContext === 'function') {
+        if (this.connected && typeof AudioContext === 'function') {
             this.context = new AudioContext();
             
             this.gainNode = this.context.createGain();

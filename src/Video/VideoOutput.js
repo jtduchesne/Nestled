@@ -32,7 +32,7 @@ export class VideoOutput {
     }
     
     start() {
-        if (this.canvas) {
+        if (this.connected) {
             this.context = this.canvas.getContext('2d', {alpha: false});
             this.context.imageSmoothingEnabled = false;
             
@@ -45,7 +45,7 @@ export class VideoOutput {
     }
     
     stop() {
-        if (this.canvas) {
+        if (this.connected) {
             window.cancelAnimationFrame(this.scheduled);
             
             this.layers = [];
@@ -60,17 +60,19 @@ export class VideoOutput {
     //===============================================================//
     
     schedule(cssBackdrop) {
-        const layers = this.layers.map((layer) => layer.getFrame());
-        
-        this.scheduled = window.requestAnimationFrame(() => {
-            this.context.fillStyle = cssBackdrop;
-            this.context.fillRect(0, 0, this.width, this.height);
+        if (this.connected) {
+            const layers = this.layers.map((layer) => layer.getFrame());
             
-            layers.forEach((layer) => {
-                this.offContext.putImageData(layer, 0, 0);
-                this.context.drawImage(this.offCanvas, 0, 0, 256, 240, 0, 0, this.width, this.height);
+            this.scheduled = window.requestAnimationFrame(() => {
+                this.context.fillStyle = cssBackdrop;
+                this.context.fillRect(0, 0, this.width, this.height);
+                
+                layers.forEach((layer) => {
+                    this.offContext.putImageData(layer, 0, 0);
+                    this.context.drawImage(this.offCanvas, 0, 0, 256, 240, 0, 0, this.width, this.height);
+                });
             });
-        });
+        }
     }
 }
 
