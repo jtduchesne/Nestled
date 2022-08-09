@@ -1,76 +1,12 @@
-import CartConnector, { Cartridge } from "../../src/Cartridges";
+import CartConnector, { Cartridge, Metadata } from "../../src/Cartridges";
 import { Header } from "../../src/Cartridges/FileFormats";
 
 describe("CartConnector", function() {
     subject(() => new CartConnector);
     
     its('file',      () => is.expected.to.be.an.instanceOf(Header));
+    its('metadata',  () => is.expected.to.be.an.instanceOf(Metadata));
     its('cartridge', () => is.expected.to.be.an.instanceOf(Cartridge));
-    
-    its('name',     () => is.expected.to.be.a('string'));
-    its('tvSystem', () => is.expected.to.be.a('string').and.equal("NTSC"));
-    
-    // #statuses is not tested by purpose, since it's just a temporary solution...
-    
-    describe(".parseFilename(filename)", function() {
-        def('action', () => $subject.parseFilename($filename));
-        
-        def('filename', () => "a_pretty_good_Game (U)[!b].nes"); /*global $filename */
-        
-        it("sets #name", function() {
-            expect(() => $action).to.change($subject, 'name');
-        });
-        it("removes the file extension", function() {
-            $action;
-            expect($subject.name).not.to.match(/\.(nes)?$/);
-        });
-        it("removes the country code", function() {
-            $action;
-            expect($subject.name).not.to.match(/\([A-Z]*\)/);
-        });
-        it("removes dump infos", function() {
-            $action;
-            expect($subject.name).not.to.match(/\[.*?\]/);
-        });
-        it("properly format the name", function() {
-            $action;
-            expect($subject.name).to.equal("A pretty good Game");
-        });
-        
-        context("when no country code is in the filename", function() {
-            def('filename', () => "Game name.nes");
-            
-            it("keeps #tvSystem as 'NTSC'(default)", function() {
-                expect(() => $action).not.to.change($subject, 'tvSystem');
-                expect($subject.tvSystem).to.equal("NTSC");
-            });
-        });
-        context("when a NTSC country code is in the filename", function() {
-            def('filename', () => "Game name (U).nes");
-            
-            it("sets #tvSystem to 'NTSC'", function() {
-                $subject.tvSystem = "PAL";
-                expect(() => $action).to.change($subject, 'tvSystem');
-                expect($subject.tvSystem).to.equal("NTSC");
-            });
-        });
-        context("when a PAL country code is in the filename", function() {
-            def('filename', () => "Game name (UK).nes");
-            
-            it("sets #tvSystem to 'PAL'", function() {
-                expect(() => $action).to.change($subject, 'tvSystem');
-                expect($subject.tvSystem).to.equal("PAL");
-            });
-        });
-        context("when a SECAM country code is in the filename", function() {
-            def('filename', () => "Game name (F).nes");
-            
-            it("sets #tvSystem to 'SECAM'", function() {
-                expect(() => $action).to.change($subject, 'tvSystem');
-                expect($subject.tvSystem).to.equal("SECAM");
-            });
-        });
-    });
     
     describe(".parseData(data)", function() {
         def('action', () => $subject.parseData($data));
@@ -238,6 +174,10 @@ describe("CartConnector", function() {
             expect(() => $action).to.change($subject, 'file');
             expect($subject.file).to.be.an.instanceOf(Header);
         });
+        it("resets #metadata", function() {
+            expect(() => $action).to.change($subject, 'metadata');
+            expect($subject.metadata).to.be.an.instanceOf(Metadata);
+        });
         it("resets #cartridge", function() {
             expect(() => $action).to.change($subject, 'cartridge');
             expect($subject.cartridge).to.be.an.instanceOf(Cartridge);
@@ -254,6 +194,10 @@ describe("CartConnector", function() {
         it("resets #file", function() {
             expect(() => $action).to.change($subject, 'file');
             expect($subject.file).to.be.an.instanceOf(Header);
+        });
+        it("resets #metadata", function() {
+            expect(() => $action).to.change($subject, 'metadata');
+            expect($subject.metadata).to.be.an.instanceOf(Metadata);
         });
         it("resets #cartridge", function() {
             expect(() => $action).to.change($subject, 'cartridge');
