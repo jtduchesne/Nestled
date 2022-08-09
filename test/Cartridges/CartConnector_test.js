@@ -1,18 +1,16 @@
 import CartConnector, { Cartridge } from "../../src/Cartridges";
+import { Header } from "../../src/Cartridges/FileFormats";
 
 describe("CartConnector", function() {
     subject(() => new CartConnector);
     
+    its('file',      () => is.expected.to.be.an.instanceOf(Header));
     its('cartridge', () => is.expected.to.be.an.instanceOf(Cartridge));
     
     its('name',     () => is.expected.to.be.a('string'));
     its('tvSystem', () => is.expected.to.be.a('string').and.equal("NTSC"));
     
     // #statuses is not tested by purpose, since it's just a temporary solution...
-    
-    its('fileLoaded',    () => is.expected.to.be.false);
-    its('fileValid',     () => is.expected.to.be.false);
-    its('fileSupported', () => is.expected.to.be.false);
     
     describe(".parseFilename(filename)", function() {
         def('action', () => $subject.parseFilename($filename));
@@ -94,7 +92,7 @@ describe("CartConnector", function() {
                            .concat($name ? Array.from($name, v => v.charCodeAt(0)) : [])).buffer
         ));
         
-        context("with the wrong file signature", function() {
+        context("with an invalid file signature", function() {
             def('signature', () => [0x42,0x41,0x44,0x1A]); // BAD_
             
             it("throws an Error", function() {
@@ -102,16 +100,24 @@ describe("CartConnector", function() {
             });
         });
         
-        context("with the right file signature", function() {
+        context("with an unsupported file signature", function() {
+            def('signature', () => [0x55,0x4E,0x49,0x46]); // UNIF
+            
+            it("throws an Error", function() {
+                expect(() => $action).to.throw(/unsupported format/i);
+            });
+        });
+        
+        context("with a valid file signature", function() {
             def('signature', () => [0x4E,0x45,0x53,0x1A]); // NES_
             
+            it("sets #file", function() {
+                expect(() => $action).to.change($subject, 'file');
+                expect($subject.file).to.be.an.instanceOf(Header);
+            });
             it("sets #cartridge", function() {
                 expect(() => $action).to.change($subject, 'cartridge');
                 expect($subject.cartridge).to.be.an.instanceOf(Cartridge);
-            });
-            it("sets #fileValid", function() {
-                expect(() => $action).to.change($subject, 'fileValid');
-                expect($subject.fileValid).to.be.true;
             });
         });
         
@@ -122,16 +128,12 @@ describe("CartConnector", function() {
             context("a supported Mapper (#1)", function() {
                 def('flags6', () => (1 << 4));
                 
-                its('fileSupported', () => is.expected.to.be.true);
-                
                 it("sets cartridge#mapperNumber", function() {
                     expect($cartridge.mapperNumber).to.equal(1);
                 });
             });
             context("an unsupported Mapper (#15)", function() {
                 def('flags6', () => (15 << 4));
-                
-                its('fileSupported', () => is.expected.to.be.false);
                 
                 it("sets cartridge#mapperNumber", function() {
                     expect($cartridge.mapperNumber).to.equal(15);
@@ -232,20 +234,13 @@ describe("CartConnector", function() {
             expect($action).to.be.an.instanceOf(Promise);
         });
         
-        it("resets #fileLoaded", function() {
-            $subject.fileLoaded = true;
-            expect(() => $action).to.change($subject, 'fileLoaded');
-            expect($subject.fileLoaded).to.be.false;
+        it("resets #file", function() {
+            expect(() => $action).to.change($subject, 'file');
+            expect($subject.file).to.be.an.instanceOf(Header);
         });
-        it("resets #fileValid", function() {
-            $subject.fileValid = true;
-            expect(() => $action).to.change($subject, 'fileValid');
-            expect($subject.fileValid).to.be.false;
-        });
-        it("resets #fileSupported", function() {
-            $subject.fileSupported = true;
-            expect(() => $action).to.change($subject, 'fileSupported');
-            expect($subject.fileSupported).to.be.false;
+        it("resets #cartridge", function() {
+            expect(() => $action).to.change($subject, 'cartridge');
+            expect($subject.cartridge).to.be.an.instanceOf(Cartridge);
         });
     });
     
@@ -256,25 +251,13 @@ describe("CartConnector", function() {
             expect($action).to.be.an.instanceOf(Promise);
         });
         
+        it("resets #file", function() {
+            expect(() => $action).to.change($subject, 'file');
+            expect($subject.file).to.be.an.instanceOf(Header);
+        });
         it("resets #cartridge", function() {
             expect(() => $action).to.change($subject, 'cartridge');
             expect($subject.cartridge).to.be.an.instanceOf(Cartridge);
-        });
-        
-        it("resets #fileLoaded", function() {
-            $subject.fileLoaded = true;
-            expect(() => $action).to.change($subject, 'fileLoaded');
-            expect($subject.fileLoaded).to.be.false;
-        });
-        it("resets #fileValid", function() {
-            $subject.fileValid = true;
-            expect(() => $action).to.change($subject, 'fileValid');
-            expect($subject.fileValid).to.be.false;
-        });
-        it("resets #fileSupported", function() {
-            $subject.fileSupported = true;
-            expect(() => $action).to.change($subject, 'fileSupported');
-            expect($subject.fileSupported).to.be.false;
         });
     });
 });

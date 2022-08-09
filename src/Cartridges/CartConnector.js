@@ -1,5 +1,10 @@
 import Cartridge from './Cartridge.js';
 import Mapper from "./Mapper.js";
+import {
+    Header,
+    INESHeader,
+    UNIFHeader,
+} from './FileFormats.js';
 
 export class CartConnector {
     constructor() {
@@ -7,16 +12,13 @@ export class CartConnector {
     }
     
     reset() {
+        this.file = new Header;
         this.cartridge = new Cartridge;
         
         this.name = "No Cartridge";
         this.tvSystem = "NTSC";
         
         this.statuses = [];
-        
-        this.fileLoaded    = false;
-        this.fileValid     = false;
-        this.fileSupported = false;
     }
     
     //=======================================================================================//
@@ -46,39 +48,38 @@ export class CartConnector {
     }
     
     parseData(data) {
-        let header = new DataView(data, 0, 0x10);
-        var offset = 0x10;
+        const signature = (new DataView(data, 0, 4)).getUint32(0);
         
-        if (header.getUint32(0) === 0x4E45531A) { //"NES" + MS-DOS end-of-file
-            this.statuses.push("iNES format");
-            this.fileValid = true;
-        } else {
-            this.fileValid = false;
+        if (signature === 0x4E45531A) // "NES[EOF]"
+            this.file = new INESHeader(data);
+        else if (signature === 0x554E4946) // "UNIF"
+            this.file = new UNIFHeader(data);
+        else
             throw new Error("Invalid format");
-        }
         
-        let flags6 = header.getUint8(6);
-        let flags7 = header.getUint8(7);
+        if (this.file.valid)
+            this.statuses.push(this.file.format);
+        else
+            throw new Error(`Unsupported format (${this.file.format})`);
         
-        let mapperNumber = (flags6 >> 4) | (flags7 & 0xF0);
-        if (Mapper.supported(mapperNumber)) {
+        let offset = this.file.byteLength;
+        
+        if (this.file.supported) {
             this.statuses.push(
-                `Mapper #${mapperNumber}: ${Mapper.name(mapperNumber)}`
+                `Mapper #${this.file.mapperNumber}: ${this.file.mapperName}`
             );
-            this.fileSupported = true;
         } else {
             this.statuses.push(
-                `Unsupported mapper (#${mapperNumber}: ${Mapper.name(mapperNumber)})`
+                `Unsupported mapper (#${this.file.mapperNumber}: ${this.file.mapperName})`
             );
-            this.fileSupported = false;
         }
-        this.cartridge = new Mapper(mapperNumber);
+        this.cartridge = new Mapper(this.file.mapperNumber);
         
-        if (flags6 & 0x8) {
+        if (!this.file.horiMirroring && !this.file.vertMirroring) {
             this.cartridge.horiMirroring = false;
             this.cartridge.vertMirroring = false;
             this.statuses.push("4-screens scrolling");
-        } else if (flags6 & 0x1) {
+        } else if (this.file.vertMirroring) {
             this.cartridge.horiMirroring = false;
             this.cartridge.vertMirroring = true;
             this.statuses.push("Horizontal scrolling");
@@ -88,22 +89,22 @@ export class CartConnector {
             this.statuses.push("Vertical scrolling");
         }
         
-        if (flags6 & 0x2) {
+        if (this.file.battery) {
             this.cartridge.battery = true;
             this.statuses.push("Battery-backed SRAM");
         }
         
-        if (flags6 & 0x4) {
+        if (this.file.trainer) {
             this.cartridge.PRGRAM.set(new Uint8Array(data, offset, 0x200), 0x1000);
             offset += 0x200;
         }
         
-        let numPRGBank = header.getUint8(4);
-        let numCHRBank = header.getUint8(5) * 2;
-        var skipped = 0;
+        const numPRGBank = this.file.PRGROMByteLength / 0x4000;
+        const numCHRBank = this.file.CHRROMByteLength / 0x1000;
+        let skipped = 0;
         
         this.statuses.push(`${numPRGBank*16}kb of PRG-ROM`);
-        for (var curBank = 0; curBank < numPRGBank; curBank++) {
+        for (let curBank = 0; curBank < numPRGBank; curBank++) {
             if (offset + 0x4000 > data.byteLength) {
                 skipped += 4;
                 continue;
@@ -113,7 +114,7 @@ export class CartConnector {
         }
         
         this.statuses.push(`${numCHRBank*4}kb of CHR-ROM`);
-        for (curBank = 0; curBank < numCHRBank; curBank++) {
+        for (let curBank = 0; curBank < numCHRBank; curBank++) {
             if (offset + 0x1000 > data.byteLength) {
                 skipped++;
                 continue;
@@ -157,8 +158,8 @@ export class CartConnector {
             }
         ).then(
             (data) => {
-                this.fileLoaded = true;
                 this.parseData(data);
+                
                 return this;
             }
         ).catch(
