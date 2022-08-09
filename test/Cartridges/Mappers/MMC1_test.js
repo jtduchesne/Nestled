@@ -3,13 +3,8 @@ import { MMC1 } from "../../../src/Cartridges/Mappers";
 describe("MMC1", function() {
     subject(() => new MMC1);
     
-    its('mapperNumber', () => is.expected.to.equal(1));
-    
     its('PRGBank', () => is.expected.to.be.an('array').and.have.lengthOf(2));
     its('CHRBank', () => is.expected.to.be.an('array').and.have.lengthOf(2));
-    
-    its('empty',   () => is.expected.to.be.false);
-    its('present', () => is.expected.to.be.true);
     
     //-------------------------------------------------------------------------------//
     

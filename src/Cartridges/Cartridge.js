@@ -1,10 +1,5 @@
 export class Cartridge {
-    constructor(mapperNumber) {
-        if (typeof mapperNumber !== 'undefined')
-            this.mapperNumber = mapperNumber;
-        else
-            this.mapperNumber = -1;
-        
+    constructor() {
         this.PRGRAM = new Uint8Array(0x4000);
         this.CHRRAM = new Uint8Array(0x2000);
         
@@ -19,8 +14,8 @@ export class Cartridge {
         this.battery = false;
     }
     
-    get empty()   { return this.mapperNumber < 0; }
-    get present() { return this.mapperNumber >= 0; }
+    get empty()   { return !this.present; }
+    get present() { return this.PRGROM.length > 0; }
     
     init() {
         if (this.PRGROM.length > 0)

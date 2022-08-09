@@ -1,8 +1,8 @@
 import Cartridge from '../Cartridge.js';
 
 export class MMC1 extends Cartridge {
-    constructor(number) {
-        super(number || 1);
+    constructor() {
+        super();
         
         this.mirroring   = 0;
         this.PRGBankMode = 3;

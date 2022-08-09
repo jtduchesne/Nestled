@@ -3,13 +3,8 @@ import { NROM } from "../../../src/Cartridges/Mappers";
 describe("NROM", function() {
     subject(() => new NROM);
     
-    its('mapperNumber', () => is.expected.to.equal(0));
-    
     its('PRGBank', () => is.expected.to.be.an('array').and.have.lengthOf(2));
     its('CHRBank', () => is.expected.to.be.an('array').and.have.lengthOf(2));
-    
-    its('empty',   () => is.expected.to.be.false);
-    its('present', () => is.expected.to.be.true);
     
     //-------------------------------------------------------------------------------//
     

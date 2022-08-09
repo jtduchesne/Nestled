@@ -61,28 +61,6 @@ describe("CartConnector", function() {
             beforeEach(() => $action);
             def('cartridge', () => $subject.cartridge); /*global $cartridge */
             
-            context("a supported Mapper (#1)", function() {
-                def('flags6', () => (1 << 4));
-                
-                it("sets cartridge#mapperNumber", function() {
-                    expect($cartridge.mapperNumber).to.equal(1);
-                });
-            });
-            context("an unsupported Mapper (#15)", function() {
-                def('flags6', () => (15 << 4));
-                
-                it("sets cartridge#mapperNumber", function() {
-                    expect($cartridge.mapperNumber).to.equal(15);
-                });
-            });
-            context("an extended Mapper number (#16)", function() {
-                def('flags7', () => (1 << 4));
-                
-                it("sets cartridge#mapperNumber", function() {
-                    expect($cartridge.mapperNumber).to.equal(16);
-                });
-            });
-            
             context("horizontal mirroring", function() {
                 def('flags6', () => 0x00);
                 

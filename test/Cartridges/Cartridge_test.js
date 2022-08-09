@@ -3,8 +3,6 @@ import { Cartridge } from "../../src";
 describe("Cartridge", function() {
     subject(() => new Cartridge);
     
-    its('mapperNumber', () => is.expected.to.equal(-1));
-    
     its('PRGROM', () => is.expected.to.be.an('array').and.be.empty);
     its('CHRROM', () => is.expected.to.be.an('array').and.be.empty);
     
