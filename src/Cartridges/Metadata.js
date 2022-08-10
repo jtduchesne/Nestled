@@ -118,6 +118,26 @@ export class Metadata {
         if (header.consoleType > 0)
             this.warn(`Unsupported console type (${this.consoleType})`);
     }
+    
+    //=======================================================================================//
+    
+    serialize() {
+        return {
+            name: this.name,
+            format: this.format,
+            consoleType: this.consoleType,
+            tvSystem: this.tvSystem,
+            
+            mapper: this.mapper,
+            PRGROM: this.PRGROM,
+            CHRROM: this.CHRROM,
+            scrolling: this.scrolling,
+            SRAM: this.SRAM,
+            PRGRAM: this.PRGRAM,
+            CHRRAM: this.CHRRAM,
+            misc: this.misc,
+        };
+    }
 }
 
 export default Metadata;
