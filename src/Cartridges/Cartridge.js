@@ -1,31 +1,57 @@
+export const PRGROMBANKSIZE = 0x4000;
+export const CHRROMBANKSIZE = 0x1000;
+
 export class Cartridge {
     constructor() {
-        this.PRGRAM = new Uint8Array(0x4000);
-        this.CHRRAM = new Uint8Array(0x2000);
+        this.PRGRAM = new Uint8Array(PRGROMBANKSIZE);
+        this.CHRRAM = new Uint8Array(CHRROMBANKSIZE);
         
         this.PRGROM = [];
+        this.firstPRGBank = this.PRGRAM;
+        this.lastPRGBank  = this.PRGRAM;
+        this.PRGBank = [this.firstPRGBank, this.lastPRGBank];
+        
         this.CHRROM = [];
-        this.PRGBank = [this.PRGRAM, this.PRGRAM];
-        this.CHRBank = [this.CHRRAM, this.CHRRAM];
+        this.firstCHRBank  = this.CHRRAM;
+        this.secondCHRBank = this.CHRRAM;
+        this.CHRBank = [this.firstCHRBank, this.secondCHRBank];
         
         this.horiMirroring = false;
         this.vertMirroring = false;
-        
-        this.battery = false;
     }
     
-    get empty()   { return !this.present; }
-    get present() { return this.PRGROM.length > 0; }
-    
-    init() {
-        if (this.PRGROM.length > 0)
-            this.PRGBank = [this.PRGROM[0], this.PRGROM[this.PRGROM.length-1]];
-        else
-            this.PRGBank = [this.PRGRAM, this.PRGRAM];
+    load(header, data) {
+        let offset = header.byteLength;
         
-        if (this.CHRROM.length === 0)
-            this.CHRROM = [this.CHRRAM.subarray(0, 0x1000), this.CHRRAM.subarray(0x1000)];
-        this.CHRBank = [this.CHRROM[0], this.CHRROM[1]];
+        this.horiMirroring = header.horiMirroring;
+        this.vertMirroring = header.vertMirroring;
+        
+        if (header.trainer) {
+            this.PRGRAM.set(new Uint8Array(data, offset, 0x200), 0x1000);
+            offset += 0x200;
+        }
+        
+        const numPRGBank = header.PRGROMByteLength / PRGROMBANKSIZE;
+        if (numPRGBank > 0) {
+            for (let bank = 0; bank < numPRGBank; bank++) {
+                this.PRGROM.push(new Uint8Array(data, offset, PRGROMBANKSIZE));
+                offset += PRGROMBANKSIZE;
+            }
+            this.firstPRGBank = this.PRGROM[0];
+            this.lastPRGBank  = this.PRGROM[this.PRGROM.length-1];
+        }
+        this.PRGBank = [this.firstPRGBank, this.lastPRGBank];
+        
+        const numCHRBank = header.CHRROMByteLength / CHRROMBANKSIZE;
+        if (numCHRBank > 0) {
+            for (let bank = 0; bank < numCHRBank; bank++) {
+                this.CHRROM.push(new Uint8Array(data, offset, CHRROMBANKSIZE));
+                offset += CHRROMBANKSIZE;
+            }
+            this.firstCHRBank  = this.CHRROM[0];
+            this.secondCHRBank = this.CHRROM[1];
+        }
+        this.CHRBank = [this.firstCHRBank, this.secondCHRBank];
     }
     
     //== Memory access from CPU =====================================//

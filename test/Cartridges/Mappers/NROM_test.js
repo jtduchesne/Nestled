@@ -1,4 +1,6 @@
 import { NROM } from "../../../src/Cartridges/Mappers";
+import { INESHeader } from "../../../src/Cartridges/FileFormats";
+import INESFile_factory from "../../Fixtures/INESFile_factory";
 
 describe("NROM", function() {
     subject(() => new NROM);
@@ -8,15 +10,19 @@ describe("NROM", function() {
     
     //-------------------------------------------------------------------------------//
     
-    describe(".init()", function() {
-        def('action', () => $subject.init());
+    /* global $header, $data, $attrs */
+    def('header', () => new INESHeader($data));
+    def('data',   () => INESFile_factory($attrs));
+    def('attrs',  () => undefined);
+    
+    describe(".load(header, data)", function() {
+        def('action', () => $subject.load($header, $data));
         
-        context("PRG", function() {
-            /*global $PRGROM */
-            beforeEach(() => { $subject.PRGROM = $PRGROM; });
+        context("with PRG data", function() {
+            def('attrs', () => ( { numPRG: $numPRG } )); /* global $numPRG */
             
-            context("with only 1 bank", function() {
-                def('PRGROM', () => ( [[1]] ));
+            context("using only 1 bank", function() {
+                def('numPRG', () => 1);
                 
                 it("sets both PRGBanks to that bank", function() {
                     expect(() => $action).to.change($subject, 'PRGBank');
@@ -24,8 +30,8 @@ describe("NROM", function() {
                     expect($subject.PRGBank[1]).to.equal($subject.PRGROM[0]);
                 });
             });
-            context("with 2 banks", function() {
-                def('PRGROM', () => ( [[1],[2]] ));
+            context("using 2 banks", function() {
+                def('numPRG', () => 2);
                 
                 it("sets PRGBanks to those banks", function() {
                     expect(() => $action).to.change($subject, 'PRGBank');
@@ -35,12 +41,11 @@ describe("NROM", function() {
             });
         });
         
-        context("CHR", function() {
-            /*global $CHRROM */
-            beforeEach(() => { $subject.CHRROM = $CHRROM; });
+        context("with CHR data", function() {
+            def('attrs', () => ( { numCHR: $numCHR } )); /* global $numCHR */
             
-            context("with only 1 bank (of 8kb, which mean 2x 4kb banks...)", function() {
-                def('CHRROM', () => ( [[1],[2]] ));
+            context("using only 1 bank (of 8kb, which mean 2x 4kb banks...)", function() {
+                def('numCHR', () => 1);
                 
                 it("sets CHRBanks to that bank", function() {
                     expect(() => $action).to.change($subject, 'CHRBank');
@@ -54,41 +59,31 @@ describe("NROM", function() {
     //-------------------------------------------------------------------------------//
     
     context("Memory Access", function() {
-        /*global $PRGROMData1, $PRGROMData2 */
-        def(['PRGROMData1','PRGROMData2']);
-        beforeEach(() => {
-            if ($PRGROMData1) $subject.PRGROM.push(new Uint8Array(0x4000).fill($PRGROMData1));
-            if ($PRGROMData2) $subject.PRGROM.push(new Uint8Array(0x4000).fill($PRGROMData2));
-            //$subject.init();
-        });
+        beforeEach(() => $subject.load($header, $data));
+        def(['numPRG', 'numCHR'], () => 0);
+        def('attrs', () => ({
+            numPRG: $numPRG,
+            numCHR: $numCHR,
+        }));
         
         describe(".cpuRead(address)", function() {
             context("with only 1 PRG bank", function() {
-                def('PRGROMData1', () => 0xA5); // b10100101
+                def('numPRG', () => 1);
                 
                 it("always reads from the same bank", function() {
-                    expect($subject.cpuRead(0x8000)).to.equal($PRGROMData1);
-                    expect($subject.cpuRead(0xFFFF)).to.equal($PRGROMData1);
+                    expect($subject.cpuRead(0x8000)).to.equal(1);
+                    expect($subject.cpuRead(0xFFFF)).to.equal(1);
                 });
             });
             
             context("with 2 PRG banks", function() {
-                def('PRGROMData1', () => 0xA5); // b10100101
-                def('PRGROMData2', () => 0xC3); // b11000011
+                def('numPRG', () => 2);
                 
                 it("reads from both banks", function() {
-                    expect($subject.cpuRead(0x8000)).to.equal($PRGROMData1);
-                    expect($subject.cpuRead(0xFFFF)).to.equal($PRGROMData2);
+                    expect($subject.cpuRead(0x8000)).to.equal(1);
+                    expect($subject.cpuRead(0xFFFF)).to.equal(2);
                 });
             });
-        });
-        
-        /*global $CHRROMData1, $CHRROMData2 */
-        def(['CHRROMData1','CHRROMData2']);
-        beforeEach(() => {
-            if ($CHRROMData1) $subject.CHRROM.push(new Uint8Array(0x1000).fill($CHRROMData1));
-            if ($CHRROMData2) $subject.CHRROM.push(new Uint8Array(0x1000).fill($CHRROMData2));
-            $subject.init();
         });
         
         describe(".ppuRead(address)", function() {
@@ -100,12 +95,11 @@ describe("NROM", function() {
             });
             
             context("with 1 CHR bank (of 8kb, which mean 2x 4kb banks...)", function() {
-                def('CHRROMData1', () => 0xA5); // b10100101
-                def('CHRROMData2', () => 0xC3); // b11000011
+                def('numCHR', () => 1);
                 
                 it("reads from those banks", function() {
-                    expect($subject.ppuRead(0x0000)).to.equal($CHRROMData1);
-                    expect($subject.ppuRead(0x1FFF)).to.equal($CHRROMData2);
+                    expect($subject.ppuRead(0x0000)).to.equal(1);
+                    expect($subject.ppuRead(0x1FFF)).to.equal(2);
                 });
             });
         });

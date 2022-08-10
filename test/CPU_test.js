@@ -24,21 +24,18 @@ describe("Cpu", function() {
         if (isSet($PRGRAMData))
             cartridge.PRGRAM.fill($PRGRAMData);
         
+        cartridge.PRGBank = cartridge.PRGROM = [new Uint8Array(0x4000),
+                                                new Uint8Array(0x4000)];
         if (isSet($PRGROMData)) {
-            cartridge.PRGROM = [new Uint8Array(0x4000).fill($PRGROMData),
-                                new Uint8Array(0x4000).fill($PRGROMData)];
-        } else {
-            cartridge.PRGROM = [new Uint8Array(0x4000),
-                                new Uint8Array(0x4000)];
+            cartridge.PRGROM.forEach((bank) => bank.fill($PRGROMData));
         }
-        cartridge.init();
         
         if (isSet($NMIvector))
-            cartridge.PRGROM[1].set(Array.of($NMIvector&0xFF, $NMIvector>>8), 0x3FFA);
+            cartridge.PRGBank[1].set(Array.of($NMIvector&0xFF, $NMIvector>>8), 0x3FFA);
         if (isSet($RESETvector))
-            cartridge.PRGROM[1].set(Array.of($RESETvector&0xFF, $RESETvector>>8), 0x3FFC);
+            cartridge.PRGBank[1].set(Array.of($RESETvector&0xFF, $RESETvector>>8), 0x3FFC);
         if (isSet($IRQvector))
-            cartridge.PRGROM[1].set(Array.of($IRQvector&0xFF, $IRQvector>>8), 0x3FFE);
+            cartridge.PRGBank[1].set(Array.of($IRQvector&0xFF, $IRQvector>>8), 0x3FFE);
         
         return cartridge;
     });

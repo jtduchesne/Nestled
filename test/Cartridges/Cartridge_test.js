@@ -1,4 +1,6 @@
 import { Cartridge } from "../../src";
+import { INESHeader } from "../../src/Cartridges/FileFormats";
+import INESFile_factory from "../Fixtures/INESFile_factory";
 
 describe("Cartridge", function() {
     subject(() => new Cartridge);
@@ -14,31 +16,90 @@ describe("Cartridge", function() {
     
     its('CHRBank', () => is.expected.to.be.an('array').and.have.lengthOf(2));
     it("should already have CHR data to read from", function() {
-        expect($subject.CHRBank[0]).to.be.an.instanceOf(Uint8Array).and.have.lengthOf(0x2000);
-        expect($subject.CHRBank[1]).to.be.an.instanceOf(Uint8Array).and.have.lengthOf(0x2000);
+        expect($subject.CHRBank[0]).to.be.an.instanceOf(Uint8Array).and.have.lengthOf(0x1000);
+        expect($subject.CHRBank[1]).to.be.an.instanceOf(Uint8Array).and.have.lengthOf(0x1000);
     });
     
     its('horiMirroring', () => is.expected.to.be.false);
     its('vertMirroring', () => is.expected.to.be.false);
-    its('battery',       () => is.expected.to.be.false);
-    
-    its('empty',   () => is.expected.to.be.true);
-    its('present', () => is.expected.to.be.false);
         
     //-------------------------------------------------------------------------------//
     
-    describe(".init()", function() {
-        def('action', () => $subject.init());
+    describe(".load(header, data)", function() {
+        def('action', () => $subject.load($header, $data));
+        /* global $header, $data, $attrs */
+        def('header', () => new INESHeader($data));
+        def('data',   () => INESFile_factory($attrs));
         
-        context("PRG", function() {
-            /*global $PRGROM */
-            beforeEach(function() {
-                $subject.PRGBank = null;
-                $subject.PRGROM = $PRGROM;
-            });
+        context("with mirroring", function() {
+            def('attrs', () => ( { byte6: $byte6 } )); /* global $byte6 */
             
-            context("without Data", function() {
-                def('PRGROM', () => ( [] ));
+            context("horizontal", function() {
+                def('byte6', () => 0x00);
+                
+                it("sets #horiMirroring", function() {
+                    expect(() => $action).to.change($subject, 'horiMirroring');
+                    expect($subject.horiMirroring).to.be.true;
+                });
+                it("does not set #vertMirroring", function() {
+                    expect(() => $action).not.to.change($subject, 'vertMirroring');
+                    expect($subject.vertMirroring).to.be.false;
+                });
+            });
+            context("vertical", function() {
+                def('byte6', () => 0x01);
+                
+                it("does not set #horiMirroring", function() {
+                    expect(() => $action).not.to.change($subject, 'horiMirroring');
+                    expect($subject.horiMirroring).to.be.false;
+                });
+                it("sets #vertMirroring", function() {
+                    expect(() => $action).to.change($subject, 'vertMirroring');
+                    expect($subject.vertMirroring).to.be.true;
+                });
+            });
+            context("none (4-screens scrolling)", function() {
+                def('byte6', () => 0x08);
+                
+                it("does not set #horiMirroring", function() {
+                    expect(() => $action).not.to.change($subject, 'horiMirroring');
+                    expect($subject.horiMirroring).to.be.false;
+                });
+                it("does not set #vertMirroring", function() {
+                    expect(() => $action).not.to.change($subject, 'vertMirroring');
+                    expect($subject.vertMirroring).to.be.false;
+                });
+            });
+        });
+        
+        context("with a 512b trainer present", function() {
+            beforeEach(() => $action);
+            
+            def('attrs', () => ({
+                numPRG: 1,
+                byte6: 0x04,
+                data: { trainer: 0xA5, PRGROM: 0x99 }
+            }));
+            
+            it("sets its content into PRGRAM(0x1000)", function() {
+                expect($subject.PRGRAM[0x0000]).to.equal(0x00);
+                expect($subject.PRGRAM[0x0FFF]).to.equal(0x00);
+                expect($subject.PRGRAM[0x1000]).to.equal(0xA5);
+                expect($subject.PRGRAM[0x11FF]).to.equal(0xA5);
+                expect($subject.PRGRAM[0x1200]).to.equal(0x00);
+            });
+            it("does not affect PRGROM", function() {
+                expect($subject.PRGROM[0][0x0000]).to.equal(0x99);
+                expect($subject.PRGROM[0][0x1000]).to.equal(0x99);
+                expect($subject.PRGROM[0][0x3FFF]).to.equal(0x99);
+            });
+        });
+        
+        context("with PRG data", function() {
+            def('attrs', () => ( { numPRG: $numPRG } )); /* global $numPRG */
+            
+            context("empty", function() {
+                def('numPRG', () => 0);
                 
                 it("sets both PRGBanks to PRGRAM", function() {
                     expect(() => $action).to.change($subject, 'PRGBank');
@@ -46,8 +107,8 @@ describe("Cartridge", function() {
                     expect($subject.PRGBank[1]).to.equal($subject.PRGRAM);
                 });
             });
-            context("with only 1 bank", function() {
-                def('PRGROM', () => ( [[1]] ));
+            context("using only 1 bank", function() {
+                def('numPRG', () => 1);
                 
                 it("sets both PRGBanks to that bank", function() {
                     expect(() => $action).to.change($subject, 'PRGBank');
@@ -55,8 +116,8 @@ describe("Cartridge", function() {
                     expect($subject.PRGBank[1]).to.equal($subject.PRGROM[0]);
                 });
             });
-            context("with 2 banks", function() {
-                def('PRGROM', () => ( [[1],[2]] ));
+            context("using 2 banks", function() {
+                def('numPRG', () => 2);
                 
                 it("sets PRGBanks to those banks", function() {
                     expect(() => $action).to.change($subject, 'PRGBank');
@@ -64,8 +125,8 @@ describe("Cartridge", function() {
                     expect($subject.PRGBank[1]).to.equal($subject.PRGROM[1]);
                 });
             });
-            context("with more than 2 banks", function() {
-                def('PRGROM', () => ( [[1],[2],[3]] ));
+            context("using more than 2 banks", function() {
+                def('numPRG', () => 3);
                 
                 it("sets PRGBanks to the first and last banks", function() {
                     expect(() => $action).to.change($subject, 'PRGBank');
@@ -75,32 +136,20 @@ describe("Cartridge", function() {
             });
         });
         
-        context("CHR", function() {
-            /*global $CHRROM */
-            beforeEach(function() {
-                $subject.CHRBank = null;
-                $subject.CHRROM = $CHRROM;
-            });
+        context("with CHR data", function() {
+            def('attrs', () => ( { numCHR: $numCHR } )); /* global $numCHR */
             
-            context("without Data", function() {
-                /*global $CHRRAMData1, $CHRRAMData2 */
-                def('CHRRAMData1', () => 1);
-                def('CHRRAMData2', () => 2);
-                beforeEach(function() {
-                    $subject.CHRRAM.fill($CHRRAMData1, 0, 0x1000);
-                    $subject.CHRRAM.fill($CHRRAMData2, 0x1000);
-                });
+            context("empty", function() {
+                def('numCHR', () => 0);
                 
-                def('CHRROM', () => ( [] ));
-                
-                it("sets CHRBanks to subsets of CHRRAM", function() {
+                it("sets both CHRBanks to CHRRAM", function() {
                     expect(() => $action).to.change($subject, 'CHRBank');
-                    expect($subject.CHRBank[0][0]).to.equal($CHRRAMData1);
-                    expect($subject.CHRBank[1][0]).to.equal($CHRRAMData2);
+                    expect($subject.CHRBank[0]).to.equal($subject.CHRRAM);
+                    expect($subject.CHRBank[1]).to.equal($subject.CHRRAM);
                 });
             });
-            context("with only 1 bank (of 8kb, which mean 2x 4kb banks...)", function() {
-                def('CHRROM', () => ( [[1],[2]] ));
+            context("using only 1 bank (of 8kb, which mean 2x 4kb banks...)", function() {
+                def('numCHR', () => 1);
                 
                 it("sets CHRBanks to that bank", function() {
                     expect(() => $action).to.change($subject, 'CHRBank');
@@ -108,8 +157,8 @@ describe("Cartridge", function() {
                     expect($subject.CHRBank[1]).to.equal($subject.CHRROM[1]);
                 });
             });
-            context("with more than 1 bank", function() {
-                def('CHRROM', () => ( [[1],[2],[3],[4]] ));
+            context("using more than 1 bank", function() {
+                def('numCHR', () => 2);
                 
                 it("sets CHRBanks to the first bank anyway", function() {
                     expect(() => $action).to.change($subject, 'CHRBank');
@@ -125,8 +174,6 @@ describe("Cartridge", function() {
     context("Memory Access", function() {
         // Only test that no errors are thrown when Cartridge is empty
         // Real Memory Access implementations are tested in the Mappers
-        
-        beforeEach(() => $subject.init());
         
         context("without PRG data", function() {
             before(() => expect($subject.PRGROM).to.be.empty);

@@ -12,16 +12,6 @@ export class MMC1 extends Cartridge {
         this.index = 0;
     }
     
-    init() {
-        super.init();
-        
-        this.firstPRGBank = this.PRGROM[0];
-        this.lastPRGBank  = this.PRGROM[this.PRGROM.length-1];
-        
-        this.PRGBank[0] = this.firstPRGBank;
-        this.PRGBank[1] = this.lastPRGBank;
-    }
-    
     //== Internal registers =========================================//
     set control(value) {
         this.mirroring   = (value & 0x03);

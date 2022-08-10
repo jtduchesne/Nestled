@@ -2,6 +2,12 @@ function str2array(str, limit) {
     return str.split("", limit).map(v => v.charCodeAt(0));
 }
 
+function setDataOrIndex(banksCount, bankSize, data) {
+    return (new Array(banksCount)).fill(0).map((_, i) => (
+        (new Array(bankSize)).fill(typeof data === 'number' ? data : i+1)
+    )).flat();
+}
+
 export default (attrs = {}) => {
     let signature = attrs['signature'];
     if (typeof signature === 'undefined')
@@ -32,14 +38,14 @@ export default (attrs = {}) => {
     
     const trainerSize = (attrs['trainer'] || byte6&0x4) ? 0x200 : 0;
     const trainerData = (attrs['data'] && attrs['data']['trainer']) || 0;
-    const PRGROMData = (attrs['data'] && attrs['data']['PRGROM']) || 0;
-    const CHRROMData = (attrs['data'] && attrs['data']['CHRROM']) || 0;
+    const PRGROMData = (attrs['data'] && attrs['data']['PRGROM']);
+    const CHRROMData = (attrs['data'] && attrs['data']['CHRROM']);
     
     const name = attrs['name'] ? str2array(attrs['name']) : [];
     
     return new Uint8Array(header
         .concat(new Array(trainerSize).fill(trainerData))
-        .concat(new Array(numPRG*0x4000).fill(PRGROMData))
-        .concat(new Array(numCHR*0x2000).fill(CHRROMData))
+        .concat(setDataOrIndex(numPRG, 0x4000, PRGROMData))
+        .concat(setDataOrIndex(numCHR*2, 0x1000, CHRROMData))
         .concat(name)).buffer;
 };
