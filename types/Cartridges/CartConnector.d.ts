@@ -1,18 +1,16 @@
 export class CartConnector {
     reset(): void;
+    file: Header | INESHeader | UNIFHeader;
+    metadata: Metadata;
     cartridge: Cartridge | Mapper;
-    name: string;
-    tvSystem: string;
-    statuses: string[];
-    fileLoaded: boolean;
-    fileValid: boolean;
-    fileSupported: boolean;
-    parseFilename(filename: string): void;
-    parseData(data: ArrayBufferLike): void;
     load(file: File): Promise<CartConnector>;
     unload(): Promise<CartConnector>;
 }
 export default CartConnector;
+import { Header } from "./FileFormats.js";
+import { INESHeader } from "./FileFormats.js";
+import { UNIFHeader } from "./FileFormats.js";
+import Metadata from "./Metadata.js";
 import Cartridge from "./Cartridge.js";
 import Mapper from "./Mapper.js";
 //# sourceMappingURL=CartConnector.d.ts.map
