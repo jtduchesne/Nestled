@@ -10,7 +10,7 @@ const constructors = Object.freeze([
 
 export class Mapper {
     constructor(number) {
-        return new (constructors[number] || NROM)(number);
+        return new (constructors[number] || NROM);
     }
     
     static supported(number) {

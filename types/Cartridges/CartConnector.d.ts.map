@@ -1,1 +1,1 @@
-{"version":3,"file":"CartConnector.d.ts","sourceRoot":"","sources":["../../src/Cartridges/CartConnector.js"],"names":[],"mappings":"AAGA;IAKI,cAWC;IAVG,8BAA8B;IAE9B,UAA0B;IAC1B,iBAAsB;IAEtB,gBAAkB;IAElB,oBAA0B;IAC1B,mBAA0B;IAC1B,uBAA0B;IAK9B,mCAsBC;IAED,2BAoFC;IAID,wCAyCC;IACD,iCAIC;CACJ"}
+{"version":3,"file":"CartConnector.d.ts","sourceRoot":"","sources":["../../src/Cartridges/CartConnector.js"],"names":[],"mappings":"AASA;IAKI,cAIC;IAHG,uCAAsB;IACtB,mBAA4B;IAC5B,8BAA8B;IAKlC,wCAwDC;IACD,iCAIC;CACJ"}

@@ -53,7 +53,7 @@ export class PPU {
         this.address    = null; //$2006 Address
         this.data       = null; //$2007 Data
         
-        this.ntsc = (this.bus.cartConnector.tvSystem === "NTSC");
+        this.ntsc = (this.bus.cartConnector.metadata.tvSystem === "NTSC");
         
         //Bus access optimizations
         this.cpu    = this.bus.cpu;

@@ -4,8 +4,6 @@ export class MMC1 extends Cartridge {
     CHRBankMode: number;
     buffer: number;
     index: number;
-    firstPRGBank: number;
-    lastPRGBank: number;
     set control(arg: number);
     set CHR0(arg: number);
     set CHR1(arg: number);
