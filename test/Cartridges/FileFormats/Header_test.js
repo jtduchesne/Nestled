@@ -1,4 +1,3 @@
-import { expect } from "chai";
 import Header from "../../../src/Cartridges/FileFormats/Header";
 
 describe("Header", function() {

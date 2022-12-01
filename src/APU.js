@@ -1,10 +1,10 @@
-import { AudioBuffer } from './Audio/AudioBuffer.js';
+import { AudioBuffer } from './Audio/index.js';
 import {
     PulseChannel,
     TriangleChannel,
     NoiseChannel,
     DMC
-} from './Audio/Channels.js';
+} from './Audio/Channels/index.js';
 
 const cyclesFrequency = 1789772.727 / 2;
 

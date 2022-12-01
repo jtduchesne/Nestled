@@ -1,4 +1,5 @@
 import Metadata from "../../src/Cartridges/Metadata";
+
 import { Header } from "../../src/Cartridges/FileFormats";
 
 describe("Metadata", function() {

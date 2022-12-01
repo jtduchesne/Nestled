@@ -1,5 +1,7 @@
-import { NROM } from "../../../src/Cartridges/Mappers";
+import NROM from "../../../src/Cartridges/Mappers/NROM";
+
 import { INESHeader } from "../../../src/Cartridges/FileFormats";
+
 import INESFile_factory from "../../Fixtures/INESFile_factory";
 
 describe("NROM", function() {

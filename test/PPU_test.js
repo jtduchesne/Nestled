@@ -1,5 +1,9 @@
-import { NES, Cartridge } from "../src";
-import { NROM } from "../src/Cartridges/Mappers";
+import NES from "../src";
+
+import {
+    Cartridge,
+    Mappers
+} from "../src/Cartridges";
 
 describe("Ppu", function() {
     def('nes', () => new NES); /*global $nes */
@@ -35,7 +39,7 @@ describe("Ppu", function() {
     def('cartridge', () => {
         let cartridge;
         if ([$horiMirroring,$vertMirroring].some(isSet)) {
-            cartridge = new NROM;
+            cartridge = new Mappers.NROM;
             cartridge.horiMirroring = $horiMirroring || false;
             cartridge.vertMirroring = $vertMirroring || false;
         } else {

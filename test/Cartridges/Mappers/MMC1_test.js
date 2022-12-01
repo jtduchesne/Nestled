@@ -1,5 +1,7 @@
-import { MMC1 } from "../../../src/Cartridges/Mappers";
+import MMC1 from "../../../src/Cartridges/Mappers/MMC1";
+
 import { INESHeader } from "../../../src/Cartridges/FileFormats";
+
 import INESFile_factory from "../../Fixtures/INESFile_factory";
 
 describe("MMC1", function() {

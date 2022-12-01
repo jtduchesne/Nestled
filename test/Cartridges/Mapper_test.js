@@ -1,4 +1,5 @@
 import Mapper from "../../src/Cartridges/Mapper";
+
 import { NROM, MMC1 } from "../../src/Cartridges/Mappers";
 
 describe("Mapper", function() {

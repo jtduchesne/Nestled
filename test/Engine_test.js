@@ -1,4 +1,4 @@
-import { NES } from "../src";
+import NES from "../src";
 
 describe("Engine", function() {
     def('nes', () => new NES); /*global $nes */

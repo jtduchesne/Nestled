@@ -1,11 +1,9 @@
-import Cartridge from './Cartridge.js';
-import Mapper from './Mapper.js';
-import Metadata from './Metadata.js';
+import { Cartridge, Mapper, Metadata } from './Cartridges/index.js';
 import {
     Header,
     INESHeader,
     UNIFHeader,
-} from './FileFormats.js';
+} from './Cartridges/FileFormats/index.js';
 
 export class CartConnector {
     constructor() {

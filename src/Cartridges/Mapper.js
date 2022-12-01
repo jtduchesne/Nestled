@@ -1,7 +1,7 @@
 import mapperNames, {
     NROM,
     MMC1,
-} from './Mappers.js';
+} from './Mappers/index.js';
 
 const constructors = Object.freeze([
     NROM,

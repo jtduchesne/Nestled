@@ -1,4 +1,7 @@
-import { NES, APU, Cartridge } from "../src";
+import NES from "../src";
+
+import { APU } from "../src/APU";
+import { Cartridge } from "../src/Cartridges";
 
 describe("Cpu", function() {
     def('nes', () => new NES); /*global $nes*/

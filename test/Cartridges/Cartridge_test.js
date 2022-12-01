@@ -1,5 +1,7 @@
-import { Cartridge } from "../../src";
+import Cartridge from "../../src/Cartridges/Cartridge";
+
 import { INESHeader } from "../../src/Cartridges/FileFormats";
+
 import INESFile_factory from "../Fixtures/INESFile_factory";
 
 describe("Cartridge", function() {

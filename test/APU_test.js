@@ -1,4 +1,5 @@
-import { NES } from "../src";
+import NES from "../src";
+
 import { AudioBuffer } from "../src/Audio";
 
 describe("APU", function() {

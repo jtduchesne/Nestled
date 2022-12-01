@@ -1,4 +1,4 @@
-import Controller from "./Controller.js";
+import { Controller } from "./Controllers/index.js";
 
 export class CtrlConnector {
     constructor() {
