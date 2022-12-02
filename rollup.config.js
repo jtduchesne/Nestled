@@ -1,4 +1,3 @@
-import babel from '@rollup/plugin-babel';
 import { terser } from "rollup-plugin-terser";
 
 export default  {
@@ -28,8 +27,5 @@ export default  {
       plugins: [terser()],
       sourcemap: true
     }
-  ],
-  plugins: [
-    babel({ babelHelpers: 'bundled', exclude: './node_modules/**'})
   ]
-}
+};
