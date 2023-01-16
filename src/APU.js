@@ -3,7 +3,7 @@ import {
     TriangleChannel,
     NoiseChannel,
     DMC
-} from './Audio/Channels/index.js';
+} from './Audio/index.js';
 
 const cyclesFrequency = 1789772.727 / 2;
 
