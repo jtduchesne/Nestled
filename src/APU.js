@@ -1,4 +1,3 @@
-import { AudioBuffer } from './Audio/index.js';
 import {
     PulseChannel,
     TriangleChannel,
@@ -19,7 +18,6 @@ export class APU {
         this.noise    = new NoiseChannel;
         this.dmc      = new DMC(cpu);
         
-        this.audioBuffer       = null;
         this.cyclesPerSample   = 0;
         this.cyclesUntilSample = 0;
         
@@ -35,14 +33,12 @@ export class APU {
     
     powerOn() {
         this.bus.audioOutput.start();
-        this.audioBuffer = new AudioBuffer(this.bus.audioOutput);
         
-        this.cyclesPerSample   = cyclesFrequency / this.audioBuffer.sampleRate;
+        this.cyclesPerSample   = cyclesFrequency / this.bus.audioOutput.sampleRate;
         this.cyclesUntilSample = this.cyclesPerSample;
     }
     powerOff() {
         this.bus.audioOutput.stop();
-        this.audioBuffer = null;
     }
     
     reset() {
@@ -214,13 +210,13 @@ export class APU {
         this.triangle.doHalf();
         this.noise.doHalf();
     }
-
+    
     //== Output =====================================================//
     doSample() {
         let pulses = this.pulse1.output + this.pulse2.output;
         let others = 3*this.triangle.output + 2*this.noise.output + this.dmc.output;
         
-        this.audioBuffer.writeSample(pulsesSamples[pulses] + othersSamples[others]);
+        this.bus.audioOutput.writeSample(pulsesSamples[pulses] + othersSamples[others]);
     }
 }
 

@@ -2,6 +2,10 @@ export class AudioOutput {
     constructor() {
         this.context  = null;
         this.gainNode = null;
+
+        this.sampleRate = 44100;
+        this.bufferLength = this.sampleRate / 30;
+        this.createNewBuffer();
     }
     
     get connected()    { return !!this.element; }
@@ -42,6 +46,10 @@ export class AudioOutput {
         if (this.connected && typeof AudioContext === 'function') {
             this.context = new AudioContext();
             
+            this.sampleRate = this.context.sampleRate;
+            this.bufferLength = this.sampleRate / 30;
+            this.createNewBuffer();
+            
             this.gainNode = this.context.createGain();
             this.gainNode.gain.value = this.value / this.max;
             this.gainNode.connect(this.context.destination);
@@ -49,6 +57,8 @@ export class AudioOutput {
         this.next = 0.0;
     }
     stop() {
+        if (this.gainNode)
+            this.gainNode.disconnect();
         this.gainNode = null;
         
         if (this.context)
@@ -58,19 +68,36 @@ export class AudioOutput {
     
     //===============================================================//
     
+    writeSample(value) {
+        this.data[this.index++] = value;
+        if (this.index === this.bufferLength) {
+            this.schedule(this.buffer);
+            this.createNewBuffer();
+        }
+    }
+    createNewBuffer() {
+        if (this.context) {
+            this.buffer = this.context.createBuffer(1, this.bufferLength, this.sampleRate);
+            this.data   = this.buffer.getChannelData(0);
+        } else {
+            this.buffer = null;
+            this.data   = new Uint8Array(this.bufferLength);
+        }
+        this.index = 0;
+    }
+    
     schedule(buffer) {
         if (this.context) {
-            let source = this.context.createBufferSource();
+            const source = this.context.createBufferSource();
             source.buffer = buffer;
             source.connect(this.gainNode);
             
-            let bufferDuration = source.buffer.duration;
             if (this.next < this.context.currentTime) {
-                this.next = this.context.currentTime + bufferDuration;
                 source.start();
+                this.next = this.context.currentTime + buffer.duration;
             } else {
-                this.next += bufferDuration;
-                source.start(this.next, 0, bufferDuration);
+                source.start(this.next);
+                this.next += buffer.duration;
             }
         }
     }
