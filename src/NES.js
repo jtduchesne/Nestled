@@ -79,11 +79,8 @@ export class NES {
     }
     
     //== Audio ==============================================================================//
-    connectAudio(output) {
-        return this.audioOutput.connect(output);
-    }
-    disconnectAudio() {
-        return this.audioOutput.disconnect();
-    }
+    
+    /** @readonly */
+    get audio() { return this.audioOutput; }
 }
 export default NES;

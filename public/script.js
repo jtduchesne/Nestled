@@ -67,8 +67,13 @@ try {
     nes.connectVideo(screenOutput);
 
     //-------------------------------------------------------------------------------------------//
-    const audioOutput = document.getElementById('audio');
-    nes.connectAudio(audioOutput);
+    const volumeInput = document.getElementById('volume');
+    volumeInput.addEventListener('change', (e) => {
+        const value = e.target.value / e.target.max;
+        nes.audio.volume = value;
+        e.target.title = "Volume: " + Math.round(value * 100) + "%";
+    });
+    nes.audio.volume = volumeInput.value / volumeInput.max;
 
     //-------------------------------------------------------------------------------------------//
     const fileInput = document.getElementById('file_select_button');
