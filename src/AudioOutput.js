@@ -1,14 +1,26 @@
+import AudioRingBuffer from "./Audio/AudioRingBuffer.js";
+
 const sampleRate = 44100;
-const bufferLength = sampleRate / 30;
+const threshold = 1/12;
 
 /** @type {AudioContext} */
 let context;
 
 export class AudioOutput {
     constructor() {
+        /** @private */
+        this.buffer = new AudioRingBuffer(sampleRate);
+        
+        /** @private */
+        this.gainNode = null;
+        /** @private */
         this.volumeValue = 1.0;
+        
+        /** @private */
         this.next = 0.0;
     }
+    
+    //===================================================================================//
     
     /**
      * @readonly
@@ -35,10 +47,7 @@ export class AudioOutput {
         return this.gainNode;
     }
     
-    /** @readonly */
-    get sampleRate() {
-        return sampleRate;
-    }
+    //===================================================================================//
     
     /**
      * Output volume between 0.0 and 1.0
@@ -52,52 +61,83 @@ export class AudioOutput {
             this.gainNode.gain.value = this.volumeValue;
     }
     
-    //===============================================================//
-    
-    start() {
-        this.context.resume();
-        this.createNewBuffer();
+    /**
+     * The amount of audio currently in the output buffer (in second).
+     * @readonly
+     */
+    get buffered() {
+        return this.next - this.context.currentTime;
     }
-    stop() {
-        this.context.suspend();
+    /**
+     * *True* if the output buffer contains enough audio to be considered safe to be
+     * played.
+     * @readonly
+     */
+    get healthy() {
+        return this.buffered >= threshold;
     }
-    
-    //===============================================================//
     
     /**
-     * @param {number} value
+     * Sample rate (in hertz).
+     * @readonly
      */
-    writeSample(value) {
-        this.data[this.index++] = value;
-        if (this.index === bufferLength) {
-            this.schedule(this.buffer);
-            this.createNewBuffer();
-        }
+    get sampleRate() {
+        return sampleRate;
     }
     
-    /** @private */
-    createNewBuffer() {
-        this.buffer = this.context.createBuffer(1, bufferLength, sampleRate);
-        this.data   = this.buffer.getChannelData(0);
-        this.index = 0;
+    //===================================================================================//
+    
+    start() {
+        const context = this.context;
+        
+        this.buffer.reset();
+        this.buffer.onnewbufferready = (buffer) => {
+            if (buffer.halfFull) {
+                buffer.onnewbufferready = (buffer) => {
+                    if (!this.healthy || buffer.halfFull)
+                        this.schedule(context, buffer);
+                };
+                
+                context.resume();
+                
+                this.next = context.currentTime;
+                while (!this.healthy)
+                    this.schedule(context, buffer);
+            }
+        };
     }
+    stop() {
+        setTimeout(() => this.context.suspend(), this.buffered * 1000);
+    }
+    
+    /** @param {number} value */
+    writeSample(value) {
+        this.buffer.writeSample(value);
+    }
+    
+    //===================================================================================//
     
     /**
      * @private
-     * @param {AudioBuffer} buffer
+     * @param {AudioContext} context
+     * @param {AudioRingBuffer} buffer
      */
-    schedule(buffer) {
+    schedule(context, buffer) {
         const source = context.createBufferSource();
-        source.buffer = buffer;
-        source.connect(this.destination);
+        const audioBuffer = buffer.shift();
+        source.buffer = audioBuffer;
+        source.onended = () => {
+            if (!this.healthy || buffer.halfFull)
+                this.schedule(context, buffer);
+        };
         
-        if (this.next < context.currentTime) {
-            source.start();
-            this.next = context.currentTime + buffer.duration;
-        } else {
-            source.start(this.next);
-            this.next += buffer.duration;
-        }
+        let next = this.next;
+        if (next - context.currentTime < 0)
+            next = context.currentTime;
+        
+        source.connect(this.destination);
+        source.start(next);
+        this.next = next + audioBuffer.duration;
     }
 }
 
