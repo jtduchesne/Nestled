@@ -35,7 +35,7 @@ export class APU {
         this.bus.audioOutput.start();
         
         this.cyclesPerSample   = cyclesFrequency / this.bus.audioOutput.sampleRate;
-        this.cyclesUntilSample = this.cyclesPerSample;
+        this.cyclesUntilSample = this.cyclesPerSample * this.bus.audioOutput.speedAdjustment;
     }
     powerOff() {
         this.bus.audioOutput.stop();
@@ -193,7 +193,7 @@ export class APU {
         
         if (--this.cyclesUntilSample <= 0) {
             this.doSample();
-            this.cyclesUntilSample += this.cyclesPerSample;
+            this.cyclesUntilSample += this.cyclesPerSample * this.bus.audioOutput.speedAdjustment;
         }
     }
     

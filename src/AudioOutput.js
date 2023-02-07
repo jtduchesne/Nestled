@@ -11,6 +11,12 @@ export class AudioOutput {
         /** @private */
         this.buffer = new AudioRingBuffer(sampleRate);
         
+        this.buffer.onbufferunderrun = (lag) => this.decreaseSpeed(lag);
+        this.buffer.onbufferoverrun = (buffer) => {
+            do this.schedule(context, buffer);
+            while (!this.healthy);
+        };
+        
         /** @private */
         this.gainNode = null;
         /** @private */
@@ -18,6 +24,10 @@ export class AudioOutput {
         
         /** @private */
         this.next = 0.0;
+        /** @private */
+        this.lockedUntil = Infinity;
+        
+        this.speedAdjustment = 1.0;
     }
     
     //===================================================================================//
@@ -90,6 +100,8 @@ export class AudioOutput {
     start() {
         const context = this.context;
         
+        this.lockedUntil = Infinity;
+        
         this.buffer.reset();
         this.buffer.onnewbufferready = (buffer) => {
             if (buffer.halfFull) {
@@ -103,6 +115,7 @@ export class AudioOutput {
                 this.next = context.currentTime;
                 while (!this.healthy)
                     this.schedule(context, buffer);
+                this.lockedUntil = this.next;
             }
         };
     }
@@ -126,18 +139,51 @@ export class AudioOutput {
         const source = context.createBufferSource();
         const audioBuffer = buffer.shift();
         source.buffer = audioBuffer;
-        source.onended = () => {
-            if (!this.healthy || buffer.halfFull)
-                this.schedule(context, buffer);
-        };
         
         let next = this.next;
-        if (next - context.currentTime < 0)
-            next = context.currentTime;
-        
+        let buffered = next - context.currentTime;
+        if (buffered < threshold) {
+            source.onended = () => {
+                if (!this.healthy || buffer.halfFull)
+                    this.schedule(context, buffer);
+            };
+            if (buffered < 0)
+                next = context.currentTime;
+        } else if (buffered > threshold*3) {
+            return;
+        }
         source.connect(this.destination);
         source.start(next);
         this.next = next + audioBuffer.duration;
+        
+        if (buffered > threshold*2)
+            this.increaseSpeed((1 - (threshold*2 / buffered)) / 10);
+    }
+    
+    /**
+     * @private
+     * @param {number} amount A positive number representing the percentage amount by
+     * which the speed will be increased.
+     */
+    increaseSpeed(amount) {
+        if (context.currentTime >= this.lockedUntil) {
+            if (this.speedAdjustment < 1)
+                this.speedAdjustment = Math.min(this.speedAdjustment * (1 + amount), 1);
+            
+            this.lockedUntil = this.next;
+        }
+    }
+    /**
+     * @private
+     * @param {number} amount A negative number representing the percentage amount by
+     * which the speed will be decreased.
+     */
+    decreaseSpeed(amount) {
+        if (context.currentTime >= this.lockedUntil) {
+            this.speedAdjustment *= (1 + amount);
+            
+            this.lockedUntil = this.next;
+        }
     }
 }
 
