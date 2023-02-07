@@ -5,7 +5,7 @@ import {
     DMC
 } from './Audio/index.js';
 
-const cyclesFrequency = 1789772.727 / 2;
+const cyclesFrequency = 1786830 / 2;
 
 export class APU {
     constructor(cpu) {
@@ -19,7 +19,7 @@ export class APU {
         this.dmc      = new DMC(cpu);
         
         this.cyclesPerSample   = 0;
-        this.cyclesUntilSample = 0;
+        this.cyclesUntilSample = Infinity;
         
         this.irqDisabled = false;
         this.irq         = false;
@@ -27,8 +27,8 @@ export class APU {
         this.status  = null;
         this.counter = null;
         
-        this.carry = 0;
-        this.cycle = 0;
+        this.toggle = false;
+        this.cycle  = 0;
     }
     
     powerOn() {
@@ -103,7 +103,7 @@ export class APU {
             if (this.irqDisabled)
                 this.irq = false;
             
-            this.resetDelay = this.carry ? 3 : 4;
+            this.resetDelay = this.toggle ? 3 : 4;
             
             if (this.counterMode === 1) {
                 this.doQuarter();
@@ -142,15 +142,14 @@ export class APU {
     
     //== Execution ==================================================//
     doCycles(count) {
-        let cycle = count + this.carry;
-        this.carry = cycle % 2;
-        cycle = (cycle - this.carry) / 2;
-        while (cycle--) {
-            if (this.resetDelay > 0) {
-                if (--this.resetDelay === 0)
-                    this.cycle = 0;
+        while (count--) {
+            if ((this.toggle = !this.toggle)) {
+                if (this.resetDelay > 0) {
+                    if (--this.resetDelay === 0)
+                        this.cycle = 0;
+                }
+                this.doCycle();
             }
-            this.doCycle();
         }
     }
     

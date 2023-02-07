@@ -1,5 +1,5 @@
-const bufferLength = 512;
-const buffersCount = 16;
+const bufferLength = 367;
+const buffersCount = 24;
 
 /**
  * An array of short audio buffers continuously reused in a FIFO manner. When ready,
