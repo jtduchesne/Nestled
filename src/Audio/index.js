@@ -1,4 +1,4 @@
-import * as Channels from './Channels/index.js';
-export { Channels };
-
-export { AudioBuffer } from './AudioBuffer.js';
+export { PulseChannel } from "./PulseChannel.js";
+export { TriangleChannel } from "./TriangleChannel.js";
+export { NoiseChannel } from "./NoiseChannel.js";
+export { DMC } from "./DMC.js";

@@ -1,77 +1,188 @@
+import AudioRingBuffer from "./Audio/AudioRingBuffer.js";
+
+const sampleRate = 44100;
+const threshold = 1/12;
+
+/** @type {AudioContext} */
+let context;
+
 export class AudioOutput {
     constructor() {
-        this.context  = null;
-        this.gainNode = null;
-    }
-    
-    get connected()    { return !!this.element; }
-    get disconnected() { return  !this.element; }
-    
-    connect(element) {
-        if (element && element.nodeName === 'INPUT') {
-            this.element = element;
-            this.value   = Number(element.value);
-            this.max     = Number(element.max) || 100;
-            
-            this.handleVolumeChange = (e) => {
-                this.value = e.target.value;
-                if (this.gainNode)
-                    this.gainNode.gain.value = this.value / this.max;
-            };
-            this.element.addEventListener('change', this.handleVolumeChange);
-            
-            return element;
-        } else {
-            return this.disconnect();
-        }
-    }
-    disconnect() {
-        if (this.element)
-            this.element.removeEventListener('change', this.handleVolumeChange);
-        this.element = null;
-        this.handleVolumeChange = undefined;
-        this.value = 0;
-        this.max = 100;
+        /** @private */
+        this.buffer = new AudioRingBuffer(sampleRate);
         
-        return null;
+        this.buffer.onbufferunderrun = (lag) => this.decreaseSpeed(lag);
+        this.buffer.onbufferoverrun = (buffer) => {
+            do this.schedule(context, buffer);
+            while (!this.healthy);
+        };
+        
+        /** @private */
+        this.gainNode = null;
+        /** @private */
+        this.volumeValue = 1.0;
+        
+        /** @private */
+        this.next = 0.0;
+        /** @private */
+        this.lockedUntil = Infinity;
+        
+        this.speedAdjustment = 1.0;
     }
     
-    //===============================================================//
+    //===================================================================================//
     
-    start() {
-        if (this.connected && typeof AudioContext === 'function') {
-            this.context = new AudioContext();
-            
+    /**
+     * @readonly
+     * @returns {AudioContext} AudioContext
+     */
+    get context() {
+        if (!context) {
+            context = new AudioContext({ sampleRate });
+            context.suspend();
+        }
+        return context;
+    }
+    
+    /**
+     * @readonly
+     * @returns {AudioNode} AudioNode
+     */
+    get destination() {
+        if (!this.gainNode) {
             this.gainNode = this.context.createGain();
-            this.gainNode.gain.value = this.value / this.max;
+            this.gainNode.gain.value = this.volumeValue;
             this.gainNode.connect(this.context.destination);
         }
-        this.next = 0.0;
+        return this.gainNode;
+    }
+    
+    //===================================================================================//
+    
+    /**
+     * Output volume between 0.0 and 1.0
+     */
+    get volume() {
+        return this.volumeValue;
+    }
+    set volume(value) {
+        this.volumeValue = Math.min(1, Math.abs(value));
+        if (this.gainNode)
+            this.gainNode.gain.value = this.volumeValue;
+    }
+    
+    /**
+     * The amount of audio currently in the output buffer (in second).
+     * @readonly
+     */
+    get buffered() {
+        return this.next - this.context.currentTime;
+    }
+    /**
+     * *True* if the output buffer contains enough audio to be considered safe to be
+     * played.
+     * @readonly
+     */
+    get healthy() {
+        return this.buffered >= threshold;
+    }
+    
+    /**
+     * Sample rate (in hertz).
+     * @readonly
+     */
+    get sampleRate() {
+        return sampleRate;
+    }
+    
+    //===================================================================================//
+    
+    start() {
+        const context = this.context;
+        
+        this.lockedUntil = Infinity;
+        
+        this.buffer.reset();
+        this.buffer.onnewbufferready = (buffer) => {
+            if (buffer.halfFull) {
+                buffer.onnewbufferready = (buffer) => {
+                    if (!this.healthy || buffer.halfFull)
+                        this.schedule(context, buffer);
+                };
+                
+                context.resume();
+                
+                this.next = context.currentTime;
+                while (!this.healthy)
+                    this.schedule(context, buffer);
+                this.lockedUntil = this.next;
+            }
+        };
     }
     stop() {
-        this.gainNode = null;
-        
-        if (this.context)
-            this.context.close();
-        this.context = null;
+        setTimeout(() => this.context.suspend(), this.buffered * 1000);
     }
     
-    //===============================================================//
+    /** @param {number} value */
+    writeSample(value) {
+        this.buffer.writeSample(value);
+    }
     
-    schedule(buffer) {
-        if (this.context) {
-            let source = this.context.createBufferSource();
-            source.buffer = buffer;
-            source.connect(this.gainNode);
+    //===================================================================================//
+    
+    /**
+     * @private
+     * @param {AudioContext} context
+     * @param {AudioRingBuffer} buffer
+     */
+    schedule(context, buffer) {
+        const source = context.createBufferSource();
+        const audioBuffer = buffer.shift();
+        source.buffer = audioBuffer;
+        
+        let next = this.next;
+        let buffered = next - context.currentTime;
+        if (buffered < threshold) {
+            source.onended = () => {
+                if (!this.healthy || buffer.halfFull)
+                    this.schedule(context, buffer);
+            };
+            if (buffered < 0)
+                next = context.currentTime;
+        } else if (buffered > threshold*3) {
+            return;
+        }
+        source.connect(this.destination);
+        source.start(next);
+        this.next = next + audioBuffer.duration;
+        
+        if (buffered > threshold*2)
+            this.increaseSpeed((1 - (threshold*2 / buffered)) / 10);
+    }
+    
+    /**
+     * @private
+     * @param {number} amount A positive number representing the percentage amount by
+     * which the speed will be increased.
+     */
+    increaseSpeed(amount) {
+        if (context.currentTime >= this.lockedUntil) {
+            if (this.speedAdjustment < 1)
+                this.speedAdjustment = Math.min(this.speedAdjustment * (1 + amount), 1);
             
-            let bufferDuration = source.buffer.duration;
-            if (this.next < this.context.currentTime) {
-                this.next = this.context.currentTime + bufferDuration;
-                source.start();
-            } else {
-                this.next += bufferDuration;
-                source.start(this.next, 0, bufferDuration);
-            }
+            this.lockedUntil = this.next;
+        }
+    }
+    /**
+     * @private
+     * @param {number} amount A negative number representing the percentage amount by
+     * which the speed will be decreased.
+     */
+    decreaseSpeed(amount) {
+        if (context.currentTime >= this.lockedUntil) {
+            this.speedAdjustment *= (1 + amount);
+            
+            this.lockedUntil = this.next;
         }
     }
 }
