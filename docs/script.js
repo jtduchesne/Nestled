@@ -43,7 +43,7 @@
 
   //-------------------------------------------------------------------------------------------//
 
-    const joypad = new Nestled.Keyboard(
+    const joypad = new Nestled.Devices.Keyboard(
         //    -A-     -W-       -S-        -D-       -Shift-    -Enter-  -K-    -L-
         {left: 65, up: 87, down: 83, right: 68, select: 16, start: 13, b: 75, a: 76}
     );
@@ -56,8 +56,13 @@
 
   //-------------------------------------------------------------------------------------------//
 
-    const audioOutput = document.getElementById('audio');
-    nes.connectAudio(audioOutput);
+    const volumeInput = document.getElementById('volume');
+    volumeInput.addEventListener('change', (e) => {
+        const value = e.target.value / e.target.max;
+        nes.audio.volume = value;
+        e.target.title = "Volume: " + Math.round(value * 100) + "%";
+    });
+    nes.audio.volume = volumeInput.value / volumeInput.max;
 
   //-------------------------------------------------------------------------------------------//
 
