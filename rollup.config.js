@@ -1,4 +1,3 @@
-import babel from '@rollup/plugin-babel';
 import { terser } from "rollup-plugin-terser";
 
 export default  {
@@ -18,18 +17,17 @@ export default  {
     {
       file: 'dist/nestled.umd.js',
       format: 'umd',
+      exports: 'named',
       name: 'Nestled',
       sourcemap: true
     },
     {
       file: 'dist/nestled.umd.min.js',
       format: 'umd',
+      exports: 'named',
       name: 'Nestled',
       plugins: [terser()],
       sourcemap: true
     }
-  ],
-  plugins: [
-    babel({ babelHelpers: 'bundled', exclude: './node_modules/**'})
   ]
-}
+};

@@ -1,5 +1,9 @@
-import { NES, Cartridge } from "../src";
-import { NROM } from "../src/Cartridges/Mappers";
+import NES from "../src";
+
+import {
+    Cartridge,
+    Mappers
+} from "../src/Cartridges";
 
 describe("Ppu", function() {
     def('nes', () => new NES); /*global $nes */
@@ -35,7 +39,7 @@ describe("Ppu", function() {
     def('cartridge', () => {
         let cartridge;
         if ([$horiMirroring,$vertMirroring].some(isSet)) {
-            cartridge = new NROM;
+            cartridge = new Mappers.NROM;
             cartridge.horiMirroring = $horiMirroring || false;
             cartridge.vertMirroring = $vertMirroring || false;
         } else {
@@ -45,16 +49,13 @@ describe("Ppu", function() {
         if (isSet($CHRRAMData))
             cartridge.CHRRAM.fill($CHRRAMData);
         
+        cartridge.CHRBank = cartridge.CHRROM = [new Uint8Array(0x1000),
+                                                new Uint8Array(0x1000)];
         if (isSet($CHRROMData)) {
-            cartridge.CHRROM = [new Uint8Array(0x2000).fill($CHRROMData),
-                                new Uint8Array(0x2000).fill($CHRROMData)];
-        } else {
-            cartridge.CHRROM = [new Uint8Array(0x2000),
-                                new Uint8Array(0x2000)];
+            cartridge.CHRROM.forEach((bank) => bank.fill($CHRROMData));
         }
-        if (isSet($CHRROM0Pattern)) cartridge.CHRROM[0].set($CHRROM0Pattern);
-        if (isSet($CHRROM1Pattern)) cartridge.CHRROM[1].set($CHRROM1Pattern);
-        cartridge.init();
+        if (isSet($CHRROM0Pattern)) cartridge.CHRBank[0].set($CHRROM0Pattern);
+        if (isSet($CHRROM1Pattern)) cartridge.CHRBank[1].set($CHRROM1Pattern);
         
         return cartridge;
     });

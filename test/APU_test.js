@@ -1,5 +1,4 @@
-import { NES } from "../src";
-import { AudioBuffer } from "../src/Audio";
+import NES from "../src";
 
 describe("APU", function() {
     def('nes', () => new NES);  /*global $nes*/
@@ -22,10 +21,6 @@ describe("APU", function() {
             $nes.audioOutput.start = () => done();
             $action;
         });
-        it("initializes #audioBuffer", function() {
-            expect(() => $action).to.change($subject, 'audioBuffer');
-            expect($subject.audioBuffer).to.be.an.instanceOf(AudioBuffer);
-        });
         it("sets #cyclesPerSample", function() {
             expect(() => $action).to.change($subject, 'cyclesPerSample');
             expect($subject.cyclesPerSample).to.be.greaterThan(0);
@@ -42,10 +37,6 @@ describe("APU", function() {
         it("stops the audioOutput", function(done) {
             $nes.audioOutput.stop = () => done();
             $action;
-        });
-        it("destroys #audioBuffer", function() {
-            expect(() => $action).to.change($subject, 'audioBuffer');
-            expect($subject.audioBuffer).to.be.null;
         });
     });
     

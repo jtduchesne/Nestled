@@ -1,5 +1,5 @@
-export { NROM } from './Mappers/NROM.js';
-export { MMC1 } from './Mappers/MMC1.js';
+export { NROM } from './NROM.js';
+export { MMC1 } from './MMC1.js';
 
 export default Object.freeze([
     //0x00

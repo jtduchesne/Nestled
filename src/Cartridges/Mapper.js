@@ -1,7 +1,7 @@
 import mapperNames, {
     NROM,
     MMC1,
-} from './Mappers.js';
+} from './Mappers/index.js';
 
 const constructors = Object.freeze([
     NROM,
@@ -10,7 +10,7 @@ const constructors = Object.freeze([
 
 export class Mapper {
     constructor(number) {
-        return new (constructors[number] || NROM)(number);
+        return new (constructors[number] || NROM);
     }
     
     static supported(number) {

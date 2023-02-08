@@ -1,4 +1,5 @@
 import Mapper from "../../src/Cartridges/Mapper";
+
 import { NROM, MMC1 } from "../../src/Cartridges/Mappers";
 
 describe("Mapper", function() {
@@ -28,7 +29,6 @@ describe("Mapper", function() {
     context("when number=0", function() {
         def('number', () => 0);
         
-        its('mapperNumber', () => is.expected.to.equal($number));
         it("returns a -NROM-", function() {
             expect($subject).to.be.an.instanceOf(NROM);
         });
@@ -36,7 +36,6 @@ describe("Mapper", function() {
     context("when number=1", function() {
         def('number', () => 1);
         
-        its('mapperNumber', () => is.expected.to.equal($number));
         it("returns a -MMC1-", function() {
             expect($subject).to.be.an.instanceOf(MMC1);
         });
@@ -44,7 +43,6 @@ describe("Mapper", function() {
     context("when number is unsupported", function() {
         def('number', () => 1234);
         
-        its('mapperNumber', () => is.expected.to.equal($number));
         it("returns a -NROM-", function() {
             expect($subject).to.be.an.instanceOf(NROM);
         });

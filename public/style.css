@@ -1,0 +1,72 @@
+body {
+    font-family: Helvetica, Arial, sans-serif;
+}
+
+main {
+    width: 256px;
+    padding: 10px;
+    margin: 5px auto;
+    border: 1px solid lightgray;
+    border-radius: 5px;
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2),
+                0 6px 20px 0 rgba(0, 0, 0, 0.19);
+}
+
+#screen {
+    display: block;
+    background-color: #000;
+}
+
+#volume {
+    display: block;
+    margin: 0 auto;
+}
+
+#status {
+    text-align: center;
+}
+
+#buttons_row {
+    display: flex;
+    flex-flow: row nowrap;
+    justify-content: space-around;
+    align-items: center;
+    margin: 1em auto;
+}
+
+#front_led.on     { filter: none; }
+#front_led.off    { filter: grayscale(100%); }
+#front_led.paused { filter: hue-rotate(60deg) brightness(120%); }
+
+button {
+    font-size: .8em;
+    min-width: 68px;
+    margin-left: 1px;
+    margin-right: 1px;
+}
+
+#file_select_row {
+    border: 1px solid lightgray;
+    border-radius: .5em;
+    padding: .5em;
+}
+
+input[type="file"] {
+    width: 100%;
+}
+
+.waiting { opacity: 0; }
+
+.animated {
+    animation-duration: 1s;
+    animation-fill-mode: forwards;
+}
+.bounceIn {
+    animation-name: bounceIn;
+}
+@keyframes bounceIn {
+    0%   { transform: scale(0.3);  opacity: 0; }
+    50%  { transform: scale(1.05); opacity: 1; }
+    70%  { transform: scale(0.9); }
+    100% { transform: scale(1.0); }
+}

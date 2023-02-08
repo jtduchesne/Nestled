@@ -1,21 +1,20 @@
 {
   "name": "nestled",
-  "version": "1.3.0",
+  "version": "1.5.0",
   "description": "Javascript NES emulator",
   "type": "module",
-  "main": "./lib/index.js",
-  "module": "./src/index.js",
+  "main": "./dist/nestled.umd.js",
+  "module": "./dist/nestled.esm.js",
   "types": "./types/index.d.ts",
   "files": [
     "dist",
-    "lib",
+    "types",
     "src"
   ],
   "scripts": {
-    "clean": "rm -rf dist lib",
-    "build:cjs": "BABEL_ENV=cjs babel src --out-dir lib --source-maps",
-    "build:bundle": "BABEL_ENV=esm rollup -c",
-    "build": "npm run build:cjs && npm run build:bundle",
+    "clean": "rm -rf dist/* && touch dist/.keep",
+    "build": "rollup -c",
+    "serve": "http-server -c-1",
     "test": "mocha \"test/**/*_test.js\" || true",
     "debug": "mocha debug \"test/**/*_test.js\" || true",
     "prepare": "npm run clean && npm run build",
@@ -42,15 +41,12 @@
   "homepage": "https://github.com/jtduchesne/Nestled#readme",
   "dependencies": {},
   "devDependencies": {
-    "@babel/cli": "^7.18.9",
-    "@babel/core": "^7.18.9",
-    "@babel/preset-env": "^7.18.9",
-    "@rollup/plugin-babel": "^5.3.1",
     "bdd-lazy-var": "^2.6.1",
     "chai": "^4.3.4",
-    "eslint": "^7.32.0",
-    "mocha": "^9.1.3",
-    "rollup": "^2.77.0",
+    "eslint": "^8.28.0",
+    "http-server": "^14.1.1",
+    "mocha": "^9.2.2",
+    "rollup": "^3.5.1",
     "rollup-plugin-terser": "^7.0.2",
     "typescript": "^4.7.4"
   }

@@ -136,13 +136,14 @@ export class CPU {
         this.opcode  = this.read(this.PC++);
         this.operand = this.read(this.PC++);
         
+        const cycle = this.cycle;
+        
         this.instructionLookup[this.opcode](
             (implied) => this.addressLookup[this.opcode](implied)
         );
-        let cycles = cyclesLookup[this.opcode];
-        this.cycle += cycles;
+        this.cycle += cyclesLookup[this.opcode];
         
-        return cycles;
+        return this.cycle - cycle;
     }
     
     //== Interrupts =================================================//

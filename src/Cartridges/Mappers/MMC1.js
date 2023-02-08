@@ -1,8 +1,8 @@
 import Cartridge from '../Cartridge.js';
 
 export class MMC1 extends Cartridge {
-    constructor(number) {
-        super(number || 1);
+    constructor() {
+        super();
         
         this.mirroring   = 0;
         this.PRGBankMode = 3;
@@ -10,16 +10,6 @@ export class MMC1 extends Cartridge {
         
         this.buffer = 0;
         this.index = 0;
-    }
-    
-    init() {
-        super.init();
-        
-        this.firstPRGBank = this.PRGROM[0];
-        this.lastPRGBank  = this.PRGROM[this.PRGROM.length-1];
-        
-        this.PRGBank[0] = this.firstPRGBank;
-        this.PRGBank[1] = this.lastPRGBank;
     }
     
     //== Internal registers =========================================//

@@ -1,10 +1,10 @@
 import CPU from './CPU.js';
 import PPU from './PPU.js';
 import Engine from './Engine.js';
-import CartConnector from './Cartridges.js';
-import CtrlConnector from './Controllers.js';
-import VideoOutput from './Video.js';
-import AudioOutput from './Audio.js';
+import CartConnector from './CartConnector.js';
+import CtrlConnector from './CtrlConnector.js';
+import VideoOutput from './VideoOutput.js';
+import AudioOutput from './AudioOutput.js';
 
 export class NES {
     constructor() {
@@ -79,11 +79,8 @@ export class NES {
     }
     
     //== Audio ==============================================================================//
-    connectAudio(output) {
-        return this.audioOutput.connect(output);
-    }
-    disconnectAudio() {
-        return this.audioOutput.disconnect();
-    }
+    
+    /** @readonly */
+    get audio() { return this.audioOutput; }
 }
 export default NES;

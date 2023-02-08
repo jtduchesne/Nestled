@@ -1,12 +1,11 @@
-import { AudioBuffer } from './Audio/AudioBuffer.js';
 import {
     PulseChannel,
     TriangleChannel,
     NoiseChannel,
     DMC
-} from './Audio/Channels.js';
+} from './Audio/index.js';
 
-const cyclesFrequency = 1789772.727 / 2;
+const cyclesFrequency = 1786830 / 2;
 
 export class APU {
     constructor(cpu) {
@@ -19,9 +18,8 @@ export class APU {
         this.noise    = new NoiseChannel;
         this.dmc      = new DMC(cpu);
         
-        this.audioBuffer       = null;
         this.cyclesPerSample   = 0;
-        this.cyclesUntilSample = 0;
+        this.cyclesUntilSample = Infinity;
         
         this.irqDisabled = false;
         this.irq         = false;
@@ -29,20 +27,18 @@ export class APU {
         this.status  = null;
         this.counter = null;
         
-        this.carry = 0;
-        this.cycle = 0;
+        this.toggle = false;
+        this.cycle  = 0;
     }
     
     powerOn() {
         this.bus.audioOutput.start();
-        this.audioBuffer = new AudioBuffer(this.bus.audioOutput);
         
-        this.cyclesPerSample   = cyclesFrequency / this.audioBuffer.sampleRate;
-        this.cyclesUntilSample = this.cyclesPerSample;
+        this.cyclesPerSample   = cyclesFrequency / this.bus.audioOutput.sampleRate;
+        this.cyclesUntilSample = this.cyclesPerSample * this.bus.audioOutput.speedAdjustment;
     }
     powerOff() {
         this.bus.audioOutput.stop();
-        this.audioBuffer = null;
     }
     
     reset() {
@@ -107,7 +103,7 @@ export class APU {
             if (this.irqDisabled)
                 this.irq = false;
             
-            this.resetDelay = this.carry ? 3 : 4;
+            this.resetDelay = this.toggle ? 3 : 4;
             
             if (this.counterMode === 1) {
                 this.doQuarter();
@@ -146,15 +142,14 @@ export class APU {
     
     //== Execution ==================================================//
     doCycles(count) {
-        let cycle = count + this.carry;
-        this.carry = cycle % 2;
-        cycle = (cycle - this.carry) / 2;
-        while (cycle--) {
-            if (this.resetDelay > 0) {
-                if (--this.resetDelay === 0)
-                    this.cycle = 0;
+        while (count--) {
+            if ((this.toggle = !this.toggle)) {
+                if (this.resetDelay > 0) {
+                    if (--this.resetDelay === 0)
+                        this.cycle = 0;
+                }
+                this.doCycle();
             }
-            this.doCycle();
         }
     }
     
@@ -197,7 +192,7 @@ export class APU {
         
         if (--this.cyclesUntilSample <= 0) {
             this.doSample();
-            this.cyclesUntilSample += this.cyclesPerSample;
+            this.cyclesUntilSample += this.cyclesPerSample * this.bus.audioOutput.speedAdjustment;
         }
     }
     
@@ -214,13 +209,13 @@ export class APU {
         this.triangle.doHalf();
         this.noise.doHalf();
     }
-
+    
     //== Output =====================================================//
     doSample() {
         let pulses = this.pulse1.output + this.pulse2.output;
         let others = 3*this.triangle.output + 2*this.noise.output + this.dmc.output;
         
-        this.audioBuffer.writeSample(pulsesSamples[pulses] + othersSamples[others]);
+        this.bus.audioOutput.writeSample(pulsesSamples[pulses] + othersSamples[others]);
     }
 }
 
