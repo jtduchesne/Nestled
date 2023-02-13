@@ -1,31 +1,47 @@
+/** Timer period lookup */
 const timerPeriods = [ // fixed to NTSC for now
     428, 380, 340, 320, 286, 254, 226, 214, 190, 160, 142, 128, 106, 84, 72, 54
 ];
 
+/**
+ * Delta modulation channel outputs a 7-bit PCM signal.
+ */
 export class DMC {
+    /**
+     * @param {import('../CPU.js').CPU} cpu
+     */
     constructor(cpu) {
+        /** @private */
         this.cpu = cpu;
         
-        this.enabled = false;
+        /** @private */
+        this._enabled = false;
         
-        this.cycle  = 0;
-        this.output = 0;
+        this.cycle = 0;
         
         this.timerCycle  = 0;
         this.timerPeriod = 0;
         
+        /** Negative number means empty */
+        this.sampleBuffer  = -1;
         this.sampleAddress = 0;
         this.sampleLength  = 0;
         this.sampleIndex   = 0;
         this.sampleLeft    = 0;
         this.sampleLoop    = false;
-        this.sampleBuffer  = -1;
         
-        this.shiftRegister     = -1;
-        this.shiftRegisterBits = 0;
+        /** Negative number means empty */
+        this.shiftRegister      = -1;
+        this.shiftRegisterCount = 0;
         
         this.irqEnabled = false;
         this.irq        = false;
+        
+        /**
+         * 7-bit output value
+         * @type {number}
+         */
+        this.output = 0;
     }
     
     reset() {
@@ -35,8 +51,8 @@ export class DMC {
         
         this.sampleBuffer = -1;
         
-        this.shiftRegister     = -1;
-        this.shiftRegisterBits = 0;
+        this.shiftRegister      = -1;
+        this.shiftRegisterCount = 0;
         
         this.rate    = 0;
         this.load    = 0;
@@ -44,6 +60,8 @@ export class DMC {
         this.length  = 0;
     }
     
+    //===================================================================================//
+    /** @type {boolean} */
     get enabled() {
         return this._enabled;
     }
@@ -61,14 +79,16 @@ export class DMC {
         this._enabled = value;
     }
     
-    //== Interrupt ==================================================//
+    //== Interrupt ======================================================================//
+    /** @private */
     doIRQ() {
         this.irq = true;
         if (this.irqEnabled)
             this.cpu.doIRQ();
     }
     
-    //== Registers ==================================================//
+    //== Registers ======================================================================//
+    /** @private @type {number} */
     get rate() {
         return this.timerPeriod;
     }
@@ -90,6 +110,7 @@ export class DMC {
             this.irq = false;
     }
     
+    /** @private @type {number} */
     get load() {
         return this.output;
     }
@@ -98,6 +119,7 @@ export class DMC {
         this.output = value;
     }
     
+    /** @private @type {number} */
     get address() {
         return this.sampleAddress;
     }
@@ -105,6 +127,7 @@ export class DMC {
         this.sampleAddress = 0xC000 + (value * 64);
     }
     
+    /** @private @type {number} */
     get length() {
         return this.sampleLength;
     }
@@ -112,7 +135,11 @@ export class DMC {
         this.sampleLength = (value * 16) + 1;
     }
     
-    //== Registers access ===========================================//
+    //== Registers access ===============================================================//
+    /**
+     * @param {number} address 16-bit address between 0x4010-0x4013
+     * @param {number} data 8-bit data
+     */
     writeRegister(address, data) {
         switch (address) {
         case 0x4010: this.rate    = data; break;
@@ -122,7 +149,7 @@ export class DMC {
         }
     }
     
-    //== Execution ==================================================//
+    //== Execution ======================================================================//
     doCycle() {
         if (this.cycle > 0) {
             this.cycle--;
@@ -135,6 +162,7 @@ export class DMC {
         }
     }
     
+    /** @private */
     updateSampleBuffer() {
         if (this.sampleBuffer < 0 && this.sampleLeft > 0) {
             this.sampleBuffer = this.cpu.read(this.sampleAddress + this.sampleIndex++);
@@ -151,14 +179,16 @@ export class DMC {
         }
     }
     
+    /** @private */
     updateShiftRegister() {
-        if (--this.shiftRegisterBits <= 0) {
-            this.shiftRegisterBits = 8;
+        if (--this.shiftRegisterCount <= 0) {
+            this.shiftRegisterCount = 8;
             this.shiftRegister = this.sampleBuffer;
             this.sampleBuffer = -1;
         }
     }
     
+    /** @private */
     updateOutput() {
         if (this.shiftRegister >= 0) {
             if (this.shiftRegister & 1) {
