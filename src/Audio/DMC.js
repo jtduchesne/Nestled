@@ -14,11 +14,6 @@ export class DMC {
         /** @private */
         this.cpu = cpu;
         
-        /** @private */
-        this._enabled = false;
-        
-        this.cycle = 0;
-        
         this.timerCycle  = 0;
         this.timerPeriod = 0;
         
@@ -45,8 +40,6 @@ export class DMC {
     }
     
     reset() {
-        this.cycle = 0;
-        
         this.timerCycle = 0;
         
         this.sampleBuffer = -1;
@@ -63,7 +56,7 @@ export class DMC {
     //===================================================================================//
     /** @type {boolean} */
     get enabled() {
-        return this._enabled;
+        return this.sampleLeft > 0;
     }
     set enabled(value) {
         if (value) {
@@ -75,16 +68,13 @@ export class DMC {
             this.sampleLeft = 0;
         }
         this.irq = false;
-        
-        this._enabled = value;
     }
     
     //== Interrupt ======================================================================//
     /** @private */
     doIRQ() {
         this.irq = true;
-        if (this.irqEnabled)
-            this.cpu.doIRQ();
+        this.cpu.doIRQ();
     }
     
     //== Registers ======================================================================//
@@ -151,22 +141,21 @@ export class DMC {
     
     //== Execution ======================================================================//
     doCycle() {
-        if (this.cycle > 0) {
-            this.cycle--;
-        }
-        if (--this.timerCycle <= 0) {
+        const timerCycle = this.timerCycle - 2;
+        if (timerCycle <= 0) {
             this.timerCycle = this.timerPeriod;
             this.updateSampleBuffer();
             this.updateShiftRegister();
             this.updateOutput();
+        } else {
+            this.timerCycle = timerCycle;
         }
     }
     
     /** @private */
     updateSampleBuffer() {
-        if (this.sampleBuffer < 0 && this.sampleLeft > 0) {
+        if (this.sampleBuffer < 0 && this.enabled) {
             this.sampleBuffer = this.cpu.read(this.sampleAddress + this.sampleIndex++);
-            this.cycle = 4;
             
             if (--this.sampleLeft <= 0) {
                 if (this.sampleLoop) {

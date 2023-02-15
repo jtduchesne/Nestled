@@ -61,13 +61,13 @@ export class APU {
     //== Registers ==================================================//
     //= 0x4015 Status =//
     get status() {
-        let value = (this.pulse1.length   && 0x01) +
-                    (this.pulse2.length   && 0x02) +
-                    (this.triangle.length && 0x04) +
-                    (this.noise.length    && 0x08) +
-                    (this.dmc.sampleLeft  && 0x10) +
-                    (this.dmc.irq         && 0x80) +
-                    (this.irq             && 0x40);
+        let value = (this.pulse1.enabled   && 0x01) +
+                    (this.pulse2.enabled   && 0x02) +
+                    (this.triangle.enabled && 0x04) +
+                    (this.noise.enabled    && 0x08) +
+                    (this.dmc.enabled      && 0x10) +
+                    (this.dmc.irq          && 0x80) +
+                    (this.irq              && 0x40);
         this.dmc.irq = false;
         this.irq     = false;
         
