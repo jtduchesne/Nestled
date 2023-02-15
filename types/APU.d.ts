@@ -29,7 +29,8 @@ export class APU {
     doCycle(): void;
     doQuarter(): void;
     doHalf(): void;
-    doSample(): void;
+    /** @private */
+    private doSample;
 }
 export default APU;
 import { PulseChannel } from "./Audio/Channels.js";
