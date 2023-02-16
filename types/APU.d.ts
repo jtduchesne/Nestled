@@ -1,30 +1,74 @@
 export class APU {
-    constructor(cpu: CPU);
-    bus: NES;
-    cpu: CPU;
+    /**
+     * @param {import('./CPU.js').CPU} cpu
+     */
+    constructor(cpu: import('./CPU.js').CPU);
+    /** @private */
+    private bus;
+    /** @private */
+    private cpu;
+    /** Pulse Channel 1 */
     pulse1: PulseChannel;
+    /** Pulse Channel 2 */
     pulse2: PulseChannel;
+    /** Triangle Channel */
     triangle: TriangleChannel;
+    /** Noise Channel */
     noise: NoiseChannel;
+    /** Delta Modulation Channel */
     dmc: DMC;
-    audioBuffer: AudioBuffer;
-    cyclesPerSample: number;
-    cyclesUntilSample: number;
+    /** If IRQ is disabled at the moment */
     irqDisabled: boolean;
+    /** If an IRQ has happened, this is cleared after reading 0x4015 */
     irq: boolean;
-    set status(arg: number);
-    get status(): number;
-    set counter(arg: number);
-    carry: number;
+    private set status(arg);
+    /**
+     * 0x4015 Status register
+     * @type {number}
+     * @private
+     */
+    private get status();
+    private set counter(arg);
+    /**
+     * 0x4017 Frame counter
+     * @type {number}
+     * @private
+     */
+    private get counter();
+    /** @private */
+    private toggle;
     cycle: number;
+    /** @private */
+    private resetDelay;
+    /** @private */
+    private cyclesPerSample;
+    /** @private */
+    private cyclesUntilSample;
     powerOn(): void;
+    /** @private @type {import('./AudioOutput').AudioOutput} */
+    private output;
     powerOff(): void;
     reset(): void;
-    doIRQ(): void;
-    counterMode: number;
-    resetDelay: number;
+    /** @private */
+    private doIRQ;
+    counterMode: number | undefined;
+    /** @readonly @type {boolean} */
+    readonly get fourStepCounterMode(): boolean;
+    /** @readonly @type {boolean} */
+    readonly get fiveStepCounterMode(): boolean;
+    /**
+     * @param {number} address 16-bit address
+     * @returns {number}
+     */
     readRegister(address: number): number;
+    /**
+     * @param {number} address 16-bit address between 0x4000-0x4017
+     * @param {number} data 8-bit data
+     */
     writeRegister(address: number, data: number): void;
+    /**
+     * @param {number} count The number of (cpu) cycles to execute
+     */
     doCycles(count: number): void;
     doCycle(): void;
     doQuarter(): void;
@@ -33,11 +77,8 @@ export class APU {
     private doSample;
 }
 export default APU;
-import { PulseChannel } from "./Audio/Channels.js";
-import { TriangleChannel } from "./Audio/Channels.js";
-import { NoiseChannel } from "./Audio/Channels.js";
-import { DMC } from "./Audio/Channels.js";
-import { AudioBuffer } from "./Audio/AudioBuffer.js";
-import CPU from "./CPU.js";
-import NES from "./NES.js";
+import { PulseChannel } from "./Audio/index.js";
+import { TriangleChannel } from "./Audio/index.js";
+import { NoiseChannel } from "./Audio/index.js";
+import { DMC } from "./Audio/index.js";
 //# sourceMappingURL=APU.d.ts.map
