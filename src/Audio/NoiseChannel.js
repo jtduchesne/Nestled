@@ -48,6 +48,7 @@ export class NoiseChannel extends Channel {
     get volume() {
         return this.envelopeEnabled ? this.envelopeVolume : this.constantVolume;
     }
+    /** @private */
     set volume(value) {
         if (value > 0x0F) {
             this.lengthCounterHalt = (value & 0x20) !== 0;
@@ -66,6 +67,7 @@ export class NoiseChannel extends Channel {
     get timer() {
         return this.timerPeriod;
     }
+    /** @private */
     set timer(value) {
         if (value > 0x0F) {
             this.timerMode   = (value >= 0x80);

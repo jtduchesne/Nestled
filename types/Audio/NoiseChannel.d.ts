@@ -14,9 +14,11 @@ export class NoiseChannel extends Channel {
     timerPeriod: number;
     /** @private */
     private shiftRegister;
+    /** @private */
     private set volume(arg);
     /** @private @type {number} */
     private get volume();
+    /** @private */
     private set timer(arg);
     /** @private @type {number} */
     private get timer();

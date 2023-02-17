@@ -1,13 +1,15 @@
 export class Channel {
-    lengthCounter: number;
-    lengthCounterHalt: boolean;
+    /** @private */
+    private lengthCounter;
+    /** @protected */
+    protected lengthCounterHalt: boolean;
     reset(): void;
     set enabled(arg: boolean);
     /** @type {boolean} */
     get enabled(): boolean;
-    protected set length(arg: number);
-    /** @protected @type {number} */
-    protected get length(): number;
+    set length(arg: number);
+    /** @type {number} */
+    get length(): number;
     /** @protected */
     protected updateLength(): void;
 }

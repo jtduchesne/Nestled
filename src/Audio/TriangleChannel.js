@@ -16,9 +16,10 @@ export class TriangleChannel extends Channel {
         /** @private */
         this.position = 0;
         
-        this.linearCounter      = 0;
-        this.linearCounterMax   = 0;
-        this.linearCounterReset = false;
+        this.linearCounter        = 0;
+        this.linearCounterMax     = 0;
+        this.linearCounterReset   = false;
+        this.linearCounterControl = false;
         
         this.timerCycle  = 0;
         this.timerPeriod = 0;
@@ -42,6 +43,7 @@ export class TriangleChannel extends Channel {
     get counter() {
         return this.linearCounter;
     }
+    /** @private */
     set counter(value) {
         if (value >= 0x80) {
             this.lengthCounterHalt    = true;
@@ -58,6 +60,7 @@ export class TriangleChannel extends Channel {
     get timer() {
         return this.timerPeriod;
     }
+    /** @private */
     set timer(value) {
         this.timerPeriod = (this.timerPeriod & 0x700) + value;
     }
@@ -91,9 +94,9 @@ export class TriangleChannel extends Channel {
     doCycle() {
         this.timerCycle -= 2;
         if (this.timerCycle <= 0) {
-            this.timerCycle = (this.timerPeriod + 1);
+            this.timerCycle = (this.timer + 1);
             
-            if (this.lengthCounter && this.linearCounter && this.timerPeriod > 3) {
+            if (this.length && this.counter && this.timer > 3) {
                 this.position++;
                 if (this.position >= 0x20)
                     this.position -= 0x20;

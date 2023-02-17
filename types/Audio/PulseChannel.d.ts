@@ -7,7 +7,8 @@ export class PulseChannel extends Channel {
      * of the negate mode of their sweep units
      */
     constructor(id: 1 | 2);
-    id: 2 | 1;
+    /** @private */
+    private id;
     constantVolume: number;
     envelopeEnabled: boolean;
     envelopeReset: boolean;
@@ -16,7 +17,7 @@ export class PulseChannel extends Channel {
     envelopeVolume: number;
     envelopeLoop: boolean;
     dutyCycle: number;
-    duty: number;
+    duty: number[];
     sweepEnabled: boolean;
     sweepReset: boolean;
     sweepCycle: number;
@@ -25,12 +26,15 @@ export class PulseChannel extends Channel {
     sweepShift: number;
     timerCycle: number;
     timerPeriod: number;
+    /** @private */
     private set volume(arg);
     /** @private @type {number} */
     private get volume();
+    /** @private */
     private set sweep(arg);
     /** @private @type {number} */
     private get sweep();
+    /** @private */
     private set timer(arg);
     /** @private @type {number} */
     private get timer();

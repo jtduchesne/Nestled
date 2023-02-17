@@ -19,6 +19,16 @@ export class AudioRingBuffer {
             new AudioBuffer({ length: bufferLength, sampleRate })
         ));
 
+        /** @private */
+        this.readyBuffer = this.writeBuffer = this.buffers[0];
+        /** @private */
+        this.nextReadyIndex = this.nextWriteIndex = 1;
+
+        /** @private */
+        this.data = this.writeBuffer.getChannelData(0);
+        /** @private */
+        this.index = 0;
+
         /**
          * The length in seconds of one audio buffer.
          * @readonly
@@ -28,7 +38,7 @@ export class AudioRingBuffer {
 
         /**
          * Triggered when a new audio buffer is ready to be shifted out and played.
-         * @type {(buffer:AudioRingBuffer) => void|undefined}
+         * @type {((buffer:AudioRingBuffer) => void)|undefined}
          */
         this.onnewbufferready = undefined;
 
@@ -38,7 +48,7 @@ export class AudioRingBuffer {
          * This should be used for logging, or to take action to prevent *another* such
          * event from happening, but nothing should be read/written to the buffer at this
          * time since it happens *while* an audio buffer is being shifted out.
-         * @type {(lag:number) => void|undefined}
+         * @type {((lag:number) => void)|undefined}
          */
         this.onbufferunderrun = undefined;
         /**
@@ -46,11 +56,9 @@ export class AudioRingBuffer {
          * 
          * This gives the opportunity to prevent it by shifting out one or more audio
          * buffers to free some space.
-         * @type {(buffer:AudioRingBuffer) => void|undefined}
+         * @type {((buffer:AudioRingBuffer) => void)|undefined}
          */
         this.onbufferoverrun = undefined;
-
-        this.reset();
     }
 
     //===================================================================================//
@@ -59,18 +67,14 @@ export class AudioRingBuffer {
      * Empties all buffers completely and bring `usage` back to 0%.
      */
     reset() {
-        /** @private */
         this.readyBuffer = this.writeBuffer = this.buffers[0];
-        /** @private */
         this.nextReadyIndex = this.nextWriteIndex = 1;
 
         this.initChannelData();
     }
     /** @private */
     initChannelData() {
-        /** @private */
         this.data = this.writeBuffer.getChannelData(0);
-        /** @private */
         this.index = 0;
     }
 

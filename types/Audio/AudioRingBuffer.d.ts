@@ -13,6 +13,16 @@ export class AudioRingBuffer {
      * @type {AudioBuffer[]}
      */
     private readonly buffers;
+    /** @private */
+    private readyBuffer;
+    private writeBuffer;
+    /** @private */
+    private nextReadyIndex;
+    private nextWriteIndex;
+    /** @private */
+    private data;
+    /** @private */
+    private index;
     /**
      * The length in seconds of one audio buffer.
      * @readonly
@@ -21,42 +31,32 @@ export class AudioRingBuffer {
     readonly duration: number;
     /**
      * Triggered when a new audio buffer is ready to be shifted out and played.
-     * @type {(buffer:AudioRingBuffer) => void|undefined}
+     * @type {((buffer:AudioRingBuffer) => void)|undefined}
      */
-    onnewbufferready: (buffer: AudioRingBuffer) => void | undefined;
+    onnewbufferready: ((buffer: AudioRingBuffer) => void) | undefined;
     /**
      * Triggered just **_after_** a buffer underrun occurs.
      *
      * This should be used for logging, or to take action to prevent *another* such
      * event from happening, but nothing should be read/written to the buffer at this
      * time since it happens *while* an audio buffer is being shifted out.
-     * @type {(lag:number) => void|undefined}
+     * @type {((lag:number) => void)|undefined}
      */
-    onbufferunderrun: (lag: number) => void | undefined;
+    onbufferunderrun: ((lag: number) => void) | undefined;
     /**
      * Triggered just **_before_** a buffer overrun occurs.
      *
      * This gives the opportunity to prevent it by shifting out one or more audio
      * buffers to free some space.
-     * @type {(buffer:AudioRingBuffer) => void|undefined}
+     * @type {((buffer:AudioRingBuffer) => void)|undefined}
      */
-    onbufferoverrun: (buffer: AudioRingBuffer) => void | undefined;
+    onbufferoverrun: ((buffer: AudioRingBuffer) => void) | undefined;
     /**
      * Empties all buffers completely and bring `usage` back to 0%.
      */
     reset(): void;
     /** @private */
-    private readyBuffer;
-    private writeBuffer;
-    /** @private */
-    private nextReadyIndex;
-    private nextWriteIndex;
-    /** @private */
     private initChannelData;
-    /** @private */
-    private data;
-    /** @private */
-    private index;
     /**
      * The length (in samples) of each audio buffer.
      * @readonly

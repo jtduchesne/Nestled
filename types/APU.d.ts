@@ -21,6 +21,9 @@ export class APU {
     irqDisabled: boolean;
     /** If an IRQ has happened, this is cleared after reading 0x4015 */
     irq: boolean;
+    /** @private */
+    private counterMode;
+    /** @private */
     private set status(arg);
     /**
      * 0x4015 Status register
@@ -28,6 +31,7 @@ export class APU {
      * @private
      */
     private get status();
+    /** @private */
     private set counter(arg);
     /**
      * 0x4017 Frame counter
@@ -45,13 +49,10 @@ export class APU {
     /** @private */
     private cyclesUntilSample;
     powerOn(): void;
-    /** @private @type {import('./AudioOutput').AudioOutput} */
-    private output;
     powerOff(): void;
     reset(): void;
     /** @private */
     private doIRQ;
-    counterMode: number | undefined;
     /** @readonly @type {boolean} */
     readonly get fourStepCounterMode(): boolean;
     /** @readonly @type {boolean} */

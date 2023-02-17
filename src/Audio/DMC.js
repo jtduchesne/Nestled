@@ -17,7 +17,7 @@ export class DMC {
         this.timerCycle  = 0;
         this.timerPeriod = 0;
         
-        /** Negative number means empty */
+        /** A negative value means empty */
         this.sampleBuffer  = -1;
         this.sampleAddress = 0;
         this.sampleLength  = 0;
@@ -25,7 +25,7 @@ export class DMC {
         this.sampleLeft    = 0;
         this.sampleLoop    = false;
         
-        /** Negative number means empty */
+        /** A negative value means empty */
         this.shiftRegister      = -1;
         this.shiftRegisterCount = 0;
         
@@ -82,6 +82,7 @@ export class DMC {
     get rate() {
         return this.timerPeriod;
     }
+    /** @private */
     set rate(value) {
         if (value >= 0x40) {
             this.irqEnabled  = (value & 0x80) !== 0;
@@ -104,6 +105,7 @@ export class DMC {
     get load() {
         return this.output;
     }
+    /** @private */
     set load(value) {
         if (value >= 0x80) value -= 0x80;
         this.output = value;
@@ -113,6 +115,7 @@ export class DMC {
     get address() {
         return this.sampleAddress;
     }
+    /** @private */
     set address(value) {
         this.sampleAddress = 0xC000 + (value * 64);
     }
@@ -121,6 +124,7 @@ export class DMC {
     get length() {
         return this.sampleLength;
     }
+    /** @private */
     set length(value) {
         this.sampleLength = (value * 16) + 1;
     }

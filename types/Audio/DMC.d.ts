@@ -10,14 +10,14 @@ export class DMC {
     private cpu;
     timerCycle: number;
     timerPeriod: number;
-    /** Negative number means empty */
+    /** A negative value means empty */
     sampleBuffer: number;
     sampleAddress: number;
     sampleLength: number;
     sampleIndex: number;
     sampleLeft: number;
     sampleLoop: boolean;
-    /** Negative number means empty */
+    /** A negative value means empty */
     shiftRegister: number;
     shiftRegisterCount: number;
     irqEnabled: boolean;
@@ -28,15 +28,19 @@ export class DMC {
      */
     output: number;
     reset(): void;
+    /** @private */
     private set rate(arg);
     /** @private @type {number} */
     private get rate();
+    /** @private */
     private set load(arg);
     /** @private @type {number} */
     private get load();
+    /** @private */
     private set address(arg);
     /** @private @type {number} */
     private get address();
+    /** @private */
     private set length(arg);
     /** @private @type {number} */
     private get length();

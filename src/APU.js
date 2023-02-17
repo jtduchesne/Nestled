@@ -36,6 +36,9 @@ export class APU {
         /** If an IRQ has happened, this is cleared after reading 0x4015 */
         this.irq         = false;
         
+        /** @private */
+        this.counterMode = FOURSTEP;
+        
         this.status  = 0;
         this.counter = 0;
         
@@ -55,17 +58,13 @@ export class APU {
     //===================================================================================//
     
     powerOn() {
-        //Bus access optimizations
-        /** @private @type {import('./AudioOutput').AudioOutput} */
-        this.output = this.bus.audioOutput;
+        this.bus.audioOutput.start();
         
-        this.output.start();
-        
-        this.cyclesPerSample   = cyclesFrequency / this.output.sampleRate;
-        this.cyclesUntilSample = this.cyclesPerSample * this.output.speedAdjustment;
+        this.cyclesPerSample   = cyclesFrequency / this.bus.audioOutput.sampleRate;
+        this.cyclesUntilSample = this.cyclesPerSample * this.bus.audioOutput.speedAdjustment;
     }
     powerOff() {
-        this.output.stop();
+        this.bus.audioOutput.stop();
     }
     
     reset() {
@@ -94,18 +93,19 @@ export class APU {
      * @private
      */
     get status() {
-        let value = (this.pulse1.enabled   && 0x01) +
-                    (this.pulse2.enabled   && 0x02) +
-                    (this.triangle.enabled && 0x04) +
-                    (this.noise.enabled    && 0x08) +
-                    (this.dmc.enabled      && 0x10) +
-                    (this.dmc.irq          && 0x80) +
-                    (this.irq              && 0x40);
+        let value = (this.pulse1.enabled   ? 0x01 : 0) +
+                    (this.pulse2.enabled   ? 0x02 : 0) +
+                    (this.triangle.enabled ? 0x04 : 0) +
+                    (this.noise.enabled    ? 0x08 : 0) +
+                    (this.dmc.enabled      ? 0x10 : 0) +
+                    (this.dmc.irq          ? 0x80 : 0) +
+                    (this.irq              ? 0x40 : 0);
         this.dmc.irq = false;
         this.irq     = false;
         
         return value;
     }
+    /** @private */
     set status(value) {
         if (value) {
             this.pulse1.enabled   = !!(value & 0x01);
@@ -130,6 +130,7 @@ export class APU {
     get counter() {
         return this.counterMode;
     }
+    /** @private */
     set counter(value) {
         if (value) {
             if (value >= 0x80) {
@@ -247,7 +248,7 @@ export class APU {
         
         if (--this.cyclesUntilSample <= 0) {
             this.doSample();
-            this.cyclesUntilSample += this.cyclesPerSample * this.output.speedAdjustment;
+            this.cyclesUntilSample += this.cyclesPerSample * this.bus.audioOutput.speedAdjustment;
         }
     }
     
@@ -271,7 +272,7 @@ export class APU {
         const pulses = this.pulse1.output + this.pulse2.output;
         const others = 3*this.triangle.output + 2*this.noise.output + this.dmc.output;
         
-        this.output.writeSample(pulsesSamples[pulses] + othersSamples[others]);
+        this.bus.audioOutput.writeSample(pulsesSamples[pulses] + othersSamples[others]);
     }
 }
 

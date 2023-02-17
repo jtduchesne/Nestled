@@ -7,15 +7,17 @@ export class TriangleChannel extends Channel {
     linearCounter: number;
     linearCounterMax: number;
     linearCounterReset: boolean;
+    linearCounterControl: boolean;
     timerCycle: number;
     timerPeriod: number;
+    /** @private */
     private set counter(arg);
     /** @private @type {number} */
     private get counter();
+    /** @private */
     private set timer(arg);
     /** @private @type {number} */
     private get timer();
-    linearCounterControl: boolean | undefined;
     /**
      * @param {number} address 16-bit address between 0x4008-0x400B
      * @param {number} data 8-bit data

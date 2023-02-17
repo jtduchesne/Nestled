@@ -65,6 +65,7 @@ export class PulseChannel extends Channel {
     get volume() {
         return this.envelopeEnabled ? this.envelopeVolume : this.constantVolume;
     }
+    /** @private */
     set volume(value) {
         this.duty = dutySequences[(value & 0xC0) >>> 6];
         
@@ -77,7 +78,6 @@ export class PulseChannel extends Channel {
             this.envelopeEnabled   = true;
             this.constantVolume    = value;
         }
-        
         this.envelopePeriod = this.constantVolume;
         this.envelopeLoop   = this.lengthCounterHalt;
     }
@@ -87,6 +87,7 @@ export class PulseChannel extends Channel {
         const sweep = this.timerPeriod >>> this.sweepShift;
         return this.sweepNegate ? ((this.id === 1) ? ~sweep : -sweep) : sweep;
     }
+    /** @private */
     set sweep(value) {
         this.sweepEnabled = (value & 0x80) !== 0;
         this.sweepPeriod  = (value & 0x70) >>> 4;
@@ -99,6 +100,7 @@ export class PulseChannel extends Channel {
     get timer() {
         return this.timerPeriod;
     }
+    /** @private */
     set timer(value) {
         this.timerPeriod = (this.timerPeriod & 0x700) + value;
     }

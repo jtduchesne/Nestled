@@ -3,8 +3,8 @@ import lengths from "./lengths.js";
 export class Channel {
     constructor() {
         /** @private */
-        this.lengthCounter     = 0;
-        /** @private */
+        this.lengthCounter = 0;
+        /** @protected */
         this.lengthCounterHalt = false;
     }
     
