@@ -8,12 +8,12 @@ let context;
 
 export class AudioOutput {
     constructor() {
-        /** @private */
+        /** @readonly */
         this.buffer = new AudioRingBuffer(sampleRate);
         
         this.buffer.onbufferunderrun = (lag) => this.decreaseSpeed(lag);
         this.buffer.onbufferoverrun = (buffer) => {
-            do this.schedule(context, buffer);
+            do this.transfer(buffer, this.context);
             while (!this.healthy);
         };
         
@@ -27,6 +27,13 @@ export class AudioOutput {
         /** @private */
         this.lockedUntil = Infinity;
         
+        /**
+         * The percentage by which the sample rate should be adjusted to keep the input
+         * and output buffers in sync and prevent buffer [over/under]runs.
+         * 
+         * This will never exceed 1.0 (100%).
+         * @type {number}
+         */
         this.speedAdjustment = 1.0;
     }
     
@@ -34,7 +41,7 @@ export class AudioOutput {
     
     /**
      * @readonly
-     * @returns {AudioContext} AudioContext
+     * @type {AudioContext}
      */
     get context() {
         if (!context) {
@@ -46,7 +53,7 @@ export class AudioOutput {
     
     /**
      * @readonly
-     * @returns {AudioNode} AudioNode
+     * @type {AudioNode}
      */
     get destination() {
         if (!this.gainNode) {
@@ -60,7 +67,8 @@ export class AudioOutput {
     //===================================================================================//
     
     /**
-     * Output volume between 0.0 and 1.0
+     * Output volume between 0.0 and 1.0.
+     * @type {number}
      */
     get volume() {
         return this.volumeValue;
@@ -73,6 +81,7 @@ export class AudioOutput {
     
     /**
      * The amount of audio currently in the output buffer (in second).
+     * @type {number}
      * @readonly
      */
     get buffered() {
@@ -81,6 +90,7 @@ export class AudioOutput {
     /**
      * *True* if the output buffer contains enough audio to be considered safe to be
      * played.
+     * @type {boolean}
      * @readonly
      */
     get healthy() {
@@ -89,6 +99,7 @@ export class AudioOutput {
     
     /**
      * Sample rate (in hertz).
+     * @type {number}
      * @readonly
      */
     get sampleRate() {
@@ -97,6 +108,12 @@ export class AudioOutput {
     
     //===================================================================================//
     
+    /**
+     * Initializes the audio context (if not already done) and the input buffer
+     * to begin receiving audio samples via `writeSample()`.
+     * 
+     * Playback will start when the input buffer contains enough audio.
+     */
     start() {
         const context = this.context;
         
@@ -107,23 +124,31 @@ export class AudioOutput {
             if (buffer.halfFull) {
                 buffer.onnewbufferready = (buffer) => {
                     if (!this.healthy || buffer.halfFull)
-                        this.schedule(context, buffer);
+                        this.transfer(buffer, context);
                 };
                 
                 context.resume();
                 
                 this.next = context.currentTime;
                 while (!this.healthy)
-                    this.schedule(context, buffer);
+                    this.transfer(buffer, context);
                 this.lockedUntil = this.next;
             }
         };
     }
+    /**
+     * Suspends the audio context, but keeps it initialized for future use.
+     * 
+     * Playback will stop when the output buffer is empty.
+     */
     stop() {
         setTimeout(() => this.context.suspend(), this.buffered * 1000);
     }
     
-    /** @param {number} value */
+    /**
+     * Appends a new sample to the input buffer.
+     * @param {number} value IEEE754 32-bit linear PCM between -1 and +1
+     */
     writeSample(value) {
         this.buffer.writeSample(value);
     }
@@ -131,11 +156,12 @@ export class AudioOutput {
     //===================================================================================//
     
     /**
+     * Transfers a segment of audio from the input buffer to the output context.
      * @private
-     * @param {AudioContext} context
      * @param {AudioRingBuffer} buffer
+     * @param {AudioContext} context
      */
-    schedule(context, buffer) {
+    transfer(buffer, context) {
         const source = context.createBufferSource();
         const audioBuffer = buffer.shift();
         source.buffer = audioBuffer;
@@ -145,7 +171,7 @@ export class AudioOutput {
         if (buffered < threshold) {
             source.onended = () => {
                 if (!this.healthy || buffer.halfFull)
-                    this.schedule(context, buffer);
+                    this.transfer(buffer, context);
             };
             if (buffered < 0)
                 next = context.currentTime;

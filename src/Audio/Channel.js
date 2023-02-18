@@ -1,40 +1,37 @@
-const lengths = [
-    10, 254, 20,  2, 40,  4, 80,  6, 160,  8, 60, 10, 14, 12, 26, 14,
-    12,  16, 24, 18, 48, 20, 96, 22, 192, 24, 72, 26, 16, 28, 32, 30,
-];
+import lengths from "./lengths.js";
 
 export class Channel {
     constructor() {
-        this.enabled = false;
-        
-        this.lengthCounter     = 0;
+        /** @private */
+        this.lengthCounter = 0;
+        /** @protected */
         this.lengthCounterHalt = false;
     }
     
     reset() {
-        this.enabled = false;
-        
-        this.length  = 0;
+        this.lengthCounter = 0;
     }
     
+    //===================================================================================//
+    /** @type {boolean} */
     get enabled() {
-        return this._enabled;
+        return this.lengthCounter > 0;
     }
     set enabled(value) {
         if (!value)
             this.lengthCounter = 0;
-        this._enabled = value;
     }
     
-    //== Registers ==================================================//
+    //== Registers ======================================================================//
+    /** @type {number} */
     get length() {
         return this.lengthCounter;
     }
     set length(value) {
-        if (this.enabled)
-            this.lengthCounter = lengths[(value & 0xF8) >>> 3];
+        this.lengthCounter = lengths[(value & 0xF8) >>> 3];
     }
     
+    /** @protected */
     updateLength() {
         if (this.lengthCounter > 0 && !this.lengthCounterHalt)
             this.lengthCounter--;
