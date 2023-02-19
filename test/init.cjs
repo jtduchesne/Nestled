@@ -1,5 +1,16 @@
-import { expect } from "chai";
-global.expect = expect;
+const chai = require('chai');
+const sinon = require('sinon');
+global.expect = chai.expect;
+global.sinon = sinon;
+
+const sinonChai = require("sinon-chai");
+chai.use(sinonChai);
+
+exports.mochaHooks = {
+    afterEach() {
+        sinon.restore();
+    }
+};
 
 global.isSet = (v) => (typeof v !== 'undefined');
 
