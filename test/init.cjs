@@ -32,3 +32,15 @@ global.FileReader = class {
 global.DOMException = class DOMException extends Error {
     get [Symbol.toStringTag]() { return 'DOMException'; }
 };
+
+global.AudioBuffer = class {
+    constructor(options = {}) {
+        const { length = 0, sampleRate = 44100 } = options;
+        this.buffer = new Float32Array(length);
+        this.duration = length / sampleRate;
+    }
+    getChannelData(channel) {
+        expect(channel).to.equal(0, "AudioBuffer.getChannelData() stub only handles channel 0.");
+        return this.buffer;
+    }
+};

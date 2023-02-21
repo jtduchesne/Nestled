@@ -7,8 +7,8 @@ import {
 
 const cyclesFrequency = 1786830 / 2;
 
-const FOURSTEP = 0;
-const FIVESTEP = 1;
+const FOURSTEP = 0x00;
+const FIVESTEP = 0x80;
 
 export class APU {
     /**
@@ -31,6 +31,8 @@ export class APU {
         /** Delta Modulation Channel */
         this.dmc      = new DMC(cpu);
         
+        this.status = 0;
+        
         /** If IRQ is disabled at the moment */
         this.irqDisabled = false;
         /** If an IRQ has happened, this is cleared after reading 0x4015 */
@@ -38,9 +40,6 @@ export class APU {
         
         /** @private */
         this.counterMode = FOURSTEP;
-        
-        this.status  = 0;
-        this.counter = 0;
         
         /** @private */
         this.toggle = false;
@@ -100,7 +99,6 @@ export class APU {
                     (this.dmc.enabled      ? 0x10 : 0) +
                     (this.dmc.irq          ? 0x80 : 0) +
                     (this.irq              ? 0x40 : 0);
-        this.dmc.irq = false;
         this.irq     = false;
         
         return value;
