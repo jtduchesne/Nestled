@@ -3,13 +3,15 @@ import lengths from "./lengths.js";
 export class Channel {
     constructor() {
         /** @private */
+        this.disabled = true;
+        /** @private */
         this.lengthCounter = 0;
         /** @protected */
         this.lengthCounterHalt = false;
     }
     
     reset() {
-        this.lengthCounter = 0;
+        this.enabled = false;
     }
     
     //===================================================================================//
@@ -18,7 +20,7 @@ export class Channel {
         return this.lengthCounter > 0;
     }
     set enabled(value) {
-        if (!value)
+        if ((this.disabled = !value))
             this.lengthCounter = 0;
     }
     
@@ -28,11 +30,12 @@ export class Channel {
         return this.lengthCounter;
     }
     set length(value) {
-        this.lengthCounter = lengths[(value & 0xF8) >>> 3];
+        if (!this.disabled)
+            this.lengthCounter = lengths[(value & 0xF8) >>> 3];
     }
     
-    /** @protected */
-    updateLength() {
+    //== Execution ======================================================================//
+    doHalf() {
         if (this.lengthCounter > 0 && !this.lengthCounterHalt)
             this.lengthCounter--;
     }
