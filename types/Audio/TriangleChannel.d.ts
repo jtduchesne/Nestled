@@ -1,7 +1,7 @@
 /**
  * Triangle channel generates a pseudo-triangle wave.
  */
-export class TriangleChannel extends Channel {
+export class TriangleChannel extends LengthCounter {
     /** @private */
     private position;
     linearCounter: number;
@@ -25,7 +25,6 @@ export class TriangleChannel extends Channel {
     writeRegister(address: number, data: number): void;
     doCycle(): void;
     doQuarter(): void;
-    doHalf(): void;
     /**
      * 4-bit output value
      * @type {number}
@@ -33,5 +32,5 @@ export class TriangleChannel extends Channel {
     get output(): number;
 }
 export default TriangleChannel;
-import Channel from "./Channel.js";
+import LengthCounter from "./LengthCounter.js";
 //# sourceMappingURL=TriangleChannel.d.ts.map

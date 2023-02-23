@@ -1,7 +1,7 @@
 /**
  * Pulse channels generate a square wave with variable duty.
  */
-export class PulseChannel extends Channel {
+export class PulseChannel extends LengthCounter {
     /**
      * @param {1|2} id The behavior of the two pulse channels differs in the effect
      * of the negate mode of their sweep units
@@ -51,5 +51,5 @@ export class PulseChannel extends Channel {
     get output(): number;
 }
 export default PulseChannel;
-import Channel from "./Channel.js";
+import LengthCounter from "./LengthCounter.js";
 //# sourceMappingURL=PulseChannel.d.ts.map

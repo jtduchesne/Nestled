@@ -1,7 +1,7 @@
 /**
  * Noise channel generates pseudo-random 1-bit noise at 16 different frequencies.
  */
-export class NoiseChannel extends Channel {
+export class NoiseChannel extends LengthCounter {
     constantVolume: number;
     envelopeEnabled: boolean;
     envelopeReset: boolean;
@@ -29,7 +29,6 @@ export class NoiseChannel extends Channel {
     writeRegister(address: number, data: number): void;
     doCycle(): void;
     doQuarter(): void;
-    doHalf(): void;
     /**
      * 4-bit output value
      * @type {number}
@@ -37,5 +36,5 @@ export class NoiseChannel extends Channel {
     get output(): number;
 }
 export default NoiseChannel;
-import Channel from "./Channel.js";
+import LengthCounter from "./LengthCounter.js";
 //# sourceMappingURL=NoiseChannel.d.ts.map

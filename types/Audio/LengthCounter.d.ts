@@ -1,4 +1,10 @@
-export class Channel {
+/**
+ * The length counter provides automatic duration control for the waveform channels.
+ *
+ * Once loaded with a value, it can optionally count down (when the halt flag is clear)
+ * and once it reaches zero, the corresponding channel is silenced.
+ */
+export class LengthCounter {
     /** @private */
     private disabled;
     /** @private */
@@ -14,5 +20,5 @@ export class Channel {
     get length(): number;
     doHalf(): void;
 }
-export default Channel;
-//# sourceMappingURL=Channel.d.ts.map
+export default LengthCounter;
+//# sourceMappingURL=LengthCounter.d.ts.map

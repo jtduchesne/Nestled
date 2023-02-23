@@ -1,4 +1,4 @@
-import Channel from './Channel.js';
+import LengthCounter from './LengthCounter.js';
 
 /** Output values lookup */
 const values = [
@@ -9,7 +9,7 @@ const values = [
 /**
  * Triangle channel generates a pseudo-triangle wave.
  */
-export class TriangleChannel extends Channel {
+export class TriangleChannel extends LengthCounter {
     constructor() {
         super();
         
@@ -113,10 +113,6 @@ export class TriangleChannel extends Channel {
         
         if (!this.linearCounterControl)
             this.linearCounterReset = false;
-    }
-    
-    doHalf() {
-        this.updateLength();
     }
     
     //== Output =========================================================================//

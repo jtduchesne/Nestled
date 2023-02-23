@@ -1,4 +1,4 @@
-import Channel from './Channel.js';
+import LengthCounter from './LengthCounter.js';
 
 /** Timer period lookup */
 const timerPeriods = [ // fixed to NTSC for now
@@ -8,7 +8,7 @@ const timerPeriods = [ // fixed to NTSC for now
 /**
  * Noise channel generates pseudo-random 1-bit noise at 16 different frequencies.
  */
-export class NoiseChannel extends Channel {
+export class NoiseChannel extends LengthCounter {
     constructor() {
         super();
         
@@ -132,10 +132,6 @@ export class NoiseChannel extends Channel {
                 this.envelopeVolume = 0xF;
             }
         }
-    }
-    
-    doHalf() {
-        this.updateLength();
     }
     
     //== Output =========================================================================//
