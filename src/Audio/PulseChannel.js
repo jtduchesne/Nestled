@@ -22,6 +22,11 @@ export class PulseChannel extends Channel {
         /** @private */
         this.id = id;
         
+        /** @private */
+        this.dutyCycle = 0;
+        /** @private */
+        this.duty = [0,0,0,0,0,0,0,0];
+        
         this.constantVolume = 0;
         
         this.envelopeEnabled = true;
@@ -30,9 +35,6 @@ export class PulseChannel extends Channel {
         this.envelopePeriod  = 0;
         this.envelopeVolume  = 0;
         this.envelopeLoop    = false;
-        
-        this.dutyCycle = 0;
-        this.duty = [0,0,0,0,0,0,0,0];
         
         this.sweepEnabled = false;
         this.sweepReset   = false;
@@ -62,11 +64,10 @@ export class PulseChannel extends Channel {
     }
     
     //== Registers ======================================================================//
-    /** @private @type {number} */
+    /** @type {number} */
     get volume() {
         return this.envelopeEnabled ? this.envelopeVolume : this.constantVolume;
     }
-    /** @private */
     set volume(value) {
         if (value > 0x0F) {
             this.duty = dutySequences[(value & 0xC0) >>> 6];
@@ -87,13 +88,12 @@ export class PulseChannel extends Channel {
         }
     }
     
-    /** @private @type {number} */
+    /** @type {number} */
     get sweep() {
         const timer = this.timerPeriod;
         const sweep = timer >>> this.sweepShift;
         return timer + (this.sweepNegate ? ((this.id === 1) ? ~sweep : -sweep) : sweep);
     }
-    /** @private */
     set sweep(value) {
         this.sweepEnabled = (value & 0x80) !== 0;
         this.sweepPeriod  = (value & 0x70) >>> 4;
@@ -102,11 +102,10 @@ export class PulseChannel extends Channel {
         this.sweepReset   = true;
     }
     
-    /** @private @type {number} */
+    /** @type {number} */
     get timer() {
         return this.timerPeriod;
     }
-    /** @private */
     set timer(value) {
         const timerPeriod = this.timerPeriod;
         if (timerPeriod > 0xFF)

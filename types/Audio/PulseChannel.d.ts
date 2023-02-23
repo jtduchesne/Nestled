@@ -9,6 +9,10 @@ export class PulseChannel extends Channel {
     constructor(id: 1 | 2);
     /** @private */
     private id;
+    /** @private */
+    private dutyCycle;
+    /** @private */
+    private duty;
     constantVolume: number;
     envelopeEnabled: boolean;
     envelopeReset: boolean;
@@ -16,8 +20,6 @@ export class PulseChannel extends Channel {
     envelopePeriod: number;
     envelopeVolume: number;
     envelopeLoop: boolean;
-    dutyCycle: number;
-    duty: number[];
     sweepEnabled: boolean;
     sweepReset: boolean;
     sweepCycle: number;
@@ -26,18 +28,15 @@ export class PulseChannel extends Channel {
     sweepShift: number;
     timerCycle: number;
     timerPeriod: number;
-    /** @private */
-    private set volume(arg);
-    /** @private @type {number} */
-    private get volume();
-    /** @private */
-    private set sweep(arg);
-    /** @private @type {number} */
-    private get sweep();
-    /** @private */
-    private set timer(arg);
-    /** @private @type {number} */
-    private get timer();
+    set volume(arg: number);
+    /** @type {number} */
+    get volume(): number;
+    set sweep(arg: number);
+    /** @type {number} */
+    get sweep(): number;
+    set timer(arg: number);
+    /** @type {number} */
+    get timer(): number;
     /**
      * @param {number} address 16-bit address between 0x4000-0x4007
      * @param {number} data 8-bit data
@@ -45,7 +44,6 @@ export class PulseChannel extends Channel {
     writeRegister(address: number, data: number): void;
     doCycle(): void;
     doQuarter(): void;
-    doHalf(): void;
     /**
      * 4-bit output value
      * @type {number}

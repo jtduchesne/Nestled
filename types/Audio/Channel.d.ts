@@ -1,5 +1,7 @@
 export class Channel {
     /** @private */
+    private disabled;
+    /** @private */
     private lengthCounter;
     /** @protected */
     protected lengthCounterHalt: boolean;
@@ -10,8 +12,7 @@ export class Channel {
     set length(arg: number);
     /** @type {number} */
     get length(): number;
-    /** @protected */
-    protected updateLength(): void;
+    doHalf(): void;
 }
 export default Channel;
 //# sourceMappingURL=Channel.d.ts.map
