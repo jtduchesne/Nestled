@@ -1,4 +1,4 @@
-import LengthCounter from './LengthCounter.js';
+import EnvelopeGenerator from "./EnvelopeGenerator.js";
 
 /** Duty cycle sequences lookup */
 const dutySequences = [
@@ -11,7 +11,7 @@ const dutySequences = [
 /**
  * Pulse channels generate a square wave with variable duty.
  */
-export class PulseChannel extends LengthCounter {
+export class PulseChannel extends EnvelopeGenerator {
     /**
      * @param {1|2} id The behavior of the two pulse channels differs in the effect
      * of the negate mode of their sweep units
@@ -27,15 +27,6 @@ export class PulseChannel extends LengthCounter {
         /** @private */
         this.duty = [0,0,0,0,0,0,0,0];
         
-        this.constantVolume = 0;
-        
-        this.envelopeEnabled = true;
-        this.envelopeReset   = false;
-        this.envelopeCycle   = 0;
-        this.envelopePeriod  = 0;
-        this.envelopeVolume  = 0;
-        this.envelopeLoop    = false;
-        
         this.sweepEnabled = false;
         this.sweepReset   = false;
         this.sweepCycle   = 0;
@@ -50,10 +41,6 @@ export class PulseChannel extends LengthCounter {
     reset() {
         super.reset();
         
-        this.volume = 0;
-        this.envelopeCycle  = 0;
-        this.envelopeVolume = 0;
-        
         this.sweep = 0;
         this.sweepCycle = 0;
         
@@ -64,26 +51,15 @@ export class PulseChannel extends LengthCounter {
     //== Registers ======================================================================//
     /** @type {number} */
     get volume() {
-        return this.envelopeEnabled ? this.envelopeVolume : this.constantVolume;
+        return super.volume;
     }
     set volume(value) {
-        if (value > 0x0F) {
+        if (value > 0x3F) {
             this.duty = dutySequences[(value & 0xC0) >>> 6];
-            
-            this.lengthCounterHalt =
-            this.envelopeLoop      = (value & 0x20) !== 0;
-            this.envelopeEnabled   = (value & 0x10) === 0;
-            this.envelopePeriod    =
-            this.constantVolume    = (value & 0x0F);
         } else {
             this.duty = dutySequences[0];
-            
-            this.lengthCounterHalt = false;
-            this.envelopeLoop      = false;
-            this.envelopeEnabled   = true;
-            this.envelopePeriod    = value;
-            this.constantVolume    = value;
         }
+        super.volume = value;
     }
     
     /** @type {number} */
@@ -118,7 +94,6 @@ export class PulseChannel extends LengthCounter {
     }
     set length(value) {
         this.dutyCycle = 0;
-        this.envelopeReset = true;
         
         this.timerPeriod = (this.timerPeriod & 0x0FF) | ((value & 0x07) << 8);
         
@@ -147,23 +122,6 @@ export class PulseChannel extends LengthCounter {
             this.dutyCycle++;
             if (this.dutyCycle >= 8)
                 this.dutyCycle = 0;
-        }
-    }
-    
-    doQuarter() {
-        if (this.envelopeReset) {
-            this.envelopeCycle  = this.envelopePeriod;
-            this.envelopeVolume = 0xF;
-            this.envelopeReset  = false;
-        } else if (this.envelopeCycle > 0) {
-            this.envelopeCycle--;
-        } else {
-            this.envelopeCycle = this.envelopePeriod;
-            if (this.envelopeVolume > 0) {
-                this.envelopeVolume--;
-            } else if (this.envelopeLoop) {
-                this.envelopeVolume = 0xF;
-            }
         }
     }
     

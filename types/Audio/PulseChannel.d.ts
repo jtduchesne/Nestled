@@ -1,7 +1,7 @@
 /**
  * Pulse channels generate a square wave with variable duty.
  */
-export class PulseChannel extends LengthCounter {
+export class PulseChannel extends EnvelopeGenerator {
     /**
      * @param {1|2} id The behavior of the two pulse channels differs in the effect
      * of the negate mode of their sweep units
@@ -13,13 +13,6 @@ export class PulseChannel extends LengthCounter {
     private dutyCycle;
     /** @private */
     private duty;
-    constantVolume: number;
-    envelopeEnabled: boolean;
-    envelopeReset: boolean;
-    envelopeCycle: number;
-    envelopePeriod: number;
-    envelopeVolume: number;
-    envelopeLoop: boolean;
     sweepEnabled: boolean;
     sweepReset: boolean;
     sweepCycle: number;
@@ -28,9 +21,6 @@ export class PulseChannel extends LengthCounter {
     sweepShift: number;
     timerCycle: number;
     timerPeriod: number;
-    set volume(arg: number);
-    /** @type {number} */
-    get volume(): number;
     set sweep(arg: number);
     /** @type {number} */
     get sweep(): number;
@@ -43,7 +33,6 @@ export class PulseChannel extends LengthCounter {
      */
     writeRegister(address: number, data: number): void;
     doCycle(): void;
-    doQuarter(): void;
     /**
      * 4-bit output value
      * @type {number}
@@ -51,5 +40,5 @@ export class PulseChannel extends LengthCounter {
     get output(): number;
 }
 export default PulseChannel;
-import LengthCounter from "./LengthCounter.js";
+import EnvelopeGenerator from "./EnvelopeGenerator.js";
 //# sourceMappingURL=PulseChannel.d.ts.map
