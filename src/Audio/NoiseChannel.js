@@ -1,4 +1,4 @@
-import LengthCounter from './LengthCounter.js';
+import EnvelopeGenerator from './EnvelopeGenerator.js';
 
 /** Timer period lookup */
 const timerPeriods = [ // fixed to NTSC for now
@@ -8,66 +8,22 @@ const timerPeriods = [ // fixed to NTSC for now
 /**
  * Noise channel generates pseudo-random 1-bit noise at 16 different frequencies.
  */
-export class NoiseChannel extends LengthCounter {
+export class NoiseChannel extends EnvelopeGenerator {
     constructor() {
         super();
         
-        this.constantVolume = 0;
-        
-        this.envelopeEnabled = true;
-        this.envelopeReset   = false;
-        this.envelopeCycle   = 0;
-        this.envelopePeriod  = 0;
-        this.envelopeVolume  = 0;
-        this.envelopeLoop    = false;
-        
         this.timerMode   = false;
-        this.timerCycle  = 0;
-        this.timerPeriod = 0;
         
         /** @private */
         this.shiftRegister = 1;
     }
     
-    reset() {
-        super.reset();
-        
-        this.envelopeCycle  = 0;
-        this.envelopeVolume = 0;
-        
-        this.timerCycle    = 0;
-        
-        this.shiftRegister = 1;
-        
-        this.volume = 0;
-        this.timer  = 0;
-    }
-    
     //== Registers ======================================================================//
-    /** @private @type {number} */
-    get volume() {
-        return this.envelopeEnabled ? this.envelopeVolume : this.constantVolume;
-    }
-    /** @private */
-    set volume(value) {
-        if (value > 0x0F) {
-            this.lengthCounterHalt = (value & 0x20) !== 0;
-            this.envelopeEnabled   = (value & 0x10) === 0;
-            this.constantVolume    = (value & 0x0F);
-        } else {
-            this.lengthCounterHalt = false;
-            this.envelopeEnabled   = true;
-            this.constantVolume    = value;
-        }
-        this.envelopeLoop   = this.lengthCounterHalt;
-        this.envelopePeriod = this.constantVolume;
-    }
     
-    /** @private @type {number} */
+    /** @type {number} */
     get timer() {
         return this.timerPeriod;
     }
-    /** @private */
     set timer(value) {
         if (value > 0x0F) {
             this.timerMode   = (value >= 0x80);
@@ -76,16 +32,6 @@ export class NoiseChannel extends LengthCounter {
             this.timerMode   = false;
             this.timerPeriod = timerPeriods[value];
         }
-    }
-    
-    /** @type {number} */
-    get length() {
-        return super.length;
-    }
-    set length(value) {
-        this.envelopeReset = true;
-        
-        super.length = value;
     }
     
     //== Registers access ===============================================================//
@@ -104,7 +50,7 @@ export class NoiseChannel extends LengthCounter {
     //== Execution ======================================================================//
     doCycle() {
         if (--this.timerCycle <= 0) {
-            this.timerCycle = this.timerPeriod;
+            this.timerCycle = (this.timerPeriod + 1);
             
             const shiftRegister = this.shiftRegister;
             let feedback = (shiftRegister & 1);
@@ -114,23 +60,6 @@ export class NoiseChannel extends LengthCounter {
                 feedback ^= ((shiftRegister >>> 1) & 1);
             
             this.shiftRegister = (shiftRegister >>> 1) | (feedback << 14);
-        }
-    }
-    
-    doQuarter() {
-        if (this.envelopeReset) {
-            this.envelopeCycle  = this.envelopePeriod;
-            this.envelopeVolume = 0xF;
-            this.envelopeReset  = false;
-        } else if (this.envelopeCycle > 0) {
-            this.envelopeCycle--;
-        } else {
-            this.envelopeCycle = this.envelopePeriod;
-            if (this.envelopeVolume > 0) {
-                this.envelopeVolume--;
-            } else if (this.envelopeLoop) {
-                this.envelopeVolume = 0xF;
-            }
         }
     }
     
