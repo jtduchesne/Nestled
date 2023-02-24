@@ -3,21 +3,14 @@
  */
 export class TriangleChannel extends LengthCounter {
     /** @private */
-    private position;
+    private phase;
     linearCounter: number;
     linearCounterMax: number;
     linearCounterReset: boolean;
     linearCounterControl: boolean;
-    timerCycle: number;
-    timerPeriod: number;
-    /** @private */
-    private set counter(arg);
-    /** @private @type {number} */
-    private get counter();
-    /** @private */
-    private set timer(arg);
-    /** @private @type {number} */
-    private get timer();
+    set counter(arg: number);
+    /** @type {number} */
+    get counter(): number;
     /**
      * @param {number} address 16-bit address between 0x4008-0x400B
      * @param {number} data 8-bit data

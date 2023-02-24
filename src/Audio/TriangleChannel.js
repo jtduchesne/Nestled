@@ -2,8 +2,8 @@ import LengthCounter from './LengthCounter.js';
 
 /** Output values lookup */
 const values = [
-    0,  1,  2,  3,  4,  5,  6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
     15, 14, 13, 12, 11, 10, 9, 8, 7, 6,  5,  4,  3,  2,  1,  0,
+    0,  1,  2,  3,  4,  5,  6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
 ];
 
 /**
@@ -14,36 +14,28 @@ export class TriangleChannel extends LengthCounter {
         super();
         
         /** @private */
-        this.position = 0;
+        this.phase = 0;
         
         this.linearCounter        = 0;
         this.linearCounterMax     = 0;
         this.linearCounterReset   = false;
         this.linearCounterControl = false;
-        
-        this.timerCycle  = 0;
-        this.timerPeriod = 0;
     }
     
     reset() {
         super.reset();
         
-        this.position = 0;
-        
-        this.linearCounter = 0;
-        
-        this.timerCycle = 0;
+        this.phase = 0;
         
         this.counter = 0;
-        this.timer   = 0;
+        this.linearCounter = 0;
     }
     
     //== Registers ======================================================================//
-    /** @private @type {number} */
+    /** @type {number} */
     get counter() {
         return this.linearCounter;
     }
-    /** @private */
     set counter(value) {
         if (value >= 0x80) {
             this.lengthCounterHalt    = true;
@@ -54,15 +46,6 @@ export class TriangleChannel extends LengthCounter {
             this.linearCounterControl = false;
             this.linearCounterMax     = value;
         }
-    }
-    
-    /** @private @type {number} */
-    get timer() {
-        return this.timerPeriod;
-    }
-    /** @private */
-    set timer(value) {
-        this.timerPeriod = (this.timerPeriod & 0x700) + value;
     }
     
     /** @type {number} */
@@ -97,9 +80,11 @@ export class TriangleChannel extends LengthCounter {
             this.timerCycle = (this.timer + 1);
             
             if (this.length && this.counter && this.timer > 3) {
-                this.position++;
-                if (this.position >= 0x20)
-                    this.position -= 0x20;
+                const phase = this.phase + 1;
+                if (phase < 32)
+                    this.phase = phase;
+                else
+                    this.phase = 0;
             }
         }
     }
@@ -121,7 +106,7 @@ export class TriangleChannel extends LengthCounter {
      * @type {number}
      */
     get output() {
-        return values[this.position];
+        return values[this.phase];
     }
 }
 
