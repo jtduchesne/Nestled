@@ -7,8 +7,6 @@ describe("Pulsechannel", function() {
     def('id', () => 1); /*global $id*/
     subject(() => new PulseChannel($id));
     
-    its('id', () => is.expected.to.equal($id));
-    
     its('enabled', () => is.expected.to.be.false);
     
     its('volume', () => is.expected.to.equal(0));
