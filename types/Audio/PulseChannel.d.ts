@@ -19,14 +19,9 @@ export class PulseChannel extends EnvelopeGenerator {
     sweepPeriod: number;
     sweepNegate: boolean;
     sweepShift: number;
-    timerCycle: number;
-    timerPeriod: number;
     set sweep(arg: number);
     /** @type {number} */
     get sweep(): number;
-    set timer(arg: number);
-    /** @type {number} */
-    get timer(): number;
     /**
      * @param {number} address 16-bit address between 0x4000-0x4007
      * @param {number} data 8-bit data

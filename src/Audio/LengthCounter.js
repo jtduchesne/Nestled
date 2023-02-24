@@ -1,3 +1,5 @@
+import TimerUnit from "./TimerUnit";
+
 /**
  * With the least significant bit set, the remaining bits select a linear length
  * (with the exception of the 0 entry).
@@ -14,8 +16,10 @@ const lengths = [
  * Once loaded with a value, it can optionally count down (when the halt flag is clear)
  * and once it reaches zero, the corresponding channel is silenced.
  */
-export class LengthCounter {
+export class LengthCounter extends TimerUnit {
     constructor() {
+        super();
+        
         /** @private */
         this.disabled = true;
         /** @private */
@@ -25,6 +29,8 @@ export class LengthCounter {
     }
     
     reset() {
+        super.reset();
+        
         this.enabled = false;
         this.length = 0;
     }

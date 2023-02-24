@@ -33,9 +33,6 @@ export class PulseChannel extends EnvelopeGenerator {
         this.sweepPeriod  = 0;
         this.sweepNegate  = false;
         this.sweepShift   = 0;
-        
-        this.timerCycle  = 0;
-        this.timerPeriod = 0;
     }
     
     reset() {
@@ -43,9 +40,6 @@ export class PulseChannel extends EnvelopeGenerator {
         
         this.sweep = 0;
         this.sweepCycle = 0;
-        
-        this.timer = 0;
-        this.timerCycle = 0;
     }
     
     //== Registers ======================================================================//
@@ -74,18 +68,6 @@ export class PulseChannel extends EnvelopeGenerator {
         this.sweepNegate  = (value & 0x08) !== 0;
         this.sweepShift   = (value & 0x07);
         this.sweepReset   = true;
-    }
-    
-    /** @type {number} */
-    get timer() {
-        return this.timerPeriod;
-    }
-    set timer(value) {
-        const timerPeriod = this.timerPeriod;
-        if (timerPeriod > 0xFF)
-            this.timerPeriod = (timerPeriod & 0x700) + value;
-        else
-            this.timerPeriod = value;
     }
     
     /** @type {number} */

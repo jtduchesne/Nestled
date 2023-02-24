@@ -4,14 +4,13 @@
  * Once loaded with a value, it can optionally count down (when the halt flag is clear)
  * and once it reaches zero, the corresponding channel is silenced.
  */
-export class LengthCounter {
+export class LengthCounter extends TimerUnit {
     /** @private */
     private disabled;
     /** @private */
     private lengthCounter;
     /** @protected */
     protected lengthCounterHalt: boolean;
-    reset(): void;
     set enabled(arg: boolean);
     /** @type {boolean} */
     get enabled(): boolean;
@@ -21,4 +20,5 @@ export class LengthCounter {
     doHalf(): void;
 }
 export default LengthCounter;
+import TimerUnit from "./TimerUnit";
 //# sourceMappingURL=LengthCounter.d.ts.map
