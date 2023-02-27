@@ -1,3 +1,6 @@
+import { expect } from "chai";
+import sinon from "sinon";
+
 import NES from "../src";
 
 import { APU } from "../src/APU";
@@ -5,8 +8,12 @@ import { Cartridge } from "../src/Cartridges";
 
 describe("Cpu", function() {
     def('nes', () => new NES); /*global $nes*/
-
+    
     subject(() => $nes.cpu);
+    
+    beforeEach("stub NES.audioOutput", function() {
+        sinon.stub($nes.audioOutput);
+    });
     
     /*global $RAMData */
     def('RAMData');
@@ -96,31 +103,35 @@ describe("Cpu", function() {
             expect($subject.cycleOffset).to.equal(0);
         });
         
-        it("calls apu.powerOn()", function(done) {
-            $subject.apu.powerOn = () => done();
+        it("calls apu.powerOn()", function() {
+            const stub = sinon.stub($subject.apu, 'powerOn');
             $action;
+            expect(stub).to.be.calledOnce;
         });
     });
     
     describe(".powerOff()", function() {
         def('action', () => $subject.powerOff());
         
-        it("calls apu.powerOff()", function(done) {
-            $subject.apu.powerOff = () => done();
+        it("calls apu.powerOff()", function() {
+            const stub = sinon.stub($subject.apu, 'powerOff');
             $action;
+            expect(stub).to.be.calledOnce;
         });
     });
     
     describe(".reset()", function() {
         def('action', () => $subject.reset());
         
-        it("calls apu.reset()", function(done) {
-            $subject.apu.reset = () => done();
+        it("calls apu.reset()", function() {
+            const stub = sinon.stub($subject.apu, 'reset');
             $action;
+            expect(stub).to.be.calledOnce;
         });
-        it("calls .doReset()", function(done) {
-            $subject.doReset = () => done();
+        it("calls .doReset()", function() {
+            const stub = sinon.stub($subject, 'doReset');
             $action;
+            expect(stub).to.be.calledOnce;
         });
     });
     
@@ -185,26 +196,29 @@ describe("Cpu", function() {
                 expect($subject.read(0x0000)).to.equal($RAMData);
                 expect($subject.read(0x1FFF)).to.equal($RAMData);
             });
-            it("reads from PPU's registers when address is between [0x2000-3FFF]", function(done) {
-                let count = 0;
-                $nes.ppu.readRegister = () => { if (++count === 2) done(); };
+            it("reads from PPU's registers when address is between [0x2000-3FFF]", function() {
+                const stub = sinon.stub($subject.ppu, 'readRegister');
                 $subject.read(0x2000);
                 $subject.read(0x3FFF);
+                expect(stub).to.be.calledTwice;
             });
-            it("reads from APU's registers when address is [0x4015]", function(done) {
-                $nes.apu.readRegister = () => done();
+            it("reads from APU's registers when address is [0x4015]", function() {
+                const stub = sinon.stub($subject.apu, 'readRegister');
                 $subject.read(0x4015);
+                expect(stub).to.be.calledOnce;
             });
-            it("reads from Controller 1 when address is [0x4016]", function(done) {
-                $nes.ctrlConnector.controllers[0].read = () => done();
+            it("reads from Controller 1 when address is [0x4016]", function() {
+                const stub = sinon.stub($subject.ctrl1, 'read');
                 $subject.read(0x4016);
+                expect(stub).to.be.calledOnce;
             });
             it("also reads most significant bits of addressBus (0x40)", function() {
                 expect($subject.read(0x4016)).to.equal(0x40);
             });
-            it("reads from Controller 2 when address is [0x4017]", function(done) {
-                $nes.ctrlConnector.controllers[1].read = () => done();
+            it("reads from Controller 2 when address is [0x4017]", function() {
+                const stub = sinon.stub($subject.ctrl2, 'read');
                 $subject.read(0x4017);
+                expect(stub).to.be.calledOnce;
             });
             it("also reads most significant bits of addressBus (0x40)", function() {
                 expect($subject.read(0x4017)).to.equal(0x40);
@@ -223,39 +237,37 @@ describe("Cpu", function() {
                 $subject.write(0x0000, 0xFF);
                 expect($subject.ram[0]).to.equal(0xFF);
             });
-            it("writes to PPU's registers when address is between [0x2000-3FFF]", function(done) {
-                let count = 0;
-                $nes.ppu.writeRegister = () => { if (++count === 2) done(); };
-                $subject.write(0x2000);
-                $subject.write(0x3FFF);
+            it("writes to PPU's registers when address is between [0x2000-3FFF]", function() {
+                const stub = sinon.stub($subject.ppu, 'writeRegister');
+                $subject.write(0x2000, 0xFF);
+                $subject.write(0x3FFF, 0xFF);
+                expect(stub).to.be.calledTwice;
             });
-            it("writes to APU's registers when address is between [0x4000-4015]", function(done) {
-                let count = 0;
-                $nes.apu.writeRegister = () => { if (++count === 2) done(); };
-                $subject.write(0x4000);
-                $subject.write(0x4015);
+            it("writes to APU's registers when address is between [0x4000-4015]", function() {
+                const stub = sinon.stub($subject.apu, 'writeRegister');
+                $subject.write(0x4000, 0xFF);
+                $subject.write(0x4015, 0xFF);
+                expect(stub).to.be.calledTwice;
             });
-            it("writes (strobe) to both Controllers when address is [0x4016]", function(done) {
-                let count = 0;
-                const write = (data) => {
-                    expect(data).to.equal(0xFF);
-                    if (++count === 2) done();
-                };
-                $nes.ctrlConnector.controllers[0].write = write;
-                $nes.ctrlConnector.controllers[1].write = write;
+            it("writes (strobe) to both Controllers when address is [0x4016]", function() {
+                const stub1 = sinon.stub($subject.ctrl1, 'write');
+                const stub2 = sinon.stub($subject.ctrl2, 'write');
                 $subject.write(0x4016, 0xFF);
+                expect(stub1).to.be.calledOnceWith(0xFF);
+                expect(stub2).to.be.calledOnceWith(0xFF);
             });
-            it("writes to APU's registers when address is [0x4017]", function(done) {
-                $nes.apu.writeRegister = () => done();
-                $subject.write(0x4017);
+            it("writes to APU's registers when address is [0x4017]", function() {
+                const stub = sinon.stub($subject.apu, 'writeRegister');
+                $subject.write(0x4017, 0xFF);
+                expect(stub).to.be.calledOnce;
             });
             it("writes to PRG-RAM when address is between [0x6000, 0x7FFF]", function() {
                 $subject.write(0x6000, 0xFF);
-                expect($nes.cartConnector.cartridge.PRGRAM[0]).to.equal(0xFF);
+                expect($subject.cart.PRGRAM[0]).to.equal(0xFF);
             });
             it("cannot writes to PRG-ROM when address is between [0x8000, 0xFFFF]", function() {
                 $subject.write(0x8000, 0xFF);
-                expect($nes.cartConnector.cartridge.PRGROM[0]).not.to.equal(0xFF);
+                expect($subject.cart.PRGROM[0]).not.to.equal(0xFF);
             });
         });
     });
