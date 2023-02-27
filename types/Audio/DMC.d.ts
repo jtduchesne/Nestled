@@ -14,12 +14,11 @@ export class DMC {
     sampleBuffer: number;
     sampleAddress: number;
     sampleLength: number;
-    sampleIndex: number;
     sampleLeft: number;
     sampleLoop: boolean;
     /** A negative value means empty */
     shiftRegister: number;
-    shiftRegisterCount: number;
+    shiftRegisterCycle: number;
     irqEnabled: boolean;
     irq: boolean;
     /**
@@ -28,25 +27,21 @@ export class DMC {
      */
     output: number;
     reset(): void;
-    /** @private */
-    private set rate(arg);
-    /** @private @type {number} */
-    private get rate();
-    /** @private */
-    private set load(arg);
-    /** @private @type {number} */
-    private get load();
-    /** @private */
-    private set address(arg);
-    /** @private @type {number} */
-    private get address();
-    /** @private */
-    private set length(arg);
-    /** @private @type {number} */
-    private get length();
     set enabled(arg: boolean);
     /** @type {boolean} */
     get enabled(): boolean;
+    set rate(arg: number);
+    /** @type {number} */
+    get rate(): number;
+    set load(arg: number);
+    /** @type {number} */
+    get load(): number;
+    set address(arg: number);
+    /** @type {number} */
+    get address(): number;
+    set length(arg: number);
+    /** @type {number} */
+    get length(): number;
     /** @private */
     private doIRQ;
     /**
