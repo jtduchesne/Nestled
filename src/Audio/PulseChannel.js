@@ -1,4 +1,4 @@
-import Channel from './Channel.js';
+import SweepUnit from "./SweepUnit.js";
 
 /** Duty cycle sequences lookup */
 const dutySequences = [
@@ -11,98 +11,32 @@ const dutySequences = [
 /**
  * Pulse channels generate a square wave with variable duty.
  */
-export class PulseChannel extends Channel {
+export class PulseChannel extends SweepUnit {
     /**
      * @param {1|2} id The behavior of the two pulse channels differs in the effect
      * of the negate mode of their sweep units
      */
     constructor(id) {
-        super();
+        super(id);
         
         /** @private */
-        this.id = id;
-        
-        this.constantVolume = 0;
-        
-        this.envelopeEnabled = true;
-        this.envelopeReset   = false;
-        this.envelopeCycle   = 0;
-        this.envelopePeriod  = 0;
-        this.envelopeVolume  = 0;
-        this.envelopeLoop    = false;
-        
         this.dutyCycle = 0;
+        /** @private */
         this.duty = [0,0,0,0,0,0,0,0];
-        
-        this.sweepEnabled = false;
-        this.sweepReset   = false;
-        this.sweepCycle   = 0;
-        this.sweepPeriod  = 0;
-        this.sweepNegate  = false;
-        this.sweepShift   = 0;
-        
-        this.timerCycle  = 0;
-        this.timerPeriod = 0;
-    }
-    
-    reset() {
-        super.reset();
-        
-        this.envelopeCycle  = 0;
-        this.envelopeVolume = 0;
-        
-        this.sweepCycle = 0;
-        
-        this.timerCycle = 0;
-        
-        this.volume = 0;
-        this.sweep  = 0;
-        this.timer  = 0;
     }
     
     //== Registers ======================================================================//
-    /** @private @type {number} */
+    /** @type {number} */
     get volume() {
-        return this.envelopeEnabled ? this.envelopeVolume : this.constantVolume;
+        return super.volume;
     }
-    /** @private */
     set volume(value) {
-        this.duty = dutySequences[(value & 0xC0) >>> 6];
-        
-        if (value > 0x0F) {
-            this.lengthCounterHalt = (value & 0x20) !== 0;
-            this.envelopeEnabled   = (value & 0x10) === 0;
-            this.constantVolume    = (value & 0x0F);
+        if (value > 0x3F) {
+            this.duty = dutySequences[(value & 0xC0) >>> 6];
         } else {
-            this.lengthCounterHalt = false;
-            this.envelopeEnabled   = true;
-            this.constantVolume    = value;
+            this.duty = dutySequences[0];
         }
-        this.envelopePeriod = this.constantVolume;
-        this.envelopeLoop   = this.lengthCounterHalt;
-    }
-    
-    /** @private @type {number} */
-    get sweep() {
-        const sweep = this.timerPeriod >>> this.sweepShift;
-        return this.sweepNegate ? ((this.id === 1) ? ~sweep : -sweep) : sweep;
-    }
-    /** @private */
-    set sweep(value) {
-        this.sweepEnabled = (value & 0x80) !== 0;
-        this.sweepPeriod  = (value & 0x70) >>> 4;
-        this.sweepNegate  = (value & 0x08) !== 0;
-        this.sweepShift   = (value & 0x07);
-        this.sweepReset   = true;
-    }
-    
-    /** @private @type {number} */
-    get timer() {
-        return this.timerPeriod;
-    }
-    /** @private */
-    set timer(value) {
-        this.timerPeriod = (this.timerPeriod & 0x700) + value;
+        super.volume = value;
     }
     
     /** @type {number} */
@@ -111,7 +45,6 @@ export class PulseChannel extends Channel {
     }
     set length(value) {
         this.dutyCycle = 0;
-        this.envelopeReset = true;
         
         this.timerPeriod = (this.timerPeriod & 0x0FF) | ((value & 0x07) << 8);
         
@@ -138,44 +71,9 @@ export class PulseChannel extends Channel {
             this.timerCycle = (this.timerPeriod + 1);
             
             this.dutyCycle++;
-            if (this.dutyCycle >= 0x8)
-                this.dutyCycle -= 0x8;
+            if (this.dutyCycle >= 8)
+                this.dutyCycle = 0;
         }
-    }
-    
-    doQuarter() {
-        if (this.envelopeReset) {
-            this.envelopeCycle  = this.envelopePeriod;
-            this.envelopeVolume = 0xF;
-            this.envelopeReset  = false;
-        } else if (this.envelopeCycle > 0) {
-            this.envelopeCycle--;
-        } else {
-            this.envelopeCycle = this.envelopePeriod;
-            if (this.envelopeVolume > 0) {
-                this.envelopeVolume--;
-            } else if (this.envelopeLoop) {
-                this.envelopeVolume = 0xF;
-            }
-        }
-    }
-    
-    doHalf() {
-        if (this.sweepCycle > 0) {
-            this.sweepCycle--;
-        } else {
-            if (this.sweepEnabled && this.sweepShift) {
-                if (this.timer >= 0x008 && this.timer+this.sweep < 0x800)
-                    this.timerPeriod += this.sweep;
-            }
-            this.sweepCycle = this.sweepPeriod;
-        }
-        if (this.sweepReset) {
-            this.sweepCycle = this.sweepPeriod;
-            this.sweepReset = false;
-        }
-        
-        this.updateLength();
     }
     
     //== Output =========================================================================//
@@ -184,7 +82,7 @@ export class PulseChannel extends Channel {
      * @type {number}
      */
     get output() {
-        if (this.enabled && this.timer >= 0x008 && this.timer+this.sweep < 0x800) {
+        if (this.enabled && this.timer >= 0x008 && this.sweep < 0x800) {
             return this.volume * this.duty[this.dutyCycle];
         } else {
             return 0;

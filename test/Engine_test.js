@@ -1,3 +1,6 @@
+import { expect } from "chai";
+import sinon from "sinon";
+
 import NES from "../src";
 
 describe("Engine", function() {
@@ -5,6 +8,8 @@ describe("Engine", function() {
     
     subject(() => $nes.engine);
     beforeEach(function() {
+        sinon.stub($nes.audioOutput);
+        sinon.stub($nes.cpu, 'doInstructions');
         $nes.cpu.powerOn();
         $nes.ppu.powerOn();
     });
@@ -13,7 +18,7 @@ describe("Engine", function() {
     its('dropped', () => is.expected.to.equal(0));
     
     its('fps',         () => is.expected.to.equal(60));
-    its('performance', () => is.expected.to.equal(1.0));
+    its('performance', () => is.expected.to.equal(1));
     
     describe(".powerOn()", function() {
         def('action', () => $subject.powerOn());
@@ -43,17 +48,27 @@ describe("Engine", function() {
             expect($subject.performance).to.equal(1.0);
         });
         
-        it("calls .init()", function(done) {
-            $subject.init = () => done();
+        it("calls .init()", function() {
+            const spy = sinon.spy($subject, 'init');
             $action;
+            expect(spy).to.be.calledOnce;
         });
-        it("calls .coldBoot()", function(done) {
-            $subject.coldBoot = () => done();
+        it("calls .coldBoot()", function() {
+            const spy = sinon.spy($subject, 'coldBoot');
             $action;
+            expect(spy).to.be.calledOnce;
         });
-        it("calls .firstLoop()", function(done) {
-            $subject.firstLoop = () => done();
+        
+        it("calls .firstLoop() (asynchronously)", function() {
+            const clock = sinon.useFakeTimers();
+            
+            const spy = sinon.spy($subject, 'firstLoop');
             $action;
+            expect(spy).not.to.be.called;
+            clock.next();
+            expect(spy).to.be.calledOnce;
+            
+            clock.restore();
         });
         
         it("sets #runningLoop", function() {
@@ -154,9 +169,16 @@ describe("Engine", function() {
                 expect($subject.performance).to.equal(0.983);
             });
             
-            it("calls .firstLoop()", function(done) {
-                $subject.firstLoop = () => done();
+            it("calls .firstLoop() (asynchronously)", function() {
+                const clock = sinon.useFakeTimers();
+                
+                const spy = sinon.spy($subject, 'firstLoop');
                 $action;
+                expect(spy).not.to.be.called;
+                clock.next();
+                expect(spy).to.be.calledOnce;
+                
+                clock.restore();
             });
             
             it("sets #runningLoop", function() {
@@ -182,17 +204,22 @@ describe("Engine", function() {
         it("sets ppu#vblank 3 times", function(done) {
             let count = 0;
             Object.defineProperty($nes.ppu, 'vblank', {
-                set: (v) => { if (v) if (++count >= 3) done(); }
+                set: (value) => {
+                    expect(value).to.be.true;
+                    if (++count >= 3) done();
+                }
             });
             $action;
         });
-        it("calls ppu.doVBlank()", function(done) {
-            $nes.ppu.doVBlank = () => done();
+        it("calls ppu.doVBlank()", function() {
+            const spy = sinon.spy($nes.ppu, 'doVBlank');
             $action;
+            expect(spy).to.be.calledOnce;
         });
-        it("calls ppu.endVBlank()", function(done) {
-            $nes.ppu.endVBlank = () => done();
+        it("calls ppu.endVBlank()", function() {
+            const spy = sinon.spy($nes.ppu, 'endVBlank');
             $action;
+            expect(spy).to.be.calledOnce;
         });
     });
 });

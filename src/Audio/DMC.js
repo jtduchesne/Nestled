@@ -15,19 +15,18 @@ export class DMC {
         this.cpu = cpu;
         
         this.timerCycle  = 0;
-        this.timerPeriod = 0;
+        this.timerPeriod = timerPeriods[0];
         
         /** A negative value means empty */
         this.sampleBuffer  = -1;
-        this.sampleAddress = 0;
-        this.sampleLength  = 0;
-        this.sampleIndex   = 0;
+        this.sampleAddress = 0xC000;
+        this.sampleLength  = 1;
         this.sampleLeft    = 0;
         this.sampleLoop    = false;
         
         /** A negative value means empty */
         this.shiftRegister      = -1;
-        this.shiftRegisterCount = 0;
+        this.shiftRegisterCycle = 0;
         
         this.irqEnabled = false;
         this.irq        = false;
@@ -42,11 +41,7 @@ export class DMC {
     reset() {
         this.timerCycle = 0;
         
-        this.sampleBuffer = -1;
-        
-        this.shiftRegister      = -1;
-        this.shiftRegisterCount = 0;
-        
+        this.enabled = false;
         this.rate    = 0;
         this.load    = 0;
         this.address = 0;
@@ -60,10 +55,8 @@ export class DMC {
     }
     set enabled(value) {
         if (value) {
-            if (this.sampleLeft === 0) {
-                this.sampleIndex = 0;
-                this.sampleLeft  = this.sampleLength;
-            }
+            if (this.sampleLeft === 0)
+                this.sampleLeft = this.sampleLength;
         } else {
             this.sampleLeft = 0;
         }
@@ -78,53 +71,48 @@ export class DMC {
     }
     
     //== Registers ======================================================================//
-    /** @private @type {number} */
+    /** @type {number} */
     get rate() {
         return this.timerPeriod;
     }
-    /** @private */
     set rate(value) {
-        if (value >= 0x40) {
+        if (value > 0x0F) {
             this.irqEnabled  = (value & 0x80) !== 0;
             this.sampleLoop  = (value & 0x40) !== 0;
             this.timerPeriod = timerPeriods[value & 0x0F];
         } else {
-            this.irqEnabled = false;
-            this.sampleLoop = false;
-            if (value > 0x0F)
-                this.timerPeriod = timerPeriods[value & 0x0F];
-            else
-                this.timerPeriod = timerPeriods[value];
+            this.irqEnabled  = false;
+            this.sampleLoop  = false;
+            this.timerPeriod = timerPeriods[value];
         }
         
         if (!this.irqEnabled)
             this.irq = false;
     }
     
-    /** @private @type {number} */
+    /** @type {number} */
     get load() {
         return this.output;
     }
-    /** @private */
     set load(value) {
-        if (value >= 0x80) value -= 0x80;
-        this.output = value;
+        if (value >= 0x80)
+            this.output = value - 0x80;
+        else
+            this.output = value;
     }
     
-    /** @private @type {number} */
+    /** @type {number} */
     get address() {
         return this.sampleAddress;
     }
-    /** @private */
     set address(value) {
         this.sampleAddress = 0xC000 + (value * 64);
     }
     
-    /** @private @type {number} */
+    /** @type {number} */
     get length() {
         return this.sampleLength;
     }
-    /** @private */
     set length(value) {
         this.sampleLength = (value * 16) + 1;
     }
@@ -159,23 +147,29 @@ export class DMC {
     /** @private */
     updateSampleBuffer() {
         if (this.sampleBuffer < 0 && this.enabled) {
-            this.sampleBuffer = this.cpu.read(this.sampleAddress + this.sampleIndex++);
+            let sampleLeft = this.sampleLeft;
+            let sampleLength = this.sampleLength;
             
-            if (--this.sampleLeft <= 0) {
-                if (this.sampleLoop) {
-                    this.sampleIndex = 0;
-                    this.sampleLeft = this.sampleLength;
-                } else if (this.irqEnabled) {
+            const index = sampleLength - sampleLeft;
+            this.sampleBuffer = this.cpu.read(this.sampleAddress + index);
+            
+            if (--sampleLeft > 0) {
+                this.sampleLeft = sampleLeft;
+            } else if (this.sampleLoop) {
+                this.sampleLeft = sampleLength;
+            } else {
+                this.sampleLeft = 0;
+                
+                if (this.irqEnabled)
                     this.doIRQ();
-                }
             }
         }
     }
     
     /** @private */
     updateShiftRegister() {
-        if (--this.shiftRegisterCount <= 0) {
-            this.shiftRegisterCount = 8;
+        if (--this.shiftRegisterCycle <= 0) {
+            this.shiftRegisterCycle = 8;
             this.shiftRegister = this.sampleBuffer;
             this.sampleBuffer = -1;
         }
@@ -183,15 +177,19 @@ export class DMC {
     
     /** @private */
     updateOutput() {
-        if (this.shiftRegister >= 0) {
-            if (this.shiftRegister & 1) {
-                if (this.output <= 125) {
-                    this.output += 2;
-                }
-            } else if (this.output >= 2) {
-                this.output -= 2;
+        const shiftRegister = this.shiftRegister;
+        if (shiftRegister >= 0) {
+            const output = this.output;
+            
+            if (shiftRegister & 1) {
+                if (output <= 125)
+                    this.output = output + 2;
+            } else {
+                if (output >= 2)
+                    this.output = output - 2;
             }
-            this.shiftRegister >>>= 1;
+            
+            this.shiftRegister = shiftRegister >>> 1;
         }
     }
 }
