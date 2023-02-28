@@ -1,14 +1,14 @@
 import { expect } from "chai";
 import sinon from "sinon";
 
+import NES from "../../src";
 import { DMC } from "../../src/Audio";
-import CPU from "../../src/CPU";
 
 describe("DMC", function() {
-    def('cpu', () => new CPU); /*global $cpu*/
-    subject(() => new DMC($cpu));
+    def('nes', () => new NES); /*global $nes*/
+    subject(() => new DMC($nes));
     
-    its('cpu', () => is.expected.to.equal($cpu));
+    its('bus', () => is.expected.to.equal($nes));
     
     its('timerCycle',  () => is.expected.to.equal(0));
     its('timerPeriod', () => is.expected.to.equal(428));
@@ -150,10 +150,10 @@ describe("DMC", function() {
             expect(() => $action).to.change($subject, 'irq');
             expect($subject.irq).to.be.true;
         });
-        it("calls CPU.doIRQ()", function() {
-            sinon.stub($cpu, 'doIRQ');
+        it("calls NES.cpu.doIRQ()", function() {
+            sinon.stub($nes.cpu, 'doIRQ');
             $action;
-            expect($cpu.doIRQ).to.be.calledOnce;
+            expect($nes.cpu.doIRQ).to.be.calledOnce;
         });
     });
     
@@ -320,7 +320,7 @@ describe("DMC", function() {
     describe(".updateSampleBuffer()", function() {
         beforeEach(function() {
             sinon.stub($subject, 'doIRQ');
-            sinon.stub($cpu, 'read');
+            sinon.stub($nes.cpu, 'read');
             $subject.sampleLength  = 10;
             $subject.enabled       = true;
         });
@@ -332,10 +332,10 @@ describe("DMC", function() {
             it("reads a new sample from memory", function() {
                 $subject.sampleAddress = 0xC000;
                 $action;
-                expect($cpu.read).to.be.calledOnceWith(0xC000);
+                expect($nes.cpu.read).to.be.calledOnceWith(0xC000);
             });
             it("sets #sampleBuffer to the value read from memory", function() {
-                $cpu.read.returns(0xAB);
+                $nes.cpu.read.returns(0xAB);
                 expect(() => $action).to.change($subject, 'sampleBuffer');
                 expect($subject.sampleBuffer).to.equal(0xAB);
             });
@@ -389,7 +389,7 @@ describe("DMC", function() {
                 
                 it("does not read from memory", function() {
                     $action;
-                    expect($cpu.read).not.to.be.called;
+                    expect($nes.cpu.read).not.to.be.called;
                 });
                 it("does not decrement #sampleLeft", function() {
                     expect(() => $action).not.to.change($subject, 'sampleLeft');

@@ -10,7 +10,6 @@ describe("APU", function() {
     subject(() => $nes.apu);
     
     its('bus', () => is.expected.to.equal($nes));
-    its('cpu', () => is.expected.to.equal($cpu));
     
     its('cycle',       () => is.expected.to.equal(0));
     its('toggle',      () => is.expected.to.be.false);

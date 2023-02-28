@@ -3,7 +3,6 @@ import sinon from "sinon";
 
 import NES from "../src";
 
-import { APU } from "../src/APU";
 import { Cartridge } from "../src/Cartridges";
 
 describe("Cpu", function() {
@@ -57,8 +56,6 @@ describe("Cpu", function() {
     
     //-------------------------------------------------------------------------------//
     
-    its('apu', () => is.expected.to.be.an.instanceOf(APU));
-    
     its('ram',   () => is.expected.to.have.a.lengthOf(0x800));
     its('stack', () => is.expected.to.have.a.lengthOf(0x100));
     
@@ -103,8 +100,8 @@ describe("Cpu", function() {
             expect($subject.cycleOffset).to.equal(0);
         });
         
-        it("calls apu.powerOn()", function() {
-            const stub = sinon.stub($subject.apu, 'powerOn');
+        it("calls NES.apu.powerOn()", function() {
+            const stub = sinon.stub($nes.apu, 'powerOn');
             $action;
             expect(stub).to.be.calledOnce;
         });
@@ -113,8 +110,8 @@ describe("Cpu", function() {
     describe(".powerOff()", function() {
         def('action', () => $subject.powerOff());
         
-        it("calls apu.powerOff()", function() {
-            const stub = sinon.stub($subject.apu, 'powerOff');
+        it("calls NES.apu.powerOff()", function() {
+            const stub = sinon.stub($nes.apu, 'powerOff');
             $action;
             expect(stub).to.be.calledOnce;
         });
@@ -123,8 +120,8 @@ describe("Cpu", function() {
     describe(".reset()", function() {
         def('action', () => $subject.reset());
         
-        it("calls apu.reset()", function() {
-            const stub = sinon.stub($subject.apu, 'reset');
+        it("calls NES.apu.reset()", function() {
+            const stub = sinon.stub($nes.apu, 'reset');
             $action;
             expect(stub).to.be.calledOnce;
         });

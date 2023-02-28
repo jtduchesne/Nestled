@@ -3,11 +3,11 @@
  */
 export class DMC {
     /**
-     * @param {import('../CPU.js').CPU} cpu
+     * @param {import('../NES.js').NES} bus
      */
-    constructor(cpu: import('../CPU.js').CPU);
+    constructor(bus: import('../NES.js').NES);
     /** @private */
-    private cpu;
+    private bus;
     timerCycle: number;
     timerPeriod: number;
     /** A negative value means empty */

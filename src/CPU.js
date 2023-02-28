@@ -1,5 +1,3 @@
-import APU from './APU.js';
-
 const cyclesLookup = [7,6,2,8,3,3,5,5,3,2,2,2,4,4,6,6, 2,5,2,8,4,4,6,6,2,4,2,7,4,4,7,7,
                       6,6,2,8,3,3,5,5,4,2,2,2,4,4,6,6, 2,5,2,8,4,4,6,6,2,4,2,7,4,4,7,7,
                       6,6,2,8,3,3,5,5,3,2,2,2,3,4,6,6, 2,5,2,8,4,4,6,6,2,4,2,7,4,4,7,7,
@@ -20,8 +18,6 @@ export class CPU {
         
         this.cycle = -1;
         this.cycleOffset = -1;
-        
-        this.apu = new APU(this);
         
         this.ram   = new Uint8Array(0x800);
         this.stack = this.ram.subarray(0x100, 0x200);
@@ -85,6 +81,7 @@ export class CPU {
         this.cycleOffset = 0;
         
         //Bus access optimizations
+        this.apu   = this.bus.apu;
         this.ppu   = this.bus.ppu;
         this.ctrl1 = this.bus.ctrlConnector.controllers[0];
         this.ctrl2 = this.bus.ctrlConnector.controllers[1];
@@ -108,18 +105,18 @@ export class CPU {
         //Program counter
         this.PC = this.resetVector();
         
-        this.apu.powerOn();
+        this.bus.apu.powerOn();
         
         this.isPowered = true;
     }
     powerOff() {
-        this.apu.powerOff();
+        this.bus.apu.powerOff();
         
         this.isPowered = false;
     }
     
     reset() {
-        this.apu.reset();
+        this.bus.apu.reset();
         this.doReset();
     }
     

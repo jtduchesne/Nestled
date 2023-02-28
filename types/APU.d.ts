@@ -1,12 +1,10 @@
 export class APU {
     /**
-     * @param {import('./CPU.js').CPU} cpu
+     * @param {import('./NES.js').NES} bus
      */
-    constructor(cpu: import('./CPU.js').CPU);
+    constructor(bus: import('./NES.js').NES);
     /** @private */
     private bus;
-    /** @private */
-    private cpu;
     /** Pulse Channel 1 */
     pulse1: PulseChannel;
     /** Pulse Channel 2 */
