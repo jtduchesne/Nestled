@@ -1,4 +1,4 @@
-import Header from './Header.js';
+import Header from '../Header.js';
 import Mapper from '../Mapper.js';
 
 const PRGROMBANKSIZE = 0x4000;

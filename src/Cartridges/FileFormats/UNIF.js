@@ -1,4 +1,4 @@
-import Header from './Header.js';
+import Header from '../Header.js';
 
 const LENGTH = 0x20;
 

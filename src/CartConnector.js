@@ -1,6 +1,5 @@
-import { Cartridge, Mapper, Metadata } from './Cartridges/index.js';
+import { Cartridge, Header, Mapper, Metadata } from './Cartridges/index.js';
 import {
-    Header,
     INESHeader,
     UNIFHeader,
 } from './Cartridges/FileFormats/index.js';
