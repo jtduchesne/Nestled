@@ -1,5 +1,8 @@
 export class Header {
-    constructor(data: ArrayBuffer);
+    /**
+     * @param {ArrayBuffer?} data
+     */
+    constructor(data?: ArrayBuffer | null);
     loaded: boolean;
     format: string;
     valid: boolean;
@@ -17,7 +20,11 @@ export class Header {
     CHRRAMByteLength: number;
     PRGNVRAMByteLength: number;
     CHRNVRAMByteLength: number;
-    get byteLength(): number;
+    /** @readonly */
+    readonly get byteLength(): number;
+    /**
+     * @param {ArrayBuffer} data
+     */
     parse(data: ArrayBuffer): boolean;
 }
 export default Header;
