@@ -1,4 +1,4 @@
-import TimerUnit from "./TimerUnit";
+import TimerUnit from "./TimerUnit.js";
 
 /**
  * With the least significant bit set, the remaining bits select a linear length
