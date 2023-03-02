@@ -3,10 +3,14 @@ import Header from '../Header.js';
 const LENGTH = 0x20;
 
 export class UNIFHeader extends Header {
+    /** @readonly */
     get byteLength() {
         return LENGTH;
     }
     
+    /**
+     * @param {ArrayBuffer} data
+     */
     parse(data) {
         if (super.parse(data)) {
             const header = new DataView(data, 0, LENGTH);

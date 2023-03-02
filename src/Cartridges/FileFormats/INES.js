@@ -8,10 +8,14 @@ const PRGRAMBANKSIZE = 0x2000;
 const LENGTH = 0x10;
 
 export class INESHeader extends Header {
+    /** @readonly */
     get byteLength() {
         return LENGTH;
     }
     
+    /**
+     * @param {ArrayBuffer} data
+     */
     parse(data) {
         if (super.parse(data)) {
             const header = new DataView(data, 0, LENGTH);
@@ -56,10 +60,12 @@ export class INESHeader extends Header {
                         const PRGSize = getROMByteLength(PRGROMBANKSIZE, byte4, byte9 & 0x0F);
                         const CHRSize = getROMByteLength(CHRROMBANKSIZE, byte5, byte9 >> 4);
                         if (PRGSize + CHRSize <= data.byteLength) {
+                            this.format = "NES 2.0";
                             this.parseV2(header);
                         }
                     } else {
                         if (header.getUint32(12) === 0) {
+                            this.format = "iNES";
                             this.parseV1(header);
                         }
                     }
@@ -72,15 +78,19 @@ export class INESHeader extends Header {
         return this.loaded;
     }
     
+    /**
+     * @param {DataView} data
+     * @private
+     */
     parseV1(data) {
-        this.format = "iNES";
-        
         this.PRGRAMByteLength = (data.getUint8(8) || 1) * PRGRAMBANKSIZE;
     }
     
+    /**
+     * @param {DataView} data
+     * @private
+     */
     parseV2(data) {
-        this.format = "NES 2.0";
-        
         this.mapperNumber += (data.getUint8(8) & 0x0F)*256;
         
         const byte9 = data.getUint8(9);

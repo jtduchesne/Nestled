@@ -1,5 +1,8 @@
 export class Header {
-    constructor(data) {
+    /**
+     * @param {ArrayBuffer?} data
+     */
+    constructor(data = null) {
         this.loaded = false;
         
         this.format = "Unknown";
@@ -27,10 +30,14 @@ export class Header {
         if (data) this.parse(data);
     }
     
+    /** @readonly */
     get byteLength() {
         return 0x00;
     }
     
+    /**
+     * @param {ArrayBuffer} data
+     */
     parse(data) {
         return this.loaded = !!data.byteLength && (data.byteLength >= this.byteLength);
     }
