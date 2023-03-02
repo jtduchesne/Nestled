@@ -56,7 +56,7 @@ export class CartConnector {
                 
                 this.metadata.load(this.file);
                 
-                this.cartridge = new Mapper(this.file.mapperNumber);
+                this.cartridge = Mapper.create(this.file.mapperNumber);
                 this.cartridge.load(this.file, data);
                 
                 return this;

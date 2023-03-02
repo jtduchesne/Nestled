@@ -1,7 +1,7 @@
 import CartConnector from "../src/CartConnector";
 
 import { Cartridge, Metadata } from "../src/Cartridges";
-import { Header } from "../src/Cartridges/FileFormats";
+import { Header } from "../src/Cartridges";
 
 describe("CartConnector", function() {
     subject(() => new CartConnector);

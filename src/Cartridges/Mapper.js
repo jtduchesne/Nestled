@@ -1,3 +1,4 @@
+import Cartridge from './Cartridge.js';
 import mapperNames, {
     NROM,
     MMC1,
@@ -8,17 +9,33 @@ const constructors = Object.freeze([
     MMC1,
 ]);
 
-export class Mapper {
-    constructor(number) {
-        return new (constructors[number] || NROM);
-    }
+export const Mapper = {
+    /**
+     * Create a new cartridge instance implementing the given mapper number's circuitry.
+     * @param {number} number iNES 1.0 mapper number (0-255)
+     * @returns {Cartridge}
+     */
+    create(number) {
+        return new (constructors[number] || Cartridge);
+    },
     
-    static supported(number) {
+    /**
+     * If the given mapper number is supported by the Nestled emulator.
+     * @param {number} number iNES 1.0 mapper number (0-255)
+     * @returns {boolean}
+     */
+    supported(number) {
         return typeof constructors[number] !== 'undefined';
-    }
-    static name(number) {
+    },
+    
+    /**
+     * The name corresponding to the given mapper number.
+     * @param {number} number iNES 1.0 mapper number (0-255)
+     * @returns {string}
+     */
+    name(number) {
         return mapperNames[number] || "Unknown";
-    }
-}
+    },
+};
 
 export default Mapper;
