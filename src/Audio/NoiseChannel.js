@@ -1,4 +1,4 @@
-import EnvelopeGenerator from './EnvelopeGenerator.js';
+import { EnvelopeGenerator } from './Units/index.js';
 
 /** Timer period lookup */
 const timerPeriods = [ // fixed to NTSC for now
@@ -12,7 +12,7 @@ export class NoiseChannel extends EnvelopeGenerator {
     constructor() {
         super();
         
-        this.timerMode   = false;
+        this.timerMode = false;
         
         /** @private */
         this.shiftRegister = 1;

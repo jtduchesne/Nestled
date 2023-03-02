@@ -1,4 +1,4 @@
-import SweepUnit from "./SweepUnit.js";
+import { SweepUnit } from "./Units/index.js";
 
 /** Duty cycle sequences lookup */
 const dutySequences = [
