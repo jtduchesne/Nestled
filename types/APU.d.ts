@@ -1,12 +1,10 @@
 export class APU {
     /**
-     * @param {import('./CPU.js').CPU} cpu
+     * @param {import('./NES.js').NES} bus
      */
-    constructor(cpu: import('./CPU.js').CPU);
+    constructor(bus: import('./NES.js').NES);
     /** @private */
     private bus;
-    /** @private */
-    private cpu;
     /** Pulse Channel 1 */
     pulse1: PulseChannel;
     /** Pulse Channel 2 */
@@ -17,12 +15,6 @@ export class APU {
     noise: NoiseChannel;
     /** Delta Modulation Channel */
     dmc: DMC;
-    /** If IRQ is disabled at the moment */
-    irqDisabled: boolean;
-    /** If an IRQ has happened, this is cleared after reading 0x4015 */
-    irq: boolean;
-    /** @private */
-    private counterMode;
     /** @private */
     private set status(arg);
     /**
@@ -31,14 +23,12 @@ export class APU {
      * @private
      */
     private get status();
+    /** If IRQ is disabled at the moment */
+    irqDisabled: boolean;
+    /** If an IRQ has happened, this is cleared after reading 0x4015 */
+    irq: boolean;
     /** @private */
-    private set counter(arg);
-    /**
-     * 0x4017 Frame counter
-     * @type {number}
-     * @private
-     */
-    private get counter();
+    private counterMode;
     /** @private */
     private toggle;
     cycle: number;
@@ -51,6 +41,14 @@ export class APU {
     powerOn(): void;
     powerOff(): void;
     reset(): void;
+    /** @private */
+    private set counter(arg);
+    /**
+     * 0x4017 Frame counter
+     * @type {number}
+     * @private
+     */
+    private get counter();
     /** @private */
     private doIRQ;
     /** @readonly @type {boolean} */

@@ -1,4 +1,5 @@
 import CPU from './CPU.js';
+import APU from './APU.js';
 import PPU from './PPU.js';
 import Engine from './Engine.js';
 import CartConnector from './CartConnector.js';
@@ -9,7 +10,7 @@ import AudioOutput from './AudioOutput.js';
 export class NES {
     constructor() {
         this.cpu = new CPU(this);
-        this.apu = this.cpu.apu;
+        this.apu = new APU(this);
         this.ppu = new PPU(this);
         this.engine = new Engine(this);
         

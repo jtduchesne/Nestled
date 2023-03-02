@@ -7,18 +7,16 @@ import {
 
 const cyclesFrequency = 1786830 / 2;
 
-const FOURSTEP = 0;
-const FIVESTEP = 1;
+const FOURSTEP = 0x00;
+const FIVESTEP = 0x80;
 
 export class APU {
     /**
-     * @param {import('./CPU.js').CPU} cpu
+     * @param {import('./NES.js').NES} bus
      */
-    constructor(cpu) {
+    constructor(bus) {
         /** @private */
-        this.bus = cpu.bus;
-        /** @private */
-        this.cpu = cpu;
+        this.bus = bus;
         
         /** Pulse Channel 1 */
         this.pulse1   = new PulseChannel(1);
@@ -29,7 +27,9 @@ export class APU {
         /** Noise Channel */
         this.noise    = new NoiseChannel;
         /** Delta Modulation Channel */
-        this.dmc      = new DMC(cpu);
+        this.dmc      = new DMC(bus);
+        
+        this.status = 0;
         
         /** If IRQ is disabled at the moment */
         this.irqDisabled = false;
@@ -38,9 +38,6 @@ export class APU {
         
         /** @private */
         this.counterMode = FOURSTEP;
-        
-        this.status  = 0;
-        this.counter = 0;
         
         /** @private */
         this.toggle = false;
@@ -83,7 +80,7 @@ export class APU {
     /** @private */
     doIRQ() {
         this.irq = true;
-        this.cpu.doIRQ();
+        this.bus.cpu.doIRQ();
     }
     
     //== Registers ======================================================================//
@@ -100,7 +97,6 @@ export class APU {
                     (this.dmc.enabled      ? 0x10 : 0) +
                     (this.dmc.irq          ? 0x80 : 0) +
                     (this.irq              ? 0x40 : 0);
-        this.dmc.irq = false;
         this.irq     = false;
         
         return value;
