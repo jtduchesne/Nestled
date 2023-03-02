@@ -20,5 +20,5 @@ export class LengthCounter extends TimerUnit {
     doHalf(): void;
 }
 export default LengthCounter;
-import TimerUnit from "./TimerUnit";
+import TimerUnit from "./TimerUnit.js";
 //# sourceMappingURL=LengthCounter.d.ts.map

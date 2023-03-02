@@ -18,5 +18,5 @@ export class NoiseChannel extends EnvelopeGenerator {
     get output(): number;
 }
 export default NoiseChannel;
-import EnvelopeGenerator from "./EnvelopeGenerator.js";
+import { EnvelopeGenerator } from "./Units/index.js";
 //# sourceMappingURL=NoiseChannel.d.ts.map

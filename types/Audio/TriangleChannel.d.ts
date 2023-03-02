@@ -17,5 +17,5 @@ export class TriangleChannel extends LinearCounter {
     get output(): number;
 }
 export default TriangleChannel;
-import LinearCounter from "./LinearCounter.js";
+import { LinearCounter } from "./Units/index.js";
 //# sourceMappingURL=TriangleChannel.d.ts.map
