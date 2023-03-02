@@ -80,20 +80,24 @@ export class MMC1 extends Cartridge {
         }
     }
     
-    //== CIRAM A10 (Pin22) ==========================================//
+    //== CIRAM A10 (Pin22) ==============================================================//
+    /**
+     * @param {number} address 16-bit address
+     * @returns {0|1}
+     */
     ciramA10(address) {
         if (this.mirroring === 3) {
             if (address < 0x800)
                 return 0;
             else
-                return address & 0x800;
+                return (address & 0x800) ? 1 : 0;
         } else if (this.mirroring === 2) {
             if (address < 0x400)
                 return 0;
             else
-                return address & 0x400;
+                return (address & 0x400) ? 1 : 0;
         } else
-            return this.mirroring;
+            return this.mirroring ? 1 : 0;
     }
 }
 export default MMC1;

@@ -6,9 +6,18 @@ import {
 
 export class CartConnector {
     constructor() {
-        this.reset();
+        /** Raw informations parsed from the file. */
+        this.file = new Header;
+        /** Interpreted informations about the file, in human-readable format. */
+        this.metadata = new Metadata;
+        /**
+         * The cartridge itself, as seen by the NES hardware, including I/O functions,
+         * memory mapping and nametable mirroring logic.
+         */
+        this.cartridge = new Cartridge;
     }
     
+    /** @private */
     reset() {
         this.file = new Header;
         this.metadata = new Metadata;
@@ -17,10 +26,19 @@ export class CartConnector {
     
     //=======================================================================================//
     
+    /**
+     * Loads a file, parses its filename and header for `metadata`, and fills `cartridge`
+     * with its content.
+     * @param {File} file
+     */
     load(file) {
         this.reset();
         
         return new Promise(
+            /**
+             * @param {(value: ArrayBuffer) => void} resolve
+             * @param {(reason: Error) => void} reject
+             */
             (resolve, reject) => {
                 if (file) {
                     this.metadata.parseFilename(file.name);
@@ -28,8 +46,13 @@ export class CartConnector {
                     if (file.size) {
                         const reader = new FileReader;
                         reader.onabort = () => reject(new DOMException);
-                        reader.onerror = () => reject(reader.error);
-                        reader.onload = () => resolve(reader.result);
+                        reader.onerror = () => reject(reader.error || new Error);
+                        reader.onload = () => {
+                            if (reader.result && typeof reader.result === 'object')
+                                resolve(reader.result);
+                            else
+                                reject(new Error);
+                        };
                         
                         reader.readAsArrayBuffer(file);
                     } else {
@@ -61,6 +84,7 @@ export class CartConnector {
                 return this;
             }
         ).catch(
+            /** @param {Error} error */
             (error) => {
                 if (error instanceof DOMException)
                     this.metadata.error("Loading aborted");
@@ -74,6 +98,9 @@ export class CartConnector {
             }
         );
     }
+    /**
+     * Unloads current file, also resetting `metadata` and `cartridge`.
+     */
     unload() {
         this.reset();
         
