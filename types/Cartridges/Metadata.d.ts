@@ -1,7 +1,9 @@
 export class Metadata {
     name: string;
     format: string;
+    /** @type {string} */
     consoleType: string;
+    /** @type {string} */
     tvSystem: string;
     mapper: string;
     PRGROM: string;
@@ -11,14 +13,41 @@ export class Metadata {
     PRGRAM: string;
     CHRRAM: string;
     misc: string;
+    /** @type {string[]} */
     warnings: string[];
+    /** @type {string[]} */
     errors: string[];
-    get supported(): boolean;
-    get valid(): boolean;
+    /** @readonly */
+    readonly get supported(): boolean;
+    /** @readonly */
+    readonly get valid(): boolean;
+    /**
+     * Pushes a new message to the *warnings* list.
+     *
+     * This automatically tags the game as __*unsupported*__.
+     * @param {string} message
+     */
     warn(message: string): void;
+    /**
+     * Pushes a new message to the *errors* list.
+     *
+     * This automatically tags the game as __*invalid*__.
+     * @param {string} message
+     */
     error(message: string): void;
+    /**
+     * Extracts the name, and potentially *tvSystem* infos, from the filename.
+     * @param {string} filename
+     */
     parseFilename(filename: string): void;
+    /**
+     * Extracts all the informations from a parsed file header.
+     * @param {Header} header
+     */
     load(header: Header): void;
+    /**
+     * Creates a simple object containing only the relevant file informations.
+     */
     serialize(): {
         name: string;
         format: string;
@@ -35,5 +64,5 @@ export class Metadata {
     };
 }
 export default Metadata;
-import Header from "./FileFormats/Header.js";
+export type Header = import('./Header.js').Header;
 //# sourceMappingURL=Metadata.d.ts.map

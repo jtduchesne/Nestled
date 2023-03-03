@@ -1,21 +1,25 @@
-const CONSOLE_TYPE = [
+/** @typedef {import('./Header.js').Header} Header */
+
+const CONSOLE_TYPE = Object.freeze([
     "NES/Famicom",
     "Nintendo Vs. System",
     "Nintendo Playchoice 10",
     "Extended Console Type",
-];
-const TV_SYSTEM = {
+]);
+const TV_SYSTEM = Object.freeze({
     NTSC: "NTSC",
     PAL: "PAL",
     SECAM: "SECAM",
-};
+});
 
 export class Metadata {
     constructor() {
         this.name = "No Cartridge";
         this.format = "";
         
+        /** @type {string} */
         this.consoleType = CONSOLE_TYPE[0];
+        /** @type {string} */
         this.tvSystem = TV_SYSTEM.NTSC;
         
         this.mapper = "";
@@ -27,28 +31,48 @@ export class Metadata {
         this.CHRRAM = "";
         this.misc = "";
         
+        /** @type {string[]} */
         this.warnings = [];
+        /** @type {string[]} */
         this.errors = [];
     }
     
     //=======================================================================================//
     
+    /** @readonly */
     get supported() {
         return this.warnings.length === 0;
     }
+    /** @readonly */
     get valid() {
         return this.errors.length === 0;
     }
     
+    /**
+     * Pushes a new message to the *warnings* list.
+     * 
+     * This automatically tags the game as __*unsupported*__.
+     * @param {string} message
+     */
     warn(message) {
         this.warnings.push(message);
     }
+    /**
+     * Pushes a new message to the *errors* list.
+     * 
+     * This automatically tags the game as __*invalid*__.
+     * @param {string} message
+     */
     error(message) {
         this.errors.push(message);
     }
     
     //=======================================================================================//
     
+    /**
+     * Extracts the name, and potentially *tvSystem* infos, from the filename.
+     * @param {string} filename
+     */
     parseFilename(filename) {
         const countryCodes = /\((U|E|Unk|Unl|1|4|A|J|B|K|C|NL|PD|F|S|FC|SW|FN|G|UK|GR|HK|I|H)+\)/.exec(filename);
         if (countryCodes) {
@@ -77,6 +101,10 @@ export class Metadata {
             this.name = this.name[0].toUpperCase() + this.name.slice(1);
     }
     
+    /**
+     * Extracts all the informations from a parsed file header.
+     * @param {Header} header
+     */
     load(header) {
         this.format = header.format;
         
@@ -121,6 +149,9 @@ export class Metadata {
     
     //=======================================================================================//
     
+    /**
+     * Creates a simple object containing only the relevant file informations.
+     */
     serialize() {
         return {
             name: this.name,

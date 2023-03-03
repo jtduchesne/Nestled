@@ -1,3 +1,5 @@
+/** @typedef {import('./Header.js').Header} Header */
+
 export const PRGROMBANKSIZE = 0x4000;
 export const CHRROMBANKSIZE = 0x1000;
 
@@ -6,13 +8,19 @@ export class Cartridge {
         this.PRGRAM = new Uint8Array(PRGROMBANKSIZE);
         this.CHRRAM = new Uint8Array(CHRROMBANKSIZE);
         
+        /** @type {Uint8Array[]} */
         this.PRGROM = [];
+        /** @protected */
         this.firstPRGBank = this.PRGRAM;
+        /** @protected */
         this.lastPRGBank  = this.PRGRAM;
         this.PRGBank = [this.firstPRGBank, this.lastPRGBank];
         
+        /** @type {Uint8Array[]} */
         this.CHRROM = [];
+        /** @protected */
         this.firstCHRBank  = this.CHRRAM;
+        /** @protected */
         this.secondCHRBank = this.CHRRAM;
         this.CHRBank = [this.firstCHRBank, this.secondCHRBank];
         
@@ -20,6 +28,12 @@ export class Cartridge {
         this.vertMirroring = false;
     }
     
+    //===================================================================================//
+    /**
+     * Loads cartridge data from a file, and sets circuitry (mirroring) from header data.
+     * @param {Header} header Already parsed header informations
+     * @param {ArrayBuffer} data The whole file, including the header data
+     */
     load(header, data) {
         let offset = header.byteLength;
         
@@ -54,7 +68,11 @@ export class Cartridge {
         this.CHRBank = [this.firstCHRBank, this.secondCHRBank];
     }
     
-    //== Memory access from CPU =====================================//
+    //== Memory access from CPU =========================================================//
+    /**
+     * @param {number} address 16-bit address
+     * @returns {number} 8-bit value
+     */
     cpuRead(address) {
         if (address >= 0xC000) {
             return this.PRGBank[1][address - 0xC000];
@@ -66,13 +84,21 @@ export class Cartridge {
             return this.PRGRAM[address];
         }
     }
+    /**
+     * @param {number} address 16-bit address
+     * @param {number} data 8-bit value
+     */
     cpuWrite(address, data) {
         if (address >= 0x6000)   address -= 0x6000;
         while (address > 0x1FFF) address -= 0x2000;
         this.PRGRAM[address] = data;
     }
     
-    //== Memory access from PPU =====================================//
+    //== Memory access from PPU =========================================================//
+    /**
+     * @param {number} address 16-bit address
+     * @returns {number} 8-bit value
+     */
     ppuRead(address) {
         if (address < 0x1000)
             return this.CHRBank[0][address];
@@ -84,25 +110,47 @@ export class Cartridge {
             return this.CHRBank[1][address];
         }
     }
+    /**
+     * @param {number} address 16-bit address
+     * @param {number} data 8-bit value
+     */
     ppuWrite(address, data) {
-        while (address > 0x1FFF) address -= 0x2000;
+        while (address > 0x0FFF) address -= 0x1000;
         this.CHRRAM[address] = data;
     }
     
-    //== CIRAM A10 (Pin22) ==========================================//
+    //== CIRAM A10 (Pin22) ==============================================================//
+    /**
+     * This is the 1k bank selection input for PPU's internal RAM, derived from the
+     * address bus.
+     * 
+     * This is used to control how the name tables are banked; in other words, this
+     * selects nametable mirroring.
+     * @param {number} address 16-bit address
+     * @returns {0|1}
+     */
     ciramA10(address) { /* eslint-disable-line no-unused-vars */
         //Not connected by default
-        return 0x0000;
+        return 0;
     }
-    //== CIRAM /CE (Pin57) ==========================================//
+    
+    //== CIRAM /CE (Pin57) ==============================================================//
+    /**
+     * This is the video memory selection input, derived from the address bus.
+     * 
+     * When set, this tells the PPU to use its own internal 2kb of RAM instead of
+     * cartridge's CHR-ROM.
+     * @param {number} address 16-bit address
+     * @returns {boolean}
+     */
     ciramEnabled(address) {
         //Connected to PPU /A13 (0x2000) by default
         if (address < 0x2000)
-            return 0x0000;
+            return false;
         else if (address < 0x4000)
-            return 0x2000;
+            return true;
         else
-            return address & 0x2000;
+            return (address & 0x2000) > 0;
     }
 }
 
