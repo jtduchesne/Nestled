@@ -135,13 +135,13 @@ describe("NROM", function() {
     });
     
     describe(".ciramEnabled(address)", function() {
-        it("is not set when address < 0x2000", function() {
-            expect($subject.ciramEnabled(0x0000)).to.not.be.ok;
-            expect($subject.ciramEnabled(0x1000)).to.not.be.ok;
+        it("is clear when address < 0x2000", function() {
+            expect($subject.ciramEnabled(0x0000)).to.be.false;
+            expect($subject.ciramEnabled(0x1000)).to.be.false;
         });
         it("is set when address >= 0x2000", function() {
-            expect($subject.ciramEnabled(0x2000)).to.be.ok;
-            expect($subject.ciramEnabled(0x3000)).to.be.ok;
+            expect($subject.ciramEnabled(0x2000)).to.be.true;
+            expect($subject.ciramEnabled(0x3000)).to.be.true;
         });
     });
 });
