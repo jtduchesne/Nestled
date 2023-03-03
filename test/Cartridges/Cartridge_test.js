@@ -1,3 +1,5 @@
+import { expect } from "chai";
+
 import Cartridge from "../../src/Cartridges/Cartridge";
 
 import { INESHeader } from "../../src/Cartridges/FileFormats";
@@ -11,13 +13,13 @@ describe("Cartridge", function() {
     its('CHRROM', () => is.expected.to.be.an('array').and.be.empty);
     
     its('PRGBank', () => is.expected.to.be.an('array').and.have.lengthOf(2));
-    it("should already have PRG data to read from", function() {
+    it("already has PRG data to read from", function() {
         expect($subject.PRGBank[0]).to.be.an.instanceOf(Uint8Array).and.have.lengthOf(0x4000);
         expect($subject.PRGBank[1]).to.be.an.instanceOf(Uint8Array).and.have.lengthOf(0x4000);
     });
     
     its('CHRBank', () => is.expected.to.be.an('array').and.have.lengthOf(2));
-    it("should already have CHR data to read from", function() {
+    it("already has CHR data to read from", function() {
         expect($subject.CHRBank[0]).to.be.an.instanceOf(Uint8Array).and.have.lengthOf(0x1000);
         expect($subject.CHRBank[1]).to.be.an.instanceOf(Uint8Array).and.have.lengthOf(0x1000);
     });
@@ -77,13 +79,14 @@ describe("Cartridge", function() {
         context("with a 512b trainer present", function() {
             beforeEach(() => $action);
             
+            // See Fixtures/INESFile_factory.js for implementation details
             def('attrs', () => ({
                 numPRG: 1,
                 byte6: 0x04,
                 data: { trainer: 0xA5, PRGROM: 0x99 }
             }));
             
-            it("sets its content into PRGRAM(0x1000)", function() {
+            it("sets its content into PRGRAM[0x1000-0x11FF]", function() {
                 expect($subject.PRGRAM[0x0000]).to.equal(0x00);
                 expect($subject.PRGRAM[0x0FFF]).to.equal(0x00);
                 expect($subject.PRGRAM[0x1000]).to.equal(0xA5);
@@ -174,8 +177,8 @@ describe("Cartridge", function() {
     //-------------------------------------------------------------------------------//
     
     context("Memory Access", function() {
-        // Only test that no errors are thrown when Cartridge is empty
-        // Real Memory Access implementations are tested in the Mappers
+        // Only tests that no errors are thrown when Cartridge is empty.
+        // Real Memory Access implementations are tested in the Mappers.
         
         context("without PRG data", function() {
             before(() => expect($subject.PRGROM).to.be.empty);
@@ -248,13 +251,13 @@ describe("Cartridge", function() {
     });
     
     describe(".ciramEnabled(address)", function() {
-        it("is not set when address < 0x2000", function() {
-            expect($subject.ciramEnabled(0x0000)).to.not.be.ok;
-            expect($subject.ciramEnabled(0x1000)).to.not.be.ok;
+        it("is clear when address < 0x2000", function() {
+            expect($subject.ciramEnabled(0x0000)).to.be.false;
+            expect($subject.ciramEnabled(0x1000)).to.be.false;
         });
         it("is set when address >= 0x2000", function() {
-            expect($subject.ciramEnabled(0x2000)).to.be.ok;
-            expect($subject.ciramEnabled(0x3000)).to.be.ok;
+            expect($subject.ciramEnabled(0x2000)).to.be.true;
+            expect($subject.ciramEnabled(0x3000)).to.be.true;
         });
     });
 });

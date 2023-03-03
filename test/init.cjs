@@ -15,17 +15,19 @@ exports.mochaHooks = {
 global.isSet = (v) => (typeof v !== 'undefined');
 
 global.File = class {
-    constructor(name, content) {
+    constructor(name, content = []) {
         this.name = name;
-        this.size = content.length;
+        this.size = content.length || content.byteLength;
         this.type = "application/octet-stream";
-        this.arrayBuffer = Uint8Array.from(content);
+        this.arrayBuffer = (content instanceof ArrayBuffer) ? content : Uint8Array.from(content).buffer;
     }
 };
 global.FileReader = class {
     readAsArrayBuffer(file) {
         this.result = file.arrayBuffer;
-        this.onload();
+        this.error  = null;
+        if (typeof this.onload === 'function')
+            this.onload();
     }
 };
 
