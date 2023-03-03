@@ -10,6 +10,12 @@ export class CartConnector {
     cartridge: Cartridge;
     /** @private */
     private reset;
+    /** @readonly */
+    readonly get name(): string;
+    /** @readonly */
+    readonly get supported(): boolean;
+    /** @readonly */
+    readonly get valid(): boolean;
     /**
      * Loads a file, parses its filename and header for `metadata`, and fills `cartridge`
      * with its content.

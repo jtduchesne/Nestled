@@ -1,3 +1,6 @@
+import { expect } from "chai";
+import sinon from "sinon";
+
 import MMC1 from "../../../src/Cartridges/Mappers/MMC1";
 
 import { INESHeader } from "../../../src/Cartridges/FileFormats";
@@ -253,55 +256,50 @@ describe("MMC1", function() {
             context("when address == 0x8000", function() {
                 def('address', () => 0x8000);
                 
-                it("sets #control", function(done) {
-                    Object.defineProperty($subject, 'control', {
-                        set: (value) => { if (value === $data) done(); }
-                    });
+                it("sets #control", function() {
+                    const spy = sinon.spy($subject, 'control', ['set']);
                     $action;
+                    expect(spy.set).to.be.calledOnceWith($data);
                 });
             });
             
             context("when address == 0xA000", function() {
                 def('address', () => 0xA000);
                 
-                it("sets #CHR0", function(done) {
-                    Object.defineProperty($subject, 'CHR0', {
-                        set: (value) => { if (value === $data) done(); }
-                    });
+                it("sets #CHR0", function() {
+                    const spy = sinon.spy($subject, 'CHR0', ['set']);
                     $action;
+                    expect(spy.set).to.be.calledOnceWith($data);
                 });
             });
             
             context("when address == 0xC000", function() {
                 def('address', () => 0xC000);
                 
-                it("sets #CHR1", function(done) {
-                    Object.defineProperty($subject, 'CHR1', {
-                        set: (value) => { if (value === $data) done(); }
-                    });
+                it("sets #CHR1", function() {
+                    const spy = sinon.spy($subject, 'CHR1', ['set']);
                     $action;
+                    expect(spy.set).to.be.calledOnceWith($data);
                 });
             });
             
             context("when address == 0xE000", function() {
                 def('address', () => 0xE000);
                 
-                it("sets #PRG", function(done) {
-                    Object.defineProperty($subject, 'PRG', {
-                        set: (value) => { if (value === $data) done(); }
-                    });
+                it("sets #PRG", function() {
+                    const spy = sinon.spy($subject, 'PRG', ['set']);
                     $action;
+                    expect(spy.set).to.be.calledOnceWith($data);
                 });
             });
             
             context("when address == 0xFFFF", function() {
                 def('address', () => 0xFFFF);
                 
-                it("sets #PRG", function(done) {
-                    Object.defineProperty($subject, 'PRG', {
-                        set: (value) => { if (value === $data) done(); }
-                    });
+                it("sets #PRG", function() {
+                    const spy = sinon.spy($subject, 'PRG', ['set']);
                     $action;
+                    expect(spy.set).to.be.calledOnceWith($data);
                 });
             });
         });
@@ -363,13 +361,10 @@ describe("MMC1", function() {
                     expect($subject.buffer).to.equal(0x0A);
                 });
                 
-                it("calls .write(address, data) with #buffer as data", function(done) {
-                    $subject.write = (address, data) => {
-                        expect(address).to.equal(0x8000);
-                        expect(data).to.equal(0x0A);
-                        done();
-                    };
+                it("calls .write(address, data) with #buffer as data", function() {
+                    const spy = sinon.spy($subject, 'write');
                     $subject.cpuWrite(0x8000, 0x00);
+                    expect(spy).to.be.calledOnceWith(0x8000, 0x0A);
                 });
                 it("resets #buffer", function() {
                     expect(() => $subject.cpuWrite(0x8000, 0x00)).to.change($subject, 'buffer');
@@ -475,13 +470,13 @@ describe("MMC1", function() {
     });
     
     describe(".ciramEnabled(address)", function() {
-        it("is not set when address < 0x2000", function() {
-            expect($subject.ciramEnabled(0x0000)).to.not.be.ok;
-            expect($subject.ciramEnabled(0x1000)).to.not.be.ok;
+        it("is clear when address < 0x2000", function() {
+            expect($subject.ciramEnabled(0x0000)).to.be.false;
+            expect($subject.ciramEnabled(0x1000)).to.be.false;
         });
         it("is set when address >= 0x2000", function() {
-            expect($subject.ciramEnabled(0x2000)).to.be.ok;
-            expect($subject.ciramEnabled(0x3000)).to.be.ok;
+            expect($subject.ciramEnabled(0x2000)).to.be.true;
+            expect($subject.ciramEnabled(0x3000)).to.be.true;
         });
     });
 });
