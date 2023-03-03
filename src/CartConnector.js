@@ -26,6 +26,16 @@ export class CartConnector {
     
     //=======================================================================================//
     
+    /** @readonly */
+    get name() { return this.metadata.name;}
+    
+    /** @readonly */
+    get supported() { return this.metadata.supported; }
+    /** @readonly */
+    get valid() { return this.metadata.valid; }
+    
+    //=======================================================================================//
+    
     /**
      * Loads a file, parses its filename and header for `metadata`, and fills `cartridge`
      * with its content.

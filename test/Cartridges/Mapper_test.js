@@ -34,7 +34,7 @@ describe("Mapper", function() {
             expect(Mapper.supported(0)).to.be.true;
         });
         it("returns -false- when unsupported", function() {
-            expect(Mapper.supported(1234)).to.be.false;
+            expect(Mapper.supported(123)).to.be.false;
         });
     });
     
@@ -43,7 +43,7 @@ describe("Mapper", function() {
             expect(Mapper.name(1)).to.equal("Nintendo MMC1");
         });
         it("returns 'Unknown' if not known", function() {
-            expect(Mapper.name(1234)).to.contain("Unknown");
+            expect(Mapper.name(255)).to.contain("Unknown");
         });
     });
 });
