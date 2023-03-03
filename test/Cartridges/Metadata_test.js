@@ -1,3 +1,5 @@
+import { expect } from "chai";
+
 import Metadata from "../../src/Cartridges/Metadata";
 
 import { Header } from "../../src/Cartridges";

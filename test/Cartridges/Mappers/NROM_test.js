@@ -1,3 +1,5 @@
+import { expect } from "chai";
+
 import NROM from "../../../src/Cartridges/Mappers/NROM";
 
 import { INESHeader } from "../../../src/Cartridges/FileFormats";

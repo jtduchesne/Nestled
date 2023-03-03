@@ -1,3 +1,5 @@
+import { expect } from "chai";
+
 import Mapper from "../../src/Cartridges/Mapper";
 
 import { Cartridge, Mappers } from "../../src/Cartridges";

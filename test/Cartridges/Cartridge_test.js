@@ -1,3 +1,5 @@
+import { expect } from "chai";
+
 import Cartridge from "../../src/Cartridges/Cartridge";
 
 import { INESHeader } from "../../src/Cartridges/FileFormats";
