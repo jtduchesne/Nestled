@@ -24,5 +24,5 @@ export class PulseChannel extends SweepUnit {
     get output(): number;
 }
 export default PulseChannel;
-import SweepUnit from "./SweepUnit.js";
+import { SweepUnit } from "./Units/index.js";
 //# sourceMappingURL=PulseChannel.d.ts.map

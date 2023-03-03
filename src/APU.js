@@ -12,13 +12,11 @@ const FIVESTEP = 0x80;
 
 export class APU {
     /**
-     * @param {import('./CPU.js').CPU} cpu
+     * @param {import('./NES.js').NES} bus
      */
-    constructor(cpu) {
+    constructor(bus) {
         /** @private */
-        this.bus = cpu.bus;
-        /** @private */
-        this.cpu = cpu;
+        this.bus = bus;
         
         /** Pulse Channel 1 */
         this.pulse1   = new PulseChannel(1);
@@ -29,7 +27,7 @@ export class APU {
         /** Noise Channel */
         this.noise    = new NoiseChannel;
         /** Delta Modulation Channel */
-        this.dmc      = new DMC(cpu);
+        this.dmc      = new DMC(bus);
         
         this.status = 0;
         
@@ -82,7 +80,7 @@ export class APU {
     /** @private */
     doIRQ() {
         this.irq = true;
-        this.cpu.doIRQ();
+        this.bus.cpu.doIRQ();
     }
     
     //== Registers ======================================================================//

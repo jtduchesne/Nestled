@@ -8,11 +8,11 @@ const timerPeriods = [ // fixed to NTSC for now
  */
 export class DMC {
     /**
-     * @param {import('../CPU.js').CPU} cpu
+     * @param {import('../NES.js').NES} bus
      */
-    constructor(cpu) {
+    constructor(bus) {
         /** @private */
-        this.cpu = cpu;
+        this.bus = bus;
         
         this.timerCycle  = 0;
         this.timerPeriod = timerPeriods[0];
@@ -67,7 +67,7 @@ export class DMC {
     /** @private */
     doIRQ() {
         this.irq = true;
-        this.cpu.doIRQ();
+        this.bus.cpu.doIRQ();
     }
     
     //== Registers ======================================================================//
@@ -151,7 +151,7 @@ export class DMC {
             let sampleLength = this.sampleLength;
             
             const index = sampleLength - sampleLeft;
-            this.sampleBuffer = this.cpu.read(this.sampleAddress + index);
+            this.sampleBuffer = this.bus.cpu.read(this.sampleAddress + index);
             
             if (--sampleLeft > 0) {
                 this.sampleLeft = sampleLeft;

@@ -1,4 +1,4 @@
-import LinearCounter from './LinearCounter.js';
+import { LinearCounter } from './Units/index.js';
 
 /** Output values lookup */
 const values = [

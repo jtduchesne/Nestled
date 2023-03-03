@@ -1,7 +1,15 @@
 export class INESHeader extends Header {
-    parseV1(data: ArrayBuffer): void;
-    parseV2(data: ArrayBuffer): void;
+    /**
+     * @param {DataView} data
+     * @private
+     */
+    private parseV1;
+    /**
+     * @param {DataView} data
+     * @private
+     */
+    private parseV2;
 }
 export default INESHeader;
-import Header from "./Header.js";
+import Header from "../Header.js";
 //# sourceMappingURL=INES.d.ts.map

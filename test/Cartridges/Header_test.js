@@ -1,4 +1,4 @@
-import Header from "../../../src/Cartridges/FileFormats/Header";
+import Header from "../../src/Cartridges/Header";
 
 describe("Header", function() {
     subject(() => new Header);
