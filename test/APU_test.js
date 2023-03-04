@@ -12,7 +12,7 @@ describe("APU", function() {
     its('bus', () => is.expected.to.equal($nes));
     
     its('cycle',       () => is.expected.to.equal(0));
-    its('toggle',      () => is.expected.to.be.false);
+    its('toggle',      () => is.expected.to.be.true);
     its('counterMode', () => is.expected.to.equal(0));
     its('irqDisabled', () => is.expected.to.be.false);
     its('irq',         () => is.expected.to.be.false);
@@ -469,24 +469,24 @@ describe("APU", function() {
             it("increases #cycle by [count]/2", function() {
                 expect(() => $action).to.increase($subject, 'cycle').by($expected);
             });
-            it("does not set #toggle", function() {
+            it("does not clear #toggle", function() {
                 expect(() => $action).not.to.change($subject, 'toggle');
-                expect($subject.toggle).to.be.false;
+                expect($subject.toggle).to.be.true;
             });
             it("calls .doCycle() [count]/2 times", function() {
                 $action;
                 expect($subject.doCycle.callCount).to.equal($expected);
             });
             
-            context("and #toggle is set", function() {
-                beforeEach(() => { $subject.toggle = true; });
+            context("and #toggle is clear", function() {
+                beforeEach(() => { $subject.toggle = false; });
                 
                 it("still increases #cycle by [count]/2", function() {
                     expect(() => $action).to.increase($subject, 'cycle').by($expected);
                 });
-                it("does not clear #toggle", function() {
+                it("does not set #toggle", function() {
                     expect(() => $action).not.to.change($subject, 'toggle');
-                    expect($subject.toggle).to.be.true;
+                    expect($subject.toggle).to.be.false;
                 });
                 it("still calls .doCycle() [count]/2 times", function() {
                     $action;
@@ -498,31 +498,31 @@ describe("APU", function() {
             def('count',    () => 5);
             def('expected', () => 3);
             
-            it("increases #cycle by [count]/2", function() {
-                expect(() => $action).to.increase($subject, 'cycle').by($expected);
+            it("increases #cycle by [count]/2 (rounded)", function() {
+                expect(() => $action).to.increase($subject, 'cycle').by($expected -1);
             });
-            it("sets #toggle", function() {
+            it("clears #toggle", function() {
                 expect(() => $action).to.change($subject, 'toggle');
-                expect($subject.toggle).to.be.true;
+                expect($subject.toggle).to.be.false;
             });
-            it("calls .doCycle() [count]/2 times", function() {
+            it("calls .doCycle() [count]/2 (rounded) times", function() {
                 $action;
-                expect($subject.doCycle.callCount).to.equal($expected);
+                expect($subject.doCycle.callCount).to.equal($expected -1);
             });
             
-            context("and #toggle is set", function() {
-                beforeEach(() => { $subject.toggle = true; });
+            context("and #toggle is clear", function() {
+                beforeEach(() => { $subject.toggle = false; });
                 
-                it("increases #cycle by [count]/2 -1", function() {
-                    expect(() => $action).to.increase($subject, 'cycle').by($expected - 1);
+                it("increases #cycle by [count]/2", function() {
+                    expect(() => $action).to.increase($subject, 'cycle').by($expected);
                 });
-                it("clears #toggle", function() {
+                it("sets #toggle", function() {
                     expect(() => $action).to.change($subject, 'toggle');
-                    expect($subject.toggle).to.be.false;
+                    expect($subject.toggle).to.be.true;
                 });
-                it("calls .doCycle() [count]/2 -1 times", function() {
+                it("calls .doCycle() [count]/2 times", function() {
                     $action;
-                    expect($subject.doCycle.callCount).to.equal($expected - 1);
+                    expect($subject.doCycle.callCount).to.equal($expected);
                 });
             });
         });

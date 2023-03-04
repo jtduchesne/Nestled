@@ -42,7 +42,7 @@ export class APU {
         this.counterMode = FOURSTEP;
         
         /** @private */
-        this.toggle = false;
+        this.toggle = true;
         this.cycle  = 0;
         
         /** @private */
