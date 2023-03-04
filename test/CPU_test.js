@@ -191,18 +191,18 @@ describe("Cpu", function() {
                 expect($subject.read(0x1FFF)).to.equal($RAMData);
             });
             it("reads from PPU's registers when address is between [0x2000-3FFF]", function() {
-                const stub = sinon.stub($subject.ppu, 'readRegister');
+                const stub = sinon.stub($nes.ppu, 'readRegister');
                 $subject.read(0x2000);
                 $subject.read(0x3FFF);
                 expect(stub).to.be.calledTwice;
             });
             it("reads from APU's registers when address is [0x4015]", function() {
-                const stub = sinon.stub($subject.apu, 'readRegister');
+                const stub = sinon.stub($nes.apu, 'readRegister');
                 $subject.read(0x4015);
                 expect(stub).to.be.calledOnce;
             });
             it("reads from Controller 1 when address is [0x4016]", function() {
-                const stub = sinon.stub($subject.ctrl1, 'read');
+                const stub = sinon.stub($nes.ctrlConnector.controllers[0], 'read');
                 $subject.read(0x4016);
                 expect(stub).to.be.calledOnce;
             });
@@ -210,7 +210,7 @@ describe("Cpu", function() {
                 expect($subject.read(0x4016)).to.equal(0x40);
             });
             it("reads from Controller 2 when address is [0x4017]", function() {
-                const stub = sinon.stub($subject.ctrl2, 'read');
+                const stub = sinon.stub($nes.ctrlConnector.controllers[1], 'read');
                 $subject.read(0x4017);
                 expect(stub).to.be.calledOnce;
             });
@@ -232,36 +232,36 @@ describe("Cpu", function() {
                 expect($subject.ram[0]).to.equal(0xFF);
             });
             it("writes to PPU's registers when address is between [0x2000-3FFF]", function() {
-                const stub = sinon.stub($subject.ppu, 'writeRegister');
+                const stub = sinon.stub($nes.ppu, 'writeRegister');
                 $subject.write(0x2000, 0xFF);
                 $subject.write(0x3FFF, 0xFF);
                 expect(stub).to.be.calledTwice;
             });
             it("writes to APU's registers when address is between [0x4000-4015]", function() {
-                const stub = sinon.stub($subject.apu, 'writeRegister');
+                const stub = sinon.stub($nes.apu, 'writeRegister');
                 $subject.write(0x4000, 0xFF);
                 $subject.write(0x4015, 0xFF);
                 expect(stub).to.be.calledTwice;
             });
             it("writes (strobe) to both Controllers when address is [0x4016]", function() {
-                const stub1 = sinon.stub($subject.ctrl1, 'write');
-                const stub2 = sinon.stub($subject.ctrl2, 'write');
+                const stub1 = sinon.stub($nes.ctrlConnector.controllers[0], 'write');
+                const stub2 = sinon.stub($nes.ctrlConnector.controllers[1], 'write');
                 $subject.write(0x4016, 0xFF);
                 expect(stub1).to.be.calledOnceWith(0xFF);
                 expect(stub2).to.be.calledOnceWith(0xFF);
             });
             it("writes to APU's registers when address is [0x4017]", function() {
-                const stub = sinon.stub($subject.apu, 'writeRegister');
+                const stub = sinon.stub($nes.apu, 'writeRegister');
                 $subject.write(0x4017, 0xFF);
                 expect(stub).to.be.calledOnce;
             });
             it("writes to PRG-RAM when address is between [0x6000, 0x7FFF]", function() {
                 $subject.write(0x6000, 0xFF);
-                expect($subject.cart.PRGRAM[0]).to.equal(0xFF);
+                expect($nes.cartConnector.cartridge.PRGRAM[0]).to.equal(0xFF);
             });
             it("cannot writes to PRG-ROM when address is between [0x8000, 0xFFFF]", function() {
                 $subject.write(0x8000, 0xFF);
-                expect($subject.cart.PRGROM[0]).not.to.equal(0xFF);
+                expect($nes.cartConnector.cartridge.PRGROM[0]).not.to.equal(0xFF);
             });
         });
     });
