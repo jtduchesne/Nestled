@@ -225,19 +225,19 @@ export class CPU {
     }
     
     //== Status =====================================================//
-    get Carry()          { return this.P & 0x01; }
-    get Zero()           { return this.P & 0x02; }
-    get Interrupt()      { return this.P & 0x04; }
-    get Decimal()        { return this.P & 0x08; }
-    get Overflow()       { return this.P & 0x40; }
-    get Negative()       { return this.P & 0x80; }
+    get Carry()          { return (this.P & 0x01) > 0; }
+    get Zero()           { return (this.P & 0x02) > 0; }
+    get Interrupt()      { return (this.P & 0x04) > 0; }
+    get Decimal()        { return (this.P & 0x08) > 0; }
+    get Overflow()       { return (this.P & 0x40) > 0; }
+    get Negative()       { return (this.P & 0x80) > 0; }
     
-    set Carry(value)     { (value ? (this.P |= 0x01) : this.P &= ~0x01); }
-    set Zero(value)      { (value ? (this.P |= 0x02) : this.P &= ~0x02); }
-    set Interrupt(value) { (value ? (this.P |= 0x04) : this.P &= ~0x04); }
-    set Decimal(value)   { (value ? (this.P |= 0x08) : this.P &= ~0x08); }
-    set Overflow(value)  { (value ? (this.P |= 0x40) : this.P &= ~0x40); }
-    set Negative(value)  { (value ? (this.P |= 0x80) : this.P &= ~0x80); }
+    set Carry(value)     { value ? (this.P |= 0x01) : (this.P &= ~0x01); }
+    set Zero(value)      { value ? (this.P |= 0x02) : (this.P &= ~0x02); }
+    set Interrupt(value) { value ? (this.P |= 0x04) : (this.P &= ~0x04); }
+    set Decimal(value)   { value ? (this.P |= 0x08) : (this.P &= ~0x08); }
+    set Overflow(value)  { value ? (this.P |= 0x40) : (this.P &= ~0x40); }
+    set Negative(value)  { value ? (this.P |= 0x80) : (this.P &= ~0x80); }
     
     //== Registers ==================================================//
     ALU(value) {
@@ -383,9 +383,9 @@ export class CPU {
     ADC(fnFetchOperand) { this.add(this.A, this.read(fnFetchOperand()));      } //Add with Carry
     SBC(fnFetchOperand) { this.add(this.A, 0xFF-this.read(fnFetchOperand())); } //Subtract with Carry
     add(reg, operand) {
-        let alu = reg + operand + this.Carry;
+        const alu = reg + operand + (this.Carry ? 1 : 0);
         this.Carry = false;
-        this.Overflow = (reg^alu) & (operand^alu) & 0x80;
+        this.Overflow = ((reg^alu) & (operand^alu) & 0x80) > 0;
         this.A = this.ALU(alu);
     }
     
@@ -399,7 +399,7 @@ export class CPU {
             operand = this.read(address);
             this.write(address, this.ALU(operand * 2));
         }
-        this.Carry = (operand & 0x80);
+        this.Carry = (operand >= 0x80);
     }
     LSR(fnFetchOperand) { //Logical Shift Right
         let operand;
@@ -411,7 +411,7 @@ export class CPU {
             operand = this.read(address);
             this.write(address, this.ALU(operand >>> 1));
         }
-        this.Carry = (operand & 0x01);
+        this.Carry = (operand & 0x01) > 0;
     }
     ROL(fnFetchOperand) { //Rotate Left
         const carry = (this.Carry ? 0x01 : 0x00);
@@ -424,7 +424,7 @@ export class CPU {
             operand = this.read(address);
             this.write(address, this.ALU((operand * 2) + carry));
         }
-        this.Carry = (operand & 0x80);
+        this.Carry = (operand >= 0x80);
     }
     ROR(fnFetchOperand) { //Rotate Right
         const carry = (this.Carry ? 0x80 : 0x00);
@@ -437,7 +437,7 @@ export class CPU {
             operand = this.read(address);
             this.write(address, this.ALU((operand >>> 1) + carry));
         }
-        this.Carry = (operand & 0x01);
+        this.Carry = (operand & 0x01) > 0;
     }
     
     INC(fnFetchOperand) { //Increment memory

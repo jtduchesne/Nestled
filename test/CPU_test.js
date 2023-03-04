@@ -361,52 +361,52 @@ describe("Cpu", function() {
         beforeEach("PowerOn", function() { $subject.powerOn(); });
         
         describe("#Carry", function() {
-            it("is truthy if Carry flag is set", function() {
+            it("is -true- if Carry flag is set", function() {
                 $subject.P = 0x01;
-                expect($subject.Carry).to.be.ok; });
-            it("is not truthy if Carry flag is clear", function() {
+                expect($subject.Carry).to.be.true; });
+            it("is -false- if Carry flag is clear", function() {
                 $subject.P = ~0x01;
-                expect($subject.Carry).not.to.be.ok; });
+                expect($subject.Carry).to.be.false; });
         });
         describe("#Zero", function() {
-            it("is truthy if Zero flag is set", function() {
+            it("is -true- if Zero flag is set", function() {
                 $subject.P = 0x02;
-                expect($subject.Zero).to.be.ok; });
-            it("is not truthy if Zero flag is clear", function() {
+                expect($subject.Zero).to.be.true; });
+            it("is -false- if Zero flag is clear", function() {
                 $subject.P = ~0x02;
-                expect($subject.Zero).not.to.be.ok; });
+                expect($subject.Zero).to.be.false; });
         });
         describe("#Interrupt", function() {
-            it("is truthy if Interrupt Disable flag is set", function() {
+            it("is -true- if Interrupt Disable flag is set", function() {
                 $subject.P = 0x04;
-                expect($subject.Interrupt).to.be.ok; });
-            it("is not truthy if Interrupt Disable flag is clear", function() {
+                expect($subject.Interrupt).to.be.true; });
+            it("is -false- if Interrupt Disable flag is clear", function() {
                 $subject.P = ~0x04;
-                expect($subject.Interrupt).not.to.be.ok; });
+                expect($subject.Interrupt).to.be.false; });
         });
         describe("#Decimal", function() {
-            it("is truthy if Decimal flag is set", function() {
+            it("is -true- if Decimal flag is set", function() {
                 $subject.P = 0x08;
-                expect($subject.Decimal).to.be.ok; });
-            it("is not truthy if Decimal flag is clear", function() {
+                expect($subject.Decimal).to.be.true; });
+            it("is -false- if Decimal flag is clear", function() {
                 $subject.P = ~0x08;
-                expect($subject.Decimal).not.to.be.ok; });
+                expect($subject.Decimal).to.be.false; });
         });
         describe("#Overflow", function() {
-            it("is truthy if Overflow flag is set", function() {
+            it("is -true- if Overflow flag is set", function() {
                 $subject.P = 0x40;
-                expect($subject.Overflow).to.be.ok; });
-            it("is not truthy if Overflow flag is clear", function() {
+                expect($subject.Overflow).to.be.true; });
+            it("is -false- if Overflow flag is clear", function() {
                 $subject.P = ~0x40;
-                expect($subject.Overflow).not.to.be.ok; });
+                expect($subject.Overflow).to.be.false; });
         });
         describe("#Negative", function() {
-            it("is truthy if Negative flag is set", function() {
+            it("is -true- if Negative flag is set", function() {
                 $subject.P = 0x80;
-                expect($subject.Negative).to.be.ok; });
-            it("is not truthy if Negative flag is clear", function() {
+                expect($subject.Negative).to.be.true; });
+            it("is -false- if Negative flag is clear", function() {
                 $subject.P = ~0x80;
-                expect($subject.Negative).not.to.be.ok; });
+                expect($subject.Negative).to.be.false; });
         });
         
         describe("#Carry = value", function() {
@@ -452,9 +452,9 @@ describe("Cpu", function() {
         describe("#Negative = value", function() {
             it("sets Negative flag to the given value", function() {
                 $subject.Negative = true;
-                expect($subject.Negative).to.be.ok;
+                expect($subject.P & 0x80).to.be.ok;
                 $subject.Negative = false;
-                expect($subject.Negative).not.to.be.ok;
+                expect($subject.P & 0x80).not.to.be.ok;
             });
         });
     });
