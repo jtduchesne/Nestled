@@ -461,90 +461,53 @@ describe("Cpu", function() {
     
     //-------------------------------------------------------------------------------//
     
-    context("Registers", function() {
+    context("Arithmetic Logic Unit", function() {
         /*global $value */
         
-        beforeEach("PowerOn", function() { $subject.powerOn(); });
-        
-        describe("Accumulator", function() {
-            def('action', () => { $subject.A = $value; });
-            beforeEach(function() { $action; });
+        describe(".ALU(value)", function() {
+            beforeEach(() => { $subject.P = 0x00; });
+            def('action', () => $subject.ALU($value));
             
             context("when value > 0xFF", function() {
                 def('value', () => 0x199);
                 
-                its('Carry', () => is.expected.to.be.ok);
-                its('A', () => is.expected.to.equal(0x99));
+                it("sets #Carry", function() {
+                    expect(() => $action).to.change($subject, 'Carry');
+                    expect($subject.Carry).to.be.true;
+                });
+                it("returns a wrapped byte value", function() {
+                    expect($action).to.equal(0x99);
+                });
             });
             context("when value > 0x80", function() {
                 def('value', () => 0xF6);
                 
-                its('Negative', () => is.expected.to.be.ok);
+                it("sets #Negative", function() {
+                    expect(() => $action).to.change($subject, 'Negative');
+                    expect($subject.Negative).to.be.true;
+                });
+                it("returns the same value", function() {
+                    expect($action).to.equal(0xF6);
+                });
             });
             context("when value < 0", function() {
                 def('value', () => -10);
                 
-                its('Negative', () => is.expected.to.be.ok);
-                its('A', () => is.expected.to.equal(0xF6));
+                it("sets #Negative", function() {
+                    expect(() => $action).to.change($subject, 'Negative');
+                    expect($subject.Negative).to.be.true;
+                });
+                it("returns a wrapped unsigned byte value", function() {
+                    expect($action).to.equal(0xF6);
+                });
             });
             context("when value = 0", function() {
                 def('value', () => 0);
                 
-                its('Zero', () => is.expected.to.be.ok);
-            });
-        });
-        describe("Index X", function() {
-            def('action', () => { $subject.X = $value; });
-            beforeEach(function() { $action; });
-            
-            context("when value > 0xFF", function() {
-                def('value', () => 0x199);
-                
-                its('Carry', () => is.expected.to.be.ok);
-                its('X', () => is.expected.to.equal(0x99));
-            });
-            context("when value > 0x80", function() {
-                def('value', () => 0xF6);
-                
-                its('Negative', () => is.expected.to.be.ok);
-            });
-            context("when value < 0", function() {
-                def('value', () => -10);
-                
-                its('Negative', () => is.expected.to.be.ok);
-                its('X', () => is.expected.to.equal(0xF6));
-            });
-            context("when value = 0", function() {
-                def('value', () => 0);
-                
-                its('Zero', () => is.expected.to.be.ok);
-            });
-        });
-        describe("Index Y", function() {
-            def('action', () => { $subject.Y = $value; });
-            beforeEach(function() { $action; });
-            
-            context("when value > 0xFF", function() {
-                def('value', () => 0x199);
-                
-                its('Carry', () => is.expected.to.be.ok);
-                its('Y', () => is.expected.to.equal(0x99));
-            });
-            context("when value > 0x80", function() {
-                def('value', () => 0xF6);
-                
-                its('Negative', () => is.expected.to.be.ok);
-            });
-            context("when value < 0", function() {
-                def('value', () => -10);
-                
-                its('Negative', () => is.expected.to.be.ok);
-                its('Y', () => is.expected.to.equal(0xF6));
-            });
-            context("when value = 0", function() {
-                def('value', () => 0);
-                
-                its('Zero', () => is.expected.to.be.ok);
+                it("sets #Zero", function() {
+                    expect(() => $action).to.change($subject, 'Zero');
+                    expect($subject.Zero).to.be.true;
+                });
             });
         });
     });

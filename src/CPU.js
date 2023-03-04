@@ -146,7 +146,7 @@ export class CPU {
         this.cycle += 7;
     }
     doReset() {
-        this.SP = this.SP+3;
+        this.SP = wrapByte(this.SP+3);
         this.Interrupt = false;
         this.PC = this.resetVector();
         this.cycle += 7;
@@ -207,11 +207,10 @@ export class CPU {
     }
     
     //== Stack ======================================================//
-    get SP()      { return this._SP; }
-    set SP(value) { this._SP = wrapByte(value); }
-    
     pushByte(value) {
-        this.stack[this.SP--] = value;
+        const SP = this.SP;
+        this.stack[SP] = value;
+        this.SP = (SP > 0) ? SP - 1 : 0xFF;
     }
     pushWord(value) {
         this.pushByte(value >> 8);
@@ -219,8 +218,7 @@ export class CPU {
     }
     
     pullByte() {
-        this.SP++;
-        return this.stack[this.SP];
+        return this.stack[this.SP = wrapByte(this.SP + 1)];
     }
     pullWord() {
         return this.pullByte() + this.pullByte()*256;
@@ -242,14 +240,6 @@ export class CPU {
     set Negative(value)  { (value ? (this.P |= 0x80) : this.P &= ~0x80); }
     
     //== Registers ==================================================//
-    get A() { return this._A; }
-    get X() { return this._X; }
-    get Y() { return this._Y; }
-    
-    set A(value) { this._A = this.ALU(value); }
-    set X(value) { this._X = this.ALU(value); }
-    set Y(value) { this._Y = this.ALU(value); }
-    
     ALU(value) {
         if (value > 0xFF) {
             this.Carry = true;
@@ -360,7 +350,7 @@ export class CPU {
     // Stack
     PHA(fnFetchOperand) { this.pushByte(fnFetchOperand(this.A)); } //Push Accumulator
     PHP(fnFetchOperand) { this.pushByte(fnFetchOperand(this.P)); } //Push Processor Status
-    PLA(fnFetchOperand) { this.A = fnFetchOperand(this.pullByte()); } //Pull Accumulator
+    PLA(fnFetchOperand) { this.A = this.ALU(fnFetchOperand(this.pullByte())); } //Pull Accumulator
     PLP(fnFetchOperand) { this.P = fnFetchOperand(this.pullByte()); } //Pull Processor Status
     
     // Status flags
@@ -374,20 +364,20 @@ export class CPU {
     SEI(fnFetchOperand) { fnFetchOperand(this.Interrupt = true); }
     
     // Register transfert
-    TAX(fnFetchOperand) { fnFetchOperand(this.X = this.A); }  //Transfert A to X
-    TXA(fnFetchOperand) { fnFetchOperand(this.A = this.X); }  //Transfert X to A
-    TAY(fnFetchOperand) { fnFetchOperand(this.Y = this.A); }  //Transfert A to Y
-    TYA(fnFetchOperand) { fnFetchOperand(this.A = this.Y); }  //Transfert Y to A
-    TSX(fnFetchOperand) { fnFetchOperand(this.X = this.SP); } //Transfert SP to X
-    TXS(fnFetchOperand) { fnFetchOperand(this.SP = this.X); } //Transfert X to SP
+    TAX(fnFetchOperand) { fnFetchOperand(this.X = this.ALU(this.A)); }  //Transfert A to X
+    TXA(fnFetchOperand) { fnFetchOperand(this.A = this.ALU(this.X)); }  //Transfert X to A
+    TAY(fnFetchOperand) { fnFetchOperand(this.Y = this.ALU(this.A)); }  //Transfert A to Y
+    TYA(fnFetchOperand) { fnFetchOperand(this.A = this.ALU(this.Y)); }  //Transfert Y to A
+    TSX(fnFetchOperand) { fnFetchOperand(this.X = this.ALU(this.SP)); } //Transfert SP to X
+    TXS(fnFetchOperand) { fnFetchOperand(this.SP = this.X); }           //Transfert X to SP
     
     // Move operations
-    LDA(fnFetchOperand) { this.A = this.read(fnFetchOperand()); } //Load Accumulator
-    LDX(fnFetchOperand) { this.X = this.read(fnFetchOperand()); } //Load X
-    LDY(fnFetchOperand) { this.Y = this.read(fnFetchOperand()); } //Load Y
-    STA(fnFetchOperand) { this.write(fnFetchOperand(), this.A); } //Store Accumulator
-    STX(fnFetchOperand) { this.write(fnFetchOperand(), this.X); } //Store X
-    STY(fnFetchOperand) { this.write(fnFetchOperand(), this.Y); } //Store Y
+    LDA(fnFetchOperand) { this.A = this.ALU(this.read(fnFetchOperand())); } //Load Accumulator
+    LDX(fnFetchOperand) { this.X = this.ALU(this.read(fnFetchOperand())); } //Load X
+    LDY(fnFetchOperand) { this.Y = this.ALU(this.read(fnFetchOperand())); } //Load Y
+    STA(fnFetchOperand) { this.write(fnFetchOperand(), this.A); }           //Store Accumulator
+    STX(fnFetchOperand) { this.write(fnFetchOperand(), this.X); }           //Store X
+    STY(fnFetchOperand) { this.write(fnFetchOperand(), this.Y); }           //Store Y
     
     // Arithmetic operations
     ADC(fnFetchOperand) { this.add(this.A, this.read(fnFetchOperand()));      } //Add with Carry
@@ -396,14 +386,14 @@ export class CPU {
         let alu = reg + operand + this.Carry;
         this.Carry = false;
         this.Overflow = (reg^alu) & (operand^alu) & 0x80;
-        this.A = alu;
+        this.A = this.ALU(alu);
     }
     
     ASL(fnFetchOperand) { //Arithmetic Shift Left
         let operand;
         if (this.opcode === 0x0A) { //Opcode $0A is implied
             operand = fnFetchOperand(this.A);
-            this.A = operand * 2;
+            this.A = this.ALU(operand * 2);
         } else {
             let address = fnFetchOperand();
             operand = this.read(address);
@@ -415,7 +405,7 @@ export class CPU {
         let operand;
         if (this.opcode === 0x4A) { //Opcode $4A is implied
             operand = fnFetchOperand(this.A);
-            this.A = operand >>> 1;
+            this.A = this.ALU(operand >>> 1);
         } else {
             let address = fnFetchOperand();
             operand = this.read(address);
@@ -424,26 +414,28 @@ export class CPU {
         this.Carry = (operand & 0x01);
     }
     ROL(fnFetchOperand) { //Rotate Left
+        const carry = (this.Carry ? 0x01 : 0x00);
         let operand;
         if (this.opcode === 0x2A) { //Opcode $2A is implied
             operand = fnFetchOperand(this.A);
-            this.A = operand * 2 + this.Carry;
+            this.A = this.ALU((operand * 2) + carry);
         } else {
             let address = fnFetchOperand();
             operand = this.read(address);
-            this.write(address, this.ALU(operand * 2 + this.Carry));
+            this.write(address, this.ALU((operand * 2) + carry));
         }
         this.Carry = (operand & 0x80);
     }
     ROR(fnFetchOperand) { //Rotate Right
+        const carry = (this.Carry ? 0x80 : 0x00);
         let operand;
         if (this.opcode === 0x6A) { //Opcode $6A is implied
             operand = fnFetchOperand(this.A);
-            this.A = (operand >>> 1) + this.Carry*128;
+            this.A = this.ALU((operand >>> 1) + carry);
         } else {
             let address = fnFetchOperand();
             operand = this.read(address);
-            this.write(address, this.ALU((operand >>> 1) + this.Carry*128));
+            this.write(address, this.ALU((operand >>> 1) + carry));
         }
         this.Carry = (operand & 0x01);
     }
@@ -456,10 +448,10 @@ export class CPU {
         let address = fnFetchOperand();
         this.write(address, this.ALU(this.read(address) - 1));
     }
-    INX(fnFetchOperand) { this.X = fnFetchOperand(this.X) + 1; } //Increment X
-    DEX(fnFetchOperand) { this.X = fnFetchOperand(this.X) - 1; } //Decrement X
-    INY(fnFetchOperand) { this.Y = fnFetchOperand(this.Y) + 1; } //Increment Y
-    DEY(fnFetchOperand) { this.Y = fnFetchOperand(this.Y) - 1; } //Decrement Y
+    INX(fnFetchOperand) { this.X = this.ALU(fnFetchOperand(this.X) + 1); } //Increment X
+    DEX(fnFetchOperand) { this.X = this.ALU(fnFetchOperand(this.X) - 1); } //Decrement X
+    INY(fnFetchOperand) { this.Y = this.ALU(fnFetchOperand(this.Y) + 1); } //Increment Y
+    DEY(fnFetchOperand) { this.Y = this.ALU(fnFetchOperand(this.Y) - 1); } //Decrement Y
     
     BIT(fnFetchOperand) { //Bit test
         let operand = this.read(fnFetchOperand());
@@ -481,9 +473,9 @@ export class CPU {
     }
     
     // Logical operations
-    ORA(fnFetchOperand) { this.A = this.A | this.read(fnFetchOperand()); } //Logical OR
-    AND(fnFetchOperand) { this.A = this.A & this.read(fnFetchOperand()); } //Logical AND
-    EOR(fnFetchOperand) { this.A = this.A ^ this.read(fnFetchOperand()); } //Exclusive OR
+    ORA(fnFetchOperand) { this.A = this.ALU(this.A | this.read(fnFetchOperand())); } //Logical OR
+    AND(fnFetchOperand) { this.A = this.ALU(this.A & this.read(fnFetchOperand())); } //Logical AND
+    EOR(fnFetchOperand) { this.A = this.ALU(this.A ^ this.read(fnFetchOperand())); } //Exclusive OR
     
     // Others
     NOP(fnFetchOperand) { fnFetchOperand(); }
