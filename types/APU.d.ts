@@ -1,8 +1,8 @@
 export class APU {
     /**
-     * @param {import('./NES.js').NES} bus
+     * @param {NES} bus
      */
-    constructor(bus: import('./NES.js').NES);
+    constructor(bus: NES);
     /** @private */
     private bus;
     /** Pulse Channel 1 */
@@ -25,7 +25,7 @@ export class APU {
     private get status();
     /** If IRQ is disabled at the moment */
     irqDisabled: boolean;
-    /** If an IRQ has happened, this is cleared after reading 0x4015 */
+    /** If an IRQ has happened. This is cleared after reading 0x4015 */
     irq: boolean;
     /** @private */
     private counterMode;
@@ -66,7 +66,7 @@ export class APU {
      */
     writeRegister(address: number, data: number): void;
     /**
-     * @param {number} count The number of (cpu) cycles to execute
+     * @param {number} count The number of (CPU) cycles to execute
      */
     doCycles(count: number): void;
     doCycle(): void;
@@ -76,6 +76,7 @@ export class APU {
     private doSample;
 }
 export default APU;
+export type NES = import('./NES.js').NES;
 import { PulseChannel } from "./Audio/index.js";
 import { TriangleChannel } from "./Audio/index.js";
 import { NoiseChannel } from "./Audio/index.js";

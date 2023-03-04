@@ -1,3 +1,5 @@
+/** @typedef {import('./NES.js').NES} NES */
+
 import {
     PulseChannel,
     TriangleChannel,
@@ -12,7 +14,7 @@ const FIVESTEP = 0x80;
 
 export class APU {
     /**
-     * @param {import('./NES.js').NES} bus
+     * @param {NES} bus
      */
     constructor(bus) {
         /** @private */
@@ -33,7 +35,7 @@ export class APU {
         
         /** If IRQ is disabled at the moment */
         this.irqDisabled = false;
-        /** If an IRQ has happened, this is cleared after reading 0x4015 */
+        /** If an IRQ has happened. This is cleared after reading 0x4015 */
         this.irq         = false;
         
         /** @private */
@@ -191,7 +193,7 @@ export class APU {
     
     //== Execution ======================================================================//
     /**
-     * @param {number} count The number of (cpu) cycles to execute
+     * @param {number} count The number of (CPU) cycles to execute
      */
     doCycles(count) {
         while (count--) {
