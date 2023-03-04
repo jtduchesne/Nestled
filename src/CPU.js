@@ -16,8 +16,7 @@ export class CPU {
     constructor(nes) {
         this.bus = nes;
         
-        this.cycle = -1;
-        this.cycleOffset = -1;
+        this.cycle = 0;
         
         this.ram   = new Uint8Array(0x800);
         this.stack = this.ram.subarray(0x100, 0x200);
@@ -78,7 +77,6 @@ export class CPU {
     
     powerOn() {
         this.cycle = 0;
-        this.cycleOffset = 0;
         
         //Bus access optimizations
         this.apu   = this.bus.apu;
@@ -121,11 +119,12 @@ export class CPU {
     }
     
     //== Execution ==================================================//
-    doInstructions(limit = 0) {
-        limit += this.cycleOffset;
-        while (this.cycle <= limit) {
-            let cycles = this.doInstruction();
-            this.apu.doCycles(cycles);
+    doInstructions(limit) {
+        let cycleBefore;
+        while (this.cycle < limit) {
+            cycleBefore = this.cycle;
+            this.doInstruction();
+            this.apu.doCycles(this.cycle - cycleBefore);
         }
     }
     
@@ -133,14 +132,10 @@ export class CPU {
         this.opcode  = this.read(this.PC++);
         this.operand = this.read(this.PC++);
         
-        const cycle = this.cycle;
-        
         this.instructionLookup[this.opcode](
             (implied) => this.addressLookup[this.opcode](implied)
         );
         this.cycle += cyclesLookup[this.opcode];
-        
-        return this.cycle - cycle;
     }
     
     //== Interrupts =================================================//

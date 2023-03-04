@@ -92,12 +92,9 @@ describe("Cpu", function() {
         });
         
         it("resets #cycle", function() {
+            $subject.cycle = 1234;
             expect(() => $action).to.change($subject, 'cycle');
             expect($subject.cycle).to.equal(0);
-        });
-        it("resets #cycleOffset", function() {
-            expect(() => $action).to.change($subject, 'cycleOffset');
-            expect($subject.cycleOffset).to.equal(0);
         });
         
         it("calls NES.apu.powerOn()", function() {
