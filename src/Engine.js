@@ -157,8 +157,6 @@ export class Engine {
     //=======================================================================================//
     
     doFrame(cpu, ppu) {
-        cpu.cycleOffset = this.frame * cyclesPerFrame;
-        
         for (let scanline = 0; scanline <= renderLines; scanline++)
             this.doScanline(cpu, ppu, scanline);
         
@@ -174,17 +172,19 @@ export class Engine {
         // Pre-render line
         this.doPreRenderLine(cpu, ppu);
         
+        cpu.cycle -= cyclesPerFrame;
+        
         this.frame++;
     }
     
     skipFrame(cpu, ppu) {
-        cpu.cycleOffset = this.frame * cyclesPerFrame;
-        
         cpu.doInstructions(cyclesBeforeVBlankStart);
         ppu.doVBlank();
         cpu.doInstructions(cyclesBeforeVBlankEnd);
         ppu.endVBlank();
         cpu.doInstructions(cyclesPerFrame);
+        
+        cpu.cycle -= cyclesPerFrame;
         
         this.frame++;
         this.dropped++;

@@ -1,29 +1,47 @@
+/** @enum {string} types */
+export const types = Object.freeze({
+    EMPTY:  "Empty",
+    JOYPAD: "Joypad",
+    ZAPPER: "Zapper",
+});
+/** @enum {string} devices */
+export const devices = Object.freeze({
+    NONE:  "None",
+    KEYBOARD: "Keyboard",
+    MOUSE: "Mouse",
+});
+
 export class Controller {
-    constructor(type) {
-        this.type = type || "";
-        
+    constructor() {
+        /** @protected */
         this.strobing = false;
-        this.states = new Array(8).fill(0);
-        this.strobe();
     }
     
-    get empty()   { return  !this.type; }
-    get present() { return !!this.type; }
+    /** @type {types} @readonly */
+    get type() { return types.EMPTY; }
+    /** @type {devices} @readonly */
+    get device() { return devices.NONE; }
     
-    strobe() {
-        this.data = [...this.states];
-    }
+    get empty()   { return this.type === types.EMPTY; }
+    get present() { return this.type !== types.EMPTY; }
     
-    //== Input/Output ===============================================//
+    //== Input/Output =======================================================================//
+    /** @returns {number} 5-bit value */
     read() {
         if (this.strobing) this.strobe();
         
-        let data = this.data.shift();
-        return data !== undefined ? data : 1;
+        return 0;
     }
+    /** @param {0|1} data 1-bit value */
     write(data) {
-        this.strobing = !!(data & 0x01);
         if (this.strobing) this.strobe();
+        
+        this.strobing = (data !== 0);
+    }
+    
+    /** @protected */
+    strobe() {
+        return;
     }
 }
 

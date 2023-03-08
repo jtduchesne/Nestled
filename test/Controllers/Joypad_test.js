@@ -118,10 +118,6 @@ describe("Joypad", function() {
             def('data', () => 0);
             beforeEach(function() { $subject.strobing = true; });
             
-            it("does not load button states into #data", function() {
-                expect(() => $action).not.to.change($subject, 'data');
-                expect($subject.data).to.have.ordered.members([0,0,0,0,0,0,0,0]);
-            });
             it("clears #strobing", function() {
                 expect(() => $action).to.change($subject, 'strobing');
                 expect($subject.strobing).to.be.false;
@@ -131,10 +127,6 @@ describe("Joypad", function() {
             def('data', () => 1);
             beforeEach(function() { $subject.strobing = false; });
             
-            it("loads button states into #data", function() {
-                expect(() => $action).to.change($subject, 'data');
-                expect($subject.data).to.have.ordered.members([1,0,0,0,1,0,0,0]);
-            });
             it("sets #strobing", function() {
                 expect(() => $action).to.change($subject, 'strobing');
                 expect($subject.strobing).to.be.true;

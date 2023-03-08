@@ -92,12 +92,9 @@ describe("Cpu", function() {
         });
         
         it("resets #cycle", function() {
+            $subject.cycle = 1234;
             expect(() => $action).to.change($subject, 'cycle');
             expect($subject.cycle).to.equal(0);
-        });
-        it("resets #cycleOffset", function() {
-            expect(() => $action).to.change($subject, 'cycleOffset');
-            expect($subject.cycleOffset).to.equal(0);
         });
         
         it("calls NES.apu.powerOn()", function() {
@@ -194,18 +191,18 @@ describe("Cpu", function() {
                 expect($subject.read(0x1FFF)).to.equal($RAMData);
             });
             it("reads from PPU's registers when address is between [0x2000-3FFF]", function() {
-                const stub = sinon.stub($subject.ppu, 'readRegister');
+                const stub = sinon.stub($nes.ppu, 'readRegister');
                 $subject.read(0x2000);
                 $subject.read(0x3FFF);
                 expect(stub).to.be.calledTwice;
             });
             it("reads from APU's registers when address is [0x4015]", function() {
-                const stub = sinon.stub($subject.apu, 'readRegister');
+                const stub = sinon.stub($nes.apu, 'readRegister');
                 $subject.read(0x4015);
                 expect(stub).to.be.calledOnce;
             });
             it("reads from Controller 1 when address is [0x4016]", function() {
-                const stub = sinon.stub($subject.ctrl1, 'read');
+                const stub = sinon.stub($nes.ctrlConnector.controllers[1], 'read');
                 $subject.read(0x4016);
                 expect(stub).to.be.calledOnce;
             });
@@ -213,7 +210,7 @@ describe("Cpu", function() {
                 expect($subject.read(0x4016)).to.equal(0x40);
             });
             it("reads from Controller 2 when address is [0x4017]", function() {
-                const stub = sinon.stub($subject.ctrl2, 'read');
+                const stub = sinon.stub($nes.ctrlConnector.controllers[2], 'read');
                 $subject.read(0x4017);
                 expect(stub).to.be.calledOnce;
             });
@@ -235,36 +232,36 @@ describe("Cpu", function() {
                 expect($subject.ram[0]).to.equal(0xFF);
             });
             it("writes to PPU's registers when address is between [0x2000-3FFF]", function() {
-                const stub = sinon.stub($subject.ppu, 'writeRegister');
+                const stub = sinon.stub($nes.ppu, 'writeRegister');
                 $subject.write(0x2000, 0xFF);
                 $subject.write(0x3FFF, 0xFF);
                 expect(stub).to.be.calledTwice;
             });
             it("writes to APU's registers when address is between [0x4000-4015]", function() {
-                const stub = sinon.stub($subject.apu, 'writeRegister');
+                const stub = sinon.stub($nes.apu, 'writeRegister');
                 $subject.write(0x4000, 0xFF);
                 $subject.write(0x4015, 0xFF);
                 expect(stub).to.be.calledTwice;
             });
             it("writes (strobe) to both Controllers when address is [0x4016]", function() {
-                const stub1 = sinon.stub($subject.ctrl1, 'write');
-                const stub2 = sinon.stub($subject.ctrl2, 'write');
+                const stub1 = sinon.stub($nes.ctrlConnector.controllers[1], 'write');
+                const stub2 = sinon.stub($nes.ctrlConnector.controllers[2], 'write');
                 $subject.write(0x4016, 0xFF);
-                expect(stub1).to.be.calledOnceWith(0xFF);
-                expect(stub2).to.be.calledOnceWith(0xFF);
+                expect(stub1).to.be.calledOnceWith(0x1);
+                expect(stub2).to.be.calledOnceWith(0x1);
             });
             it("writes to APU's registers when address is [0x4017]", function() {
-                const stub = sinon.stub($subject.apu, 'writeRegister');
+                const stub = sinon.stub($nes.apu, 'writeRegister');
                 $subject.write(0x4017, 0xFF);
                 expect(stub).to.be.calledOnce;
             });
             it("writes to PRG-RAM when address is between [0x6000, 0x7FFF]", function() {
                 $subject.write(0x6000, 0xFF);
-                expect($subject.cart.PRGRAM[0]).to.equal(0xFF);
+                expect($nes.cartConnector.cartridge.PRGRAM[0]).to.equal(0xFF);
             });
             it("cannot writes to PRG-ROM when address is between [0x8000, 0xFFFF]", function() {
                 $subject.write(0x8000, 0xFF);
-                expect($subject.cart.PRGROM[0]).not.to.equal(0xFF);
+                expect($nes.cartConnector.cartridge.PRGROM[0]).not.to.equal(0xFF);
             });
         });
     });
@@ -364,52 +361,52 @@ describe("Cpu", function() {
         beforeEach("PowerOn", function() { $subject.powerOn(); });
         
         describe("#Carry", function() {
-            it("is truthy if Carry flag is set", function() {
+            it("is -true- if Carry flag is set", function() {
                 $subject.P = 0x01;
-                expect($subject.Carry).to.be.ok; });
-            it("is not truthy if Carry flag is clear", function() {
+                expect($subject.Carry).to.be.true; });
+            it("is -false- if Carry flag is clear", function() {
                 $subject.P = ~0x01;
-                expect($subject.Carry).not.to.be.ok; });
+                expect($subject.Carry).to.be.false; });
         });
         describe("#Zero", function() {
-            it("is truthy if Zero flag is set", function() {
+            it("is -true- if Zero flag is set", function() {
                 $subject.P = 0x02;
-                expect($subject.Zero).to.be.ok; });
-            it("is not truthy if Zero flag is clear", function() {
+                expect($subject.Zero).to.be.true; });
+            it("is -false- if Zero flag is clear", function() {
                 $subject.P = ~0x02;
-                expect($subject.Zero).not.to.be.ok; });
+                expect($subject.Zero).to.be.false; });
         });
         describe("#Interrupt", function() {
-            it("is truthy if Interrupt Disable flag is set", function() {
+            it("is -true- if Interrupt Disable flag is set", function() {
                 $subject.P = 0x04;
-                expect($subject.Interrupt).to.be.ok; });
-            it("is not truthy if Interrupt Disable flag is clear", function() {
+                expect($subject.Interrupt).to.be.true; });
+            it("is -false- if Interrupt Disable flag is clear", function() {
                 $subject.P = ~0x04;
-                expect($subject.Interrupt).not.to.be.ok; });
+                expect($subject.Interrupt).to.be.false; });
         });
         describe("#Decimal", function() {
-            it("is truthy if Decimal flag is set", function() {
+            it("is -true- if Decimal flag is set", function() {
                 $subject.P = 0x08;
-                expect($subject.Decimal).to.be.ok; });
-            it("is not truthy if Decimal flag is clear", function() {
+                expect($subject.Decimal).to.be.true; });
+            it("is -false- if Decimal flag is clear", function() {
                 $subject.P = ~0x08;
-                expect($subject.Decimal).not.to.be.ok; });
+                expect($subject.Decimal).to.be.false; });
         });
         describe("#Overflow", function() {
-            it("is truthy if Overflow flag is set", function() {
+            it("is -true- if Overflow flag is set", function() {
                 $subject.P = 0x40;
-                expect($subject.Overflow).to.be.ok; });
-            it("is not truthy if Overflow flag is clear", function() {
+                expect($subject.Overflow).to.be.true; });
+            it("is -false- if Overflow flag is clear", function() {
                 $subject.P = ~0x40;
-                expect($subject.Overflow).not.to.be.ok; });
+                expect($subject.Overflow).to.be.false; });
         });
         describe("#Negative", function() {
-            it("is truthy if Negative flag is set", function() {
+            it("is -true- if Negative flag is set", function() {
                 $subject.P = 0x80;
-                expect($subject.Negative).to.be.ok; });
-            it("is not truthy if Negative flag is clear", function() {
+                expect($subject.Negative).to.be.true; });
+            it("is -false- if Negative flag is clear", function() {
                 $subject.P = ~0x80;
-                expect($subject.Negative).not.to.be.ok; });
+                expect($subject.Negative).to.be.false; });
         });
         
         describe("#Carry = value", function() {
@@ -455,99 +452,62 @@ describe("Cpu", function() {
         describe("#Negative = value", function() {
             it("sets Negative flag to the given value", function() {
                 $subject.Negative = true;
-                expect($subject.Negative).to.be.ok;
+                expect($subject.P & 0x80).to.be.ok;
                 $subject.Negative = false;
-                expect($subject.Negative).not.to.be.ok;
+                expect($subject.P & 0x80).not.to.be.ok;
             });
         });
     });
     
     //-------------------------------------------------------------------------------//
     
-    context("Registers", function() {
+    context("Arithmetic Logic Unit", function() {
         /*global $value */
         
-        beforeEach("PowerOn", function() { $subject.powerOn(); });
-        
-        describe("Accumulator", function() {
-            def('action', () => { $subject.A = $value; });
-            beforeEach(function() { $action; });
+        describe(".ALU(value)", function() {
+            beforeEach(() => { $subject.P = 0x00; });
+            def('action', () => $subject.ALU($value));
             
             context("when value > 0xFF", function() {
                 def('value', () => 0x199);
                 
-                its('Carry', () => is.expected.to.be.ok);
-                its('A', () => is.expected.to.equal(0x99));
+                it("sets #Carry", function() {
+                    expect(() => $action).to.change($subject, 'Carry');
+                    expect($subject.Carry).to.be.true;
+                });
+                it("returns a wrapped byte value", function() {
+                    expect($action).to.equal(0x99);
+                });
             });
             context("when value > 0x80", function() {
                 def('value', () => 0xF6);
                 
-                its('Negative', () => is.expected.to.be.ok);
+                it("sets #Negative", function() {
+                    expect(() => $action).to.change($subject, 'Negative');
+                    expect($subject.Negative).to.be.true;
+                });
+                it("returns the same value", function() {
+                    expect($action).to.equal(0xF6);
+                });
             });
             context("when value < 0", function() {
                 def('value', () => -10);
                 
-                its('Negative', () => is.expected.to.be.ok);
-                its('A', () => is.expected.to.equal(0xF6));
+                it("sets #Negative", function() {
+                    expect(() => $action).to.change($subject, 'Negative');
+                    expect($subject.Negative).to.be.true;
+                });
+                it("returns a wrapped unsigned byte value", function() {
+                    expect($action).to.equal(0xF6);
+                });
             });
             context("when value = 0", function() {
                 def('value', () => 0);
                 
-                its('Zero', () => is.expected.to.be.ok);
-            });
-        });
-        describe("Index X", function() {
-            def('action', () => { $subject.X = $value; });
-            beforeEach(function() { $action; });
-            
-            context("when value > 0xFF", function() {
-                def('value', () => 0x199);
-                
-                its('Carry', () => is.expected.to.be.ok);
-                its('X', () => is.expected.to.equal(0x99));
-            });
-            context("when value > 0x80", function() {
-                def('value', () => 0xF6);
-                
-                its('Negative', () => is.expected.to.be.ok);
-            });
-            context("when value < 0", function() {
-                def('value', () => -10);
-                
-                its('Negative', () => is.expected.to.be.ok);
-                its('X', () => is.expected.to.equal(0xF6));
-            });
-            context("when value = 0", function() {
-                def('value', () => 0);
-                
-                its('Zero', () => is.expected.to.be.ok);
-            });
-        });
-        describe("Index Y", function() {
-            def('action', () => { $subject.Y = $value; });
-            beforeEach(function() { $action; });
-            
-            context("when value > 0xFF", function() {
-                def('value', () => 0x199);
-                
-                its('Carry', () => is.expected.to.be.ok);
-                its('Y', () => is.expected.to.equal(0x99));
-            });
-            context("when value > 0x80", function() {
-                def('value', () => 0xF6);
-                
-                its('Negative', () => is.expected.to.be.ok);
-            });
-            context("when value < 0", function() {
-                def('value', () => -10);
-                
-                its('Negative', () => is.expected.to.be.ok);
-                its('Y', () => is.expected.to.equal(0xF6));
-            });
-            context("when value = 0", function() {
-                def('value', () => 0);
-                
-                its('Zero', () => is.expected.to.be.ok);
+                it("sets #Zero", function() {
+                    expect(() => $action).to.change($subject, 'Zero');
+                    expect($subject.Zero).to.be.true;
+                });
             });
         });
     });

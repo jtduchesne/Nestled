@@ -1,1 +1,1 @@
-{"version":3,"file":"Joypad.d.ts","sourceRoot":"","sources":["../../src/Controllers/Joypad.js"],"names":[],"mappings":"AAMA;IACI,cAMC;IAHG,2CAEE;IAGN,oDAMC;CACJ"}
+{"version":3,"file":"Joypad.d.ts","sourceRoot":"","sources":["../../src/Controllers/Joypad.js"],"names":[],"mappings":"AAWA;IAIQ,+BAA+B;IAC/B,eAA+C;IAC/C,+BAA+B;IAC/B,aAA8B;IAE9B,8BAA8B;IAC9B,gBADW,aAAa,EAAE,CAGxB;IAON,iCAAiC;IACjC,QADc,CAAC,GAAC,CAAC,CAMhB;IAQD;;;;OAIG;IACH,iCAHW,UAAU,iBASpB;IAED;;;;OAIG;IACH,kBAHW,UAAU,aACV,OAAO,QAIjB;CACJ;;sCAhEqB,OAAO,KAAK,IAAI;yBACzB;;;;;;;;;CAAa"}
