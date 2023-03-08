@@ -202,7 +202,7 @@ describe("Cpu", function() {
                 expect(stub).to.be.calledOnce;
             });
             it("reads from Controller 1 when address is [0x4016]", function() {
-                const stub = sinon.stub($nes.ctrlConnector.controllers[0], 'read');
+                const stub = sinon.stub($nes.ctrlConnector.controllers[1], 'read');
                 $subject.read(0x4016);
                 expect(stub).to.be.calledOnce;
             });
@@ -210,7 +210,7 @@ describe("Cpu", function() {
                 expect($subject.read(0x4016)).to.equal(0x40);
             });
             it("reads from Controller 2 when address is [0x4017]", function() {
-                const stub = sinon.stub($nes.ctrlConnector.controllers[1], 'read');
+                const stub = sinon.stub($nes.ctrlConnector.controllers[2], 'read');
                 $subject.read(0x4017);
                 expect(stub).to.be.calledOnce;
             });
@@ -244,11 +244,11 @@ describe("Cpu", function() {
                 expect(stub).to.be.calledTwice;
             });
             it("writes (strobe) to both Controllers when address is [0x4016]", function() {
-                const stub1 = sinon.stub($nes.ctrlConnector.controllers[0], 'write');
-                const stub2 = sinon.stub($nes.ctrlConnector.controllers[1], 'write');
+                const stub1 = sinon.stub($nes.ctrlConnector.controllers[1], 'write');
+                const stub2 = sinon.stub($nes.ctrlConnector.controllers[2], 'write');
                 $subject.write(0x4016, 0xFF);
-                expect(stub1).to.be.calledOnceWith(0xFF);
-                expect(stub2).to.be.calledOnceWith(0xFF);
+                expect(stub1).to.be.calledOnceWith(0x1);
+                expect(stub2).to.be.calledOnceWith(0x1);
             });
             it("writes to APU's registers when address is [0x4017]", function() {
                 const stub = sinon.stub($nes.apu, 'writeRegister');

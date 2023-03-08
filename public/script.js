@@ -56,10 +56,10 @@ try {
     }, false);
 
     //-------------------------------------------------------------------------------------------//
-    const joypad = new Devices.Keyboard(
-        //    -A-     -W-       -S-        -D-       -Shift-    -Enter-  -K-    -L-
-        {left: 65, up: 87, down: 83, right: 68, select: 16, start: 13, b: 75, a: 76}
-    );
+    const joypad = new Devices.Keyboard({
+        left: "A", up: "W", down: "S", right: "D",
+        select: "Shift", start: "Enter", b: "K", a: "L"
+    });
     nes.insertController(joypad);
 
     //-------------------------------------------------------------------------------------------//
