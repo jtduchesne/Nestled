@@ -3,10 +3,11 @@ import Keyboard from "../../../src/Controllers/Devices/Keyboard";
 describe("Keyboard", function() {
     subject(() => new Keyboard);
     
-    describe(".assignKey(buttonName, keyCode)", function() {
-        /*global $buttonName, $keyCode */
-        def('action', () => $subject.assignKey($buttonName, $keyCode));
+    describe(".assignKey(buttonName, keyName)", function() {
+        /*global $buttonName, $keyCode, $keyName */
+        def('action', () => $subject.assignKey($buttonName, $keyName));
         def('keyCode', () => 13);
+        def('keyName', () => "Enter");
         
         context("if buttonName is valid", function() {
             def('buttonName', () => "start");
@@ -37,20 +38,31 @@ describe("Keyboard", function() {
         def('action', () => $subject.assignKeys($opts));
         
         context("if all the names are valid", function() {
-            def('opts', () => ({start: 1, select: 2}));
+            def('opts', () => ({start: "1", select: "2"}));
             
             it("adds them to #keyMap", function() {
                 expect($subject.keyHandlers).to.be.empty;
                 $action;
-                expect($subject.keyHandlers[1]).to.equal($subject.getButtonHandler('start'));
-                expect($subject.keyHandlers[2]).to.equal($subject.getButtonHandler('select'));
+                expect($subject.keyHandlers[0x31]).to.equal($subject.getButtonHandler('start'));
+                expect($subject.keyHandlers[0x32]).to.equal($subject.getButtonHandler('select'));
             });
         });
-        context("if a name is not valid", function() {
-            def('opts', () => ({start: 1, select: 2, stop: 3}));
+        context("if a button name is not valid", function() {
+            def('opts', () => ({start: "1", select: "2", stop: "3"}));
             
             it("throws an error containing the invalid name", function() {
                 expect(() => $action).to.throw("stop");
+            });
+        });
+        context("if a key name is not valid", function() {
+            def('opts', () => ({start: "1", select: "2", a: ""}));
+            
+            it("adds only the valid ones to #keyMap", function() {
+                expect($subject.keyHandlers).to.be.empty;
+                $action;
+                expect($subject.keyHandlers[0x31]).to.equal($subject.getButtonHandler('start'));
+                expect($subject.keyHandlers[0x32]).to.equal($subject.getButtonHandler('select'));
+                expect(Object.values($subject.keyHandlers)).to.have.lengthOf(2);
             });
         });
     });
@@ -59,7 +71,7 @@ describe("Keyboard", function() {
         /*global $event, $keyDown */
         def('action', () => $subject.pressKey($event, $keyDown));
         beforeEach(function() {
-            $subject.assignKey('start', 13);
+            $subject.assignKey('start', "Enter");
         });
         
         context("if event.keyCode is assigned to a button", function() {
