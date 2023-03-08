@@ -1,3 +1,9 @@
+/**
+ * @typedef {import('../Joypad.js').ButtonName} ButtonName
+ * @typedef {import('../Joypad.js').ButtonHandler} ButtonHandler
+ * @typedef {keyof KEYS} KeyCode
+ */
+
 import Joypad from '../Joypad.js';
 
 const KEYS = Object.freeze({
@@ -19,10 +25,18 @@ const KEYS = Object.freeze({
 });
 
 export class Keyboard extends Joypad {
+    /**
+     * @param {Record<ButtonName,KeyCode>=} opts
+     */
     constructor(opts) {
         super();
         
-        this.keyMap = {};
+        /** @type {Record<string,ButtonHandler>} @private */
+        this.keyHandlers = {};
+        
+        /** @type {Record<string,string>} @private */
+        this.assignedKeys = {};
+        
         if (opts) this.assignKeys(opts);
         
         if (typeof window !== 'undefined') {
@@ -31,29 +45,56 @@ export class Keyboard extends Joypad {
         }
     }
     
-    get map() {
-        return KEYS;
-    }
-    
-    assignKey(buttonName, keyCode) {
-        let handler = this.getButtonHandler(buttonName);
-        
-        Object.entries(this.keyMap).forEach(
-            ([key, value]) => { if (value === handler) delete this.keyMap[key]; }
+    //=======================================================================================//
+    /**
+     * Assign one or more keyboard keys to Joypad buttons.
+     * @param {Record<ButtonName,KeyCode>} keys
+     */
+    assignKeys(keys) {
+        Object.entries(keys).forEach(
+            /** @param {[any, KeyCode]} value */
+            ([button, key]) => this.assignKey(button, key)
         );
-        this.keyMap[keyCode] = handler;
-    }
-    assignKeys(opts) {
-        Object.entries(opts).forEach(([key, value]) => this.assignKey(key, value));
     }
     
+    /**
+     * Assign a keyboard key to one of the Joypad button.
+     * @param {ButtonName} buttonName
+     * @param {KeyCode} keyCode
+     * @private
+     */
+    assignKey(buttonName, keyCode) {
+        const handler = this.getButtonHandler(buttonName);
+        
+        this.assignedKeys[buttonName] = KEYS[keyCode];
+        
+        Object.entries(this.keyHandlers).forEach(
+            ([key, value]) => { if (value === handler) delete this.keyHandlers[key]; }
+        );
+        this.keyHandlers[keyCode] = handler;
+    }
+    
+    /**
+     * @param {KeyboardEvent} event
+     * @param {boolean} keyDown
+     * @private
+     */
     pressKey(event, keyDown) {
-        let key = event.keyCode || event.which;
-        let button = this.keyMap[key];
-        if (button) {
-            button(keyDown);
+        const key = event.keyCode || event.which;
+        const handler = this.keyHandlers[key];
+        if (typeof handler === 'function') {
+            handler(keyDown);
             event.preventDefault();
         }
+    }
+    
+    //== Buttons ============================================================================//
+    /**
+     * Get the name of the assigned key for the given button name.
+     * @param {ButtonName} name
+     */
+    getAssignedKey(name) {
+        return this.assignedKeys[name] || "";
     }
 }
 
