@@ -4,6 +4,12 @@ export const types = Object.freeze({
     JOYPAD: "Joypad",
     ZAPPER: "Zapper",
 });
+/** @enum {string} devices */
+export const devices = Object.freeze({
+    NONE:  "None",
+    KEYBOARD: "Keyboard",
+    MOUSE: "Mouse",
+});
 
 export class Controller {
     constructor() {
@@ -13,6 +19,8 @@ export class Controller {
     
     /** @type {types} @readonly */
     get type() { return types.EMPTY; }
+    /** @type {devices} @readonly */
+    get device() { return devices.NONE; }
     
     get empty()   { return this.type === types.EMPTY; }
     get present() { return this.type !== types.EMPTY; }
