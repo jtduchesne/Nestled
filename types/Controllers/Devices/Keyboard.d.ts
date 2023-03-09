@@ -27,9 +27,9 @@ export class Keyboard extends Joypad {
     private pressKey;
     /**
      * Get the name of the assigned key for the given button name.
-     * @param {ButtonName} name
+     * @param {ButtonName} buttonName
      */
-    getAssignedKey(name: ButtonName): string;
+    getAssignedKey(buttonName: ButtonName): string;
 }
 export default Keyboard;
 export type ButtonName = import('../Joypad.js').ButtonName;
