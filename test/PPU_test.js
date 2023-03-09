@@ -99,7 +99,7 @@ describe("Ppu", function() {
         def('action', () => $subject.reset());
         
         it("clears Control Register", function() {
-            $subject.writeRegister(0x2000, 0xFF);
+            $subject.write(0x2000, 0xFF);
             $action;
             expect($subject.addressIncrement).to.equal(1);
             expect($subject.sprPatternTable).to.equal(0);
@@ -108,7 +108,7 @@ describe("Ppu", function() {
             expect($subject.nmiEnabled).to.be.false;
         });
         it("clears Mask Register", function() {
-            $subject.writeRegister(0x2001, 0xFF);
+            $subject.write(0x2001, 0xFF);
             $action;
             expect($subject.grayscale).to.be.false;
             expect($subject.showLeftMostBkg).to.be.false;
@@ -122,7 +122,7 @@ describe("Ppu", function() {
             expect($subject.renderingEnabled).to.be.false;
         });
         it("clears Scroll Register", function() {
-            $subject.writeRegister(0x2005, 0xFF);
+            $subject.write(0x2005, 0xFF);
             $action;
             expect($subject.writeToggle).to.be.false;
             expect($subject.fineScrollX).to.equal(0);
@@ -187,10 +187,10 @@ describe("Ppu", function() {
     context("Registers", function() {
         beforeEach("PowerOn", function() { $subject.powerOn(); });
         
-        describe(".readRegister(address)", function() {
+        describe(".read(address)", function() {
             /*global $actionTwice, $address */
-            def('action', () => $subject.readRegister($address));
-            def('actionTwice', () => ($action || true) && $subject.readRegister($address));
+            def('action', () => $subject.read($address));
+            def('actionTwice', () => ($action || true) && $subject.read($address));
             
             context("when address is 0x2002", function() {
                 def('address', () => 0x2002);
@@ -310,10 +310,10 @@ describe("Ppu", function() {
             });
         });
         
-        describe(".writeRegister(address, data)", function() {
+        describe(".write(address, data)", function() {
             /*global $actionAgain, $data */
-            def('action', () => $subject.writeRegister($address, $data));
-            def('actionAgain', () => $subject.writeRegister($address, $data));
+            def('action', () => $subject.write($address, $data));
+            def('actionAgain', () => $subject.write($address, $data));
             def('actionTwice', () => $action || $actionAgain);
             
             context("when address is 0x2000", function() {
@@ -408,7 +408,7 @@ describe("Ppu", function() {
                 
                 context("the first time", function() {
                     beforeEach(function() {
-                        $subject.writeRegister($address, 0xAD); // b10101|101
+                        $subject.write($address, 0xAD); // b10101|101
                     });                                         //  XXXXX|xxx
                     
                     it("sets fineScrollX", function() {
@@ -420,8 +420,8 @@ describe("Ppu", function() {
                 });
                 context("the second time", function() {
                     beforeEach(function() {
-                        $subject.writeRegister($address, 0x00);
-                        $subject.writeRegister($address, 0xAD); // b10101|101
+                        $subject.write($address, 0x00);
+                        $subject.write($address, 0xAD); // b10101|101
                     });                                         //  YYYYY|yyy
                     
                     it("sets fineScrollY", function() {
@@ -501,76 +501,76 @@ describe("Ppu", function() {
         
         def('CHRROMData', () => 0x99); // b10011001
         
-        describe(".read(address)", function() {
+        describe(".readData(address)", function() {
             def('VRAM0Data',  () => 0xA5); // b10100101
             def('VRAM1Data',  () => 0xC3); // b11000011
             
             it("reads from cartridge (CHR-ROM) when address < 0x2000", function() {
-                expect($subject.read(0x0000)).to.equal($CHRROMData);
+                expect($subject.readData(0x0000)).to.equal($CHRROMData);
             });
             it("reads from VRAM when address >= 0x2000", function() {
-                expect($subject.read(0x2001)).to.equal($VRAM0Data);
+                expect($subject.readData(0x2001)).to.equal($VRAM0Data);
             });
             context("when cartridge has horizontal mirroring", function() {
                 def('horiMirroring', () => true);
                 
                 it("reads from vramBank[0] when address [0x2000-0x23FF]", function() {
-                    expect($subject.read(0x2002)).to.equal($VRAM0Data);
+                    expect($subject.readData(0x2002)).to.equal($VRAM0Data);
                 });
                 it("reads from vramBank[0] when address [0x2400-0x27FF]", function() {
-                    expect($subject.read(0x2402)).to.equal($VRAM0Data);
+                    expect($subject.readData(0x2402)).to.equal($VRAM0Data);
                 });
                 it("reads from vramBank[1] when address [0x2800-0x2BFF]", function() {
-                    expect($subject.read(0x2802)).to.equal($VRAM1Data);
+                    expect($subject.readData(0x2802)).to.equal($VRAM1Data);
                 });
                 it("reads from vramBank[1] when address [0x2C00-0x2FFF]", function() {
-                    expect($subject.read(0x2C02)).to.equal($VRAM1Data);
+                    expect($subject.readData(0x2C02)).to.equal($VRAM1Data);
                 });
             });
             context("when cartridge has vertical mirroring", function() {
                 def('vertMirroring', () => true);
                 
                 it("reads from vramBank[0] when address [0x2000-0x23FF]", function() {
-                    expect($subject.read(0x2003)).to.equal($VRAM0Data);
+                    expect($subject.readData(0x2003)).to.equal($VRAM0Data);
                 });
                 it("reads from vramBank[1] when address [0x2400-0x2BFF]", function() {
-                    expect($subject.read(0x2403)).to.equal($VRAM1Data);
+                    expect($subject.readData(0x2403)).to.equal($VRAM1Data);
                 });
                 it("reads from vramBank[0] when address [0x2800-0x2BFF]", function() {
-                    expect($subject.read(0x2803)).to.equal($VRAM0Data);
+                    expect($subject.readData(0x2803)).to.equal($VRAM0Data);
                 });
                 it("reads from vramBank[1] when address [0x2C00-0x2FFF]", function() {
-                    expect($subject.read(0x2C03)).to.equal($VRAM1Data);
+                    expect($subject.readData(0x2C03)).to.equal($VRAM1Data);
                 });
             });
         });
         
-        describe(".write(address, data)", function() {
+        describe(".writeData(address, data)", function() {
             it("cannot write to cartridge (CHR-ROM) when address < 0x2000", function() {
-                expect(() => $subject.write(0x0001, 0xFF)).not.to.change($nes.cartConnector.cartridge.CHRROM[0], '1');
+                expect(() => $subject.writeData(0x0001, 0xFF)).not.to.change($nes.cartConnector.cartridge.CHRROM[0], '1');
                 expect($nes.cartConnector.cartridge.CHRROM[0][0]).to.equal($CHRROMData);
             });
             it("writes to VRAM when address >= 0x2000", function() {
-                expect(() => $subject.write(0x2002, 0xFF)).to.change($subject.vramBank[0], '2');
+                expect(() => $subject.writeData(0x2002, 0xFF)).to.change($subject.vramBank[0], '2');
                 expect($subject.vramBank[0][0x2]).to.equal(0xFF);
             });
             context("when cartridge has horizontal mirroring", function() {
                 def('horiMirroring', () => true);
                 
                 it("writes to vramBank[0] when address [0x2000-0x23FF]", function() {
-                    $subject.write(0x2003, 0xFF);
+                    $subject.writeData(0x2003, 0xFF);
                     expect($subject.vramBank[0][0x3]).to.equal(0xFF);
                 });
                 it("writes to vramBank[0] when address [0x2400-0x27FF]", function() {
-                    $subject.write(0x2403, 0xFF);
+                    $subject.writeData(0x2403, 0xFF);
                     expect($subject.vramBank[0][0x3]).to.equal(0xFF);
                 });
                 it("writes to vramBank[1] when address [0x2800-0x2BFF]", function() {
-                    $subject.write(0x2803, 0xFF);
+                    $subject.writeData(0x2803, 0xFF);
                     expect($subject.vramBank[1][0x3]).to.equal(0xFF);
                 });
                 it("writes to vramBank[1] when address [0x2C00-0x2FFF]", function() {
-                    $subject.write(0x2C03, 0xFF);
+                    $subject.writeData(0x2C03, 0xFF);
                     expect($subject.vramBank[1][0x3]).to.equal(0xFF);
                 });
             });
@@ -578,19 +578,19 @@ describe("Ppu", function() {
                 def('vertMirroring', () => true);
                 
                 it("writes to vramBank[0] when address [0x2000-0x23FF]", function() {
-                    $subject.write(0x2004, 0xFF);
+                    $subject.writeData(0x2004, 0xFF);
                     expect($subject.vramBank[0][0x4]).to.equal(0xFF);
                 });
                 it("writes to vramBank[1] when address [0x2400-0x27FF]", function() {
-                    $subject.write(0x2404, 0xFF);
+                    $subject.writeData(0x2404, 0xFF);
                     expect($subject.vramBank[1][0x4]).to.equal(0xFF);
                 });
                 it("writes to vramBank[0] when address [0x2800-0x2BFF]", function() {
-                    $subject.write(0x2804, 0xFF);
+                    $subject.writeData(0x2804, 0xFF);
                     expect($subject.vramBank[0][0x4]).to.equal(0xFF);
                 });
                 it("writes to vramBank[1] when address [0x2C00-0x2FFF]", function() {
-                    $subject.write(0x2C04, 0xFF);
+                    $subject.writeData(0x2C04, 0xFF);
                     expect($subject.vramBank[1][0x4]).to.equal(0xFF);
                 });
             });
@@ -814,8 +814,8 @@ describe("Ppu", function() {
                 it("reads from VRAM", function() {
                     expect($action).to.equal($VRAMData);
                 });
-                it("calls .read() with a modified address (0x2xxx)", function(done) {
-                    $subject.read = (address) => {
+                it("calls .readData() with a modified address (0x2xxx)", function(done) {
+                    $subject.readData = (address) => {
                         expect(address).to.equal(0x2FFF);
                         done();
                     };
@@ -871,8 +871,8 @@ describe("Ppu", function() {
             context("when cartridge.ciramEnabled() returns -true-", function() {
                 beforeEach(function() { $nes.cartConnector.cartridge.ciramEnabled = () => true; });
                 
-                it("calls .read() with a modified address", function(done) {
-                    $subject.read = (address) => {
+                it("calls .readData() with a modified address", function(done) {
+                    $subject.readData = (address) => {
                         expect(address).to.equal(0x2FFF);
                         done();
                     };
@@ -1333,9 +1333,9 @@ describe("Ppu", function() {
                 def('attributes', () => ~0x20);
                 beforeEach(function() { $subject.sprLayer = null; });
                 
-                it("sets #sprLayer to reference #sprInFrontLayer", function() {
+                it("sets #sprLayer to reference #sprBeforeLayer", function() {
                     expect(() => $action).to.change($subject, 'sprLayer');
-                    expect($subject.sprLayer).to.equal($subject.sprInFrontLayer);
+                    expect($subject.sprLayer).to.equal($subject.sprBeforeLayer);
                 });
             });
         });
