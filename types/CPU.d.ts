@@ -109,7 +109,7 @@ export class CPU {
     doIRQ(): void;
     /**
      * @param {number} address 16-bit address
-     * @returns {number}
+     * @returns {number} 8-bit data
      */
     read(address: number): number;
     /**
