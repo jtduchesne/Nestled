@@ -1,99 +1,198 @@
+/**
+ * @typedef {import('./NES.js').NES} NES
+ */
+
 import { VideoBuffer, Colors } from './Video/index.js';
 const { pxlColors, cssColors } = Colors;
 
-const bitplaneLookup = {
-    0:     0, // 0x0000
-    32768: 1, // 0x8000
-    128:   2, // 0x0080
-    32896: 3, // 0x8080
-};
+/** @type {Readonly<Record<number, number>>} */
+const bitplaneLookup = Object.freeze({
+    0x0000: 0,
+    0x8000: 1,
+    0x0080: 2,
+    0x8080: 3,
+});
 
 export class PPU {
-    constructor(nes) {
-        this.bus = nes;
+    /**
+     * @param {NES} bus
+     */
+    constructor(bus) {
+        /** @private */
+        this.bus = bus;
         
-        this.vblank = false;
+        this.ntsc = true;
         
-        //Internal Video RAM (or Character Internal RAM (CI-RAM) )
+        /** Internal Video RAM (or Character Internal RAM (CI-RAM) ) */
         this.vram = new Uint8Array(0x800);
-        this.vramBank = [this.vram.subarray(0x000, 0x400), this.vram.subarray(0x400, 0x800)];
+        /** @private */
+        this.vramBank = [this.vram.subarray(0x000, 0x400),
+                         this.vram.subarray(0x400, 0x800)];
         
-        //Object Attribute Memory
-        this.oamPrimary   = new Uint8Array(64*4);
-        this.oamSecondary = new Uint8Array(8*4);
-        this.oamAddress = 0; //For accessing primary OAM through $2004 and DMA
-        this.oamIndex   = 0; //For internal access to secondary OAM
-        
-        //Palettes
+        /** Internal Palette memory (2x 16-bytes) */
         this.palette = [new Uint8Array(4*4), new Uint8Array(4*4)];
         
+        //-----------------------------------------------------------------------//
+        /** @type {1|32} */
+        this.addressIncrement = 1;
+        /** @type {0x0000 | 0x1000} */
+        this.sprPatternTable  = 0x0000;
+        /** @type {0x0000 | 0x1000} */
+        this.bkgPatternTable  = 0x0000;
+        this.sprite8x16       = false;
+        this.nmiEnabled       = false;
+        
+        /** @type {8|16} @private */
+        this.spriteHeight     = 8;
+        
+        this.grayscale        = false;
+        this.showLeftMostBkg  = false;
+        this.showLeftMostSpr  = false;
+        this.showBackground   = false;
+        this.showSprites      = false;
+        this.emphasizeRed     = false;
+        this.emphasizeGreen   = false;
+        this.emphasizeBlue    = false;
+        
+        /** @private */
+        this.renderingEnabled = false;
+        
+        /**
+         * Set when a *Sprite Overflow* occurs,
+         * and cleared after *V-Blank*. */
+        this.spriteOverflow   = false;
+        /**
+         * Set when *Sprite-0 hit* occurs,
+         * and cleared after *V-Blank*. */
+        this.sprite0Hit       = false;
+        /**
+         * Set when *V-Blank* occurs,
+         * and cleared after *V-Blank*, or by reading *$2002*. */
+        this.vblank           = false;
+        
+        /** Object Attribute Memory (256-bytes) */
+        this.oamPrimary       = new Uint8Array(64*4);
+        /** 8-bit wide - For accessing primary OAM through *$2004* and *DMA*. */
+        this.oamAddress       = 0x00;
+        
+        /**
+         * Internal buffer for Sprite rendering, can hold up to 8 sprites worth
+         * of metadata (32-bytes).
+         * @private */
+        this.oamSecondary     = new Uint8Array(8*4);
+        /** 5-bit wide - Used internally to access secondary OAM buffer.
+         * @private */
+        this.oamIndex         = 0x00;
+        
+        /** 3-bit wide */
+        this.fineScrollX      = 0x0;
+        /** 3-bit wide */
+        this.fineScrollY      = 0x0;
+        
+        /** @private */
+        this.writeToggle      = false;
+        
+        /** 16-bit wide */
+        this.addressBus       = 0x0000;
+        /**
+         * 16-bit wide - Used internally to allow atomic modifications of the
+         * 16-bit address bus.
+         * @private */
+        this.addressBuffer    = 0x0000;
+        
+        /**
+         * 8-bit wide - Used internally when accessing external data.
+         * @private */
+        this.readBuffer       = 0x00;
+        //-----------------------------------------------------------------------//
+        
         //Buffers
-        this.bkgPixelsBuffer = new Uint32Array(16);
-        this.sprPixelsBuffer = new Uint32Array(8);
+        /** @private */ this.bkgPixelsBuffer = new Uint32Array(16);
+        /** @private */ this.sprPixelsBuffer = new Uint32Array(8);
         
         //Layers
-        this.bkgLayer        = new VideoBuffer(264, 256);
-        this.sprBehindLayer  = new VideoBuffer(264, 256);
-        this.sprInFrontLayer = new VideoBuffer(264, 256);
-        this.sprLayer        = this.sprInFrontLayer;
+        /** @private */ this.bkgLayer       = new VideoBuffer(256 +8, 240 +16);
+        /** @private */ this.sprBehindLayer = new VideoBuffer(256 +8, 240 +16);
+        /** @private */ this.sprBeforeLayer = new VideoBuffer(256 +8, 240 +16);
+        /** @private */ this.sprLayer       = this.sprBeforeLayer;
         
         //Used for Sprite0 hit detection
-        this.sprite0Layer = new Uint32Array(264);
+        /** @private */ this.sprite0Layer = new Uint32Array(264);
+        /** @private */ this.sprite0      = false;
         
         this.isPowered = false;
     }
     
+    //== Power ==========================================================================//
     powerOn() {
-        this.control    = null; //$2000 Control
-        this.mask       = null; //$2001 Mask
-        this.status     = null; //$2002 Status
-        this.OAMAddress = null; //$2003 OAM address
-        this.oamPrimary.fill(0);//$2004 OAM data
-        this.scroll     = null; //$2005 Scroll
-        this.address    = null; //$2006 Address
-        this.data       = null; //$2007 Data
+        this.control       = 0x00;   //$2000 Control
+        this.mask          = 0x00;   //$2001 Mask
+        this.sprite0Hit    = false;  //$2002 Status
+        this.OAMAddress    = 0x00;   //$2003 OAM address
+        this.fineScrollX   = 0x0;    //$2005 Scroll
+        this.fineScrollY   = 0x0;
+        this.addressBus    = 0x0000; //$2006 Address
+        this.addressBuffer = 0x0000;
+        this.readBuffer    = 0x00;   //$2007 Data
+        
+        this.writeToggle   = false;
         
         this.ntsc = (this.bus.cartConnector.metadata.tvSystem === "NTSC");
         
-        //Bus access optimizations
-        this.cpu    = this.bus.cpu;
-        this.cart   = this.bus.cartConnector.cartridge;
-        this.output = this.bus.videoOutput;
-        
-        this.output.addLayer(this.sprBehindLayer);
-        this.output.addLayer(this.bkgLayer);
-        this.output.addLayer(this.sprInFrontLayer);
-        this.output.start();
+        this.bus.videoOutput.addLayer(this.sprBehindLayer);
+        this.bus.videoOutput.addLayer(this.bkgLayer);
+        this.bus.videoOutput.addLayer(this.sprBeforeLayer);
+        this.bus.videoOutput.start();
         
         this.isPowered = true;
     }
     powerOff() {
-        this.output.stop();
+        this.bus.videoOutput.stop();
         
         this.isPowered = false;
     }
     
     reset() {
-        this.control = null; //$2000 Control Register
-        this.mask    = null; //$2001 Mask Register
-        this.scroll  = null; //$2005 Scroll Register
-        this.data    = null; //$2007 Data Register
+        this.control     = 0x00; //$2000 Control
+        this.mask        = 0x00; //$2001 Mask
+        this.fineScrollX = 0x0;  //$2005 Scroll
+        this.fineScrollY = 0x0;
+        this.readBuffer  = 0x00; //$2007 Data
+        
+        this.writeToggle = false;
     }
     
-    //== Vertical Blank =============================================//
+    //== Vertical Blank =================================================================//
     doVBlank() {
         this.vblank = true;
-        if (this.nmiEnabled) this.cpu.doNMI();
+        if (this.nmiEnabled) this.bus.cpu.doNMI();
     }
     endVBlank() {
-        this.status = null;
+        this.spriteOverflow = false;
+        this.sprite0Hit = false;
+        this.vblank = false;
     }
     
-    //== Registers ==================================================//
-    //= 0x2000 Control =//
+    //== DMA ============================================================================//
+    /**
+     * Transfer 256-bytes from CPU memory at given address directly to OAM data.
+     * @param {number} address 16-bit address
+     */
+    doDMA(address) {
+        const cpu = this.bus.cpu;
+        for(let count = 0; count < 256; count++)
+            this.OAMData = cpu.read(address++);
+    }
+    
+    //== Registers ======================================================================//
+    /**
+     * 0x2000 Control
+     * @param {number} value 8-bit value
+     * @private
+     */
     set control(value) {
-        if (value !== null) {
-            this.addressBuffer &= ~0x0C00; // b1111.0011.1111.1111
+        this.addressBuffer &= ~0x0C00; // b1111.0011.1111.1111
+        if (value) {
             this.addressBuffer |= (value & 0x3)<<10;
             
             this.addressIncrement = (value & 0x04) ? 32 : 1;
@@ -102,16 +201,20 @@ export class PPU {
             this.sprite8x16 =     !!(value & 0x20);
             this.nmiEnabled =     !!(value & 0x80);
         } else {
-            this.addressIncrement = 1;     //[1,32]
-            this.sprPatternTable = 0x0000; //[0x0000,0x1000]
-            this.bkgPatternTable = 0x0000; //[0x0000,0x1000]
+            this.addressIncrement = 1;
+            this.sprPatternTable = 0x0000;
+            this.bkgPatternTable = 0x0000;
             this.sprite8x16 = false;
             this.nmiEnabled = false;
         }
         this.spriteHeight = this.sprite8x16 ? 16 : 8;
     }
     
-    //= 0x2001 Mask =//
+    /**
+     * 0x2001 Mask
+     * @param {number} value 8-bit value
+     * @private
+     */
     set mask(value) {
         if (value) {
             this.grayscale       = !!(value & 0x01);
@@ -137,114 +240,135 @@ export class PPU {
             this.renderingEnabled = false;
         }
     }
-        
-    //= 0x2002 Status =//
+    
+    /**
+     * 0x2002 Status
+     * 
+     * Reading this register is not idempotent as it resets *V-Blank* afterward.
+     * @type {number} 8-bit value
+     * @private
+     */
     get status() {
-        let value = (this.spriteOverflow && 0x20) |
-                    (this.sprite0Hit && 0x40) |
-                    (this.vblank && 0x80);
+        let value = (this.spriteOverflow ? 0x20 : 0) +
+                    (this.sprite0Hit ? 0x40 : 0) +
+                    (this.vblank ? 0x80 : 0);
         this.vblank = false;
         this.writeToggle = false;
         
         return value;
     }
-    set status(value) {
-        this.spriteOverflow = false;
-        this.sprite0Hit = false;
-        this.sprite0 = false;
-        this.vblank = false;
-    }
     
-    //= 0x2003 OAM address =//
+    /**
+     * 0x2003 OAM address
+     * @param {number} value 8-bit value
+     * @private
+     */
     set OAMAddress(value) {
-        this.oamAddress = value || 0x00;
+        this.oamAddress = value;
     }
     
-    //= 0x2004 OAM data =//
+    /**
+     * 0x2004 OAM data
+     * 
+     * Writing to this register automatically increments OAM address.
+     * @type {number} 8-bit value
+     * @private
+     */
     get OAMData() {
         return this.oamPrimary[this.oamAddress];
     }
+    /** @private */
     set OAMData(value) {
         this.oamPrimary[this.oamAddress++] = value;
         if (this.oamAddress > 0xFF) this.oamAddress = 0x00;
     }
     
-    //= 0x2005 Scroll =//
+    /**
+     * 0x2005 Scroll
+     * @param {number} value 8-bit value
+     * @private
+     */
     set scroll(value) {
-        if (value !== null) {
-            let toggle = this.writeToggle;
-            let addressBuffer = this.addressBuffer;
-            if (toggle) {
-                // Vertical scroll
-                addressBuffer &= 0x0C1F; // b0000.1100.0001.1111
-                addressBuffer |= ((value & 0x07) << 12);
-                addressBuffer |= ((value & 0xF8) << 2);
-                
-                this.fineScrollY = value & 0x07;
-            } else {
-                // Horizontal scroll
-                addressBuffer &= 0x7FE0; // b0111.1111.1110.0000
-                addressBuffer |= (value >>> 3);
-                
-                this.fineScrollX = value & 0x07;
-            }
-            this.addressBuffer = addressBuffer;
-            this.writeToggle = !toggle;
-        } else {
-            this.writeToggle = false;
-            this.fineScrollX = 0x0;
-            this.fineScrollY = 0x0;
-        }
-    }
-    
-    //= 0x2006 Address =//
-    set address(value) {
-        if (value !== null) {
-            let toggle = this.writeToggle;
-            if (toggle) {
-                this.addressBuffer = (this.addressBuffer & 0xff00) | value;
-                this.addressBus = this.addressBuffer;
-            } else {
-                value = (value & 0x3f) << 8;
-                this.addressBuffer = (this.addressBuffer & 0x00ff) | value;
-            }
-            this.writeToggle = !toggle;
-        } else {
-            this.writeToggle = false;
-            this.addressBus = this.addressBuffer = 0x0000;
-        }
-    }
-    
-    //= 0x2007 Data =//
-    get data() {
-        let value;
-        let address = this.addressBus;
+        const toggle = this.writeToggle;
         
+        let addressBuffer = this.addressBuffer;
+        if (toggle) {
+            // Vertical scroll
+            addressBuffer &= 0x0C1F; // b0000.1100.0001.1111
+            addressBuffer |= ((value & 0x07) << 12);
+            addressBuffer |= ((value & 0xF8) << 2);
+            
+            this.fineScrollY = value & 0x07;
+        } else {
+            // Horizontal scroll
+            addressBuffer &= 0x7FE0; // b0111.1111.1110.0000
+            addressBuffer |= (value >>> 3);
+            
+            this.fineScrollX = value & 0x07;
+        }
+        this.addressBuffer = addressBuffer;
+        
+        this.writeToggle = !toggle;
+    }
+    
+    /**
+     * 0x2006 Address
+     * @param {number} value 8-bit value
+     * @private
+     */
+    set address(value) {
+        const toggle = this.writeToggle;
+        
+        if (toggle) {
+            this.addressBuffer = (this.addressBuffer & 0xff00) | value;
+            this.addressBus = this.addressBuffer;
+        } else {
+            value = (value & 0x3f) << 8;
+            this.addressBuffer = (this.addressBuffer & 0x00ff) | value;
+        }
+        
+        this.writeToggle = !toggle;
+    }
+    
+    /**
+     * 0x2007 Data
+     * 
+     * Reading or writing to this register automatically increments the address
+     * bus by the amount set in *$2000*.
+     * @type {number} 8-bit value
+     * @private
+     */
+    get data() {
+        const address = this.addressBus;
+        
+        let value;
         if (address >= 0x3F00)
             value = this.readPalette(address);
         else
             value = this.readBuffer;
         
-        this.readBuffer = this.read(address);
+        this.readBuffer = this.readData(address);
         this.addressBus = address + this.addressIncrement;
         
         return value;
     }
+    /** @private */
     set data(value) {
-        if (value !== null) {
-            let address = this.addressBus;
-            if (address >= 0x3F00)
-                this.writePalette(address, value);
-            else
-                this.write(address, value);
-            
-            this.addressBus = address + this.addressIncrement;
-        } else
-            this.readBuffer = 0x00;
+        const address = this.addressBus;
+        if (address >= 0x3F00)
+            this.writePalette(address, value);
+        else
+            this.writeData(address, value);
+        
+        this.addressBus = address + this.addressIncrement;
     }
     
-    //== Registers access ===========================================//
-    readRegister(address) {
+    //== Registers access ===============================================================//
+    /**
+     * @param {number} address 16-bit address
+     * @returns {number} 8-bit data
+     */
+    read(address) {
         if (address > 0x2007) address &= 0x2007;
         switch (address) {
         case 0x2002: return this.status;
@@ -253,7 +377,11 @@ export class PPU {
         default:     return 0x00;
         }
     }
-    writeRegister(address, data) {
+    /**
+     * @param {number} address 16-bit address
+     * @param {number} data 8-bit data
+     */
+    write(address, data) {
         if (address > 0x2007) address &= 0x2007;
         switch (address) {
         case 0x2000: this.control    = data; break;
@@ -266,34 +394,57 @@ export class PPU {
         }
     }
     
-    //== Data =======================================================//
-    read(address) {
-        let cartridge = this.cart;
+    //== Data ===========================================================================//
+    /**
+     * @param {number} address 16-bit address
+     * @returns {number} 8-bit data
+     * @private
+     */
+    readData(address) {
+        const cartridge = this.bus.cartConnector.cartridge;
         if (cartridge.ciramEnabled(address))
             return this.vramBank[cartridge.ciramA10(address)][address & 0x3FF];
         else
             return cartridge.ppuRead(address);
     }
-    write(address, data) {
-        let cartridge = this.cart;
+    /**
+     * @param {number} address 16-bit address
+     * @param {number} data 8-bit data
+     * @private
+     */
+    writeData(address, data) {
+        const cartridge = this.bus.cartConnector.cartridge;
         if (cartridge.ciramEnabled(address))
             this.vramBank[cartridge.ciramA10(address)][address & 0x3FF] = data;
         else
             cartridge.ppuWrite(address, data);
     }
     
-    //== Palettes ===================================================//
+    //== Palettes =======================================================================//
+    /** The first color of background palette */
     get backdrop() { return this.palette[0][0]; }
     
+    /** Background palette (4x 4-bytes) */
     get bkgPalette() { return this.palette[0]; }
+    /** Sprite palette (4x 4-bytes) */
     get sprPalette() { return this.palette[1]; }
     
+    /**
+     * @param {number} address 16-bit address
+     * @returns {number} 8-bit data
+     * @private
+     */
     readPalette(address) {
         if (address & 0x3)
             return this.palette[(address & 0x10) >>> 4][address & 0x0F];
         else
             return this.palette[0][0x00];
     }
+    /**
+     * @param {number} address 16-bit address
+     * @param {number} data 8-bit data
+     * @private
+     */
     writePalette(address, data) {
         if (address & 0x3)
             this.palette[(address & 0x10) >>> 4][address & 0x0F] = data;
@@ -301,7 +452,7 @@ export class PPU {
             this.palette[0][address & 0x0F] = data;
     }
     
-    //== Scrolling ==================================================//
+    //== Scrolling ======================================================================//
     incrementX() {
         if (!this.renderingEnabled) return;
         
@@ -324,7 +475,7 @@ export class PPU {
         } else {
             addressBus -= 0x7000; 
             
-            let coarseY = (addressBus & 0x03E0);
+            const coarseY = (addressBus & 0x03E0);
             if (coarseY === 0x03A0) { // 29 << 5
                 addressBus &= 0x0C1F;
                 addressBus ^= 0x0800;
@@ -358,57 +509,76 @@ export class PPU {
         this.fineScrollY = addressBus >>> 12;
     }
     
-    //== Background =================================================//
+    //== Background =====================================================================//
+    /**
+     * @param {number} bus 16-bit address bus
+     * @private
+     */
     fetchNameTable(bus) {
-        let address = 0x2000 + (bus & 0x0FFF);
-        return this.read(address);
+        const address = 0x2000 + (bus & 0x0FFF);
+        return this.readData(address);
     }
+    /**
+     * @param {number} bus 16-bit address bus
+     * @private
+     */
     fetchAttributeTable(bus) {
-        let address = 0x23C0 | (bus & 0x0C00) | (bus>>>4 & 0x0038) | (bus>>>2 & 0x0007);
+        const address = 0x23C0 | (bus & 0x0C00) | (bus>>>4 & 0x0038) | (bus>>>2 & 0x0007);
         let offset = 0;
         if (bus & 0x0002) offset += 2;
         if (bus & 0x0040) offset += 4;
-        return (this.read(address) >>> offset) & 0x3;
+        return (this.readData(address) >>> offset) & 0x3;
     }
+    /**
+     * @param {number} patternIndex
+     * @param {number} row
+     * @private
+     */
     fetchBkgPatternTable(patternIndex, row) {
         let address = this.bkgPatternTable + patternIndex*16 + row;
-        return this.read(address)*256 + this.read(address+8);
+        return this.readData(address)*256 + this.readData(address+8);
     }
     
     fetchTile() {
         if (!this.showBackground) return;
 
-        let addressBus = this.addressBus;
+        const addressBus = this.addressBus;
         
-        let patternIndex = this.fetchNameTable(addressBus);
-        let paletteIndex = this.fetchAttributeTable(addressBus);
-        let pattern      = this.fetchBkgPatternTable(patternIndex, this.fineScrollY);
+        const patternIndex = this.fetchNameTable(addressBus);
+        const paletteIndex = this.fetchAttributeTable(addressBus);
+        
+        const pattern = this.fetchBkgPatternTable(patternIndex, this.fineScrollY);
         
         this.bkgPixelsBuffer.copyWithin(0, 8);
-        this.setPatternPixels(this.bkgPixelsBuffer.subarray(8), pattern, this.bkgPalette, paletteIndex);
+        const target = this.bkgPixelsBuffer.subarray(8);
+        this.setPatternPixels(target, pattern, this.bkgPalette, paletteIndex);
     }
     
     fetchNullTile() {
         if (!this.showBackground) return;
         
-        let addressBus = this.addressBus;
-        let patternIndex = this.fetchNameTable(addressBus);
+        const addressBus = this.addressBus;
+        const patternIndex = this.fetchNameTable(addressBus);
         this.fetchAttributeTable(addressBus);
         this.fetchBkgPatternTable(patternIndex, this.fineScrollY);
     }
     fetchNullNTs() {
         if (!this.showBackground) return;
         
-        let addressBus = this.addressBus;
+        const addressBus = this.addressBus;
         this.fetchNameTable(addressBus);
         this.fetchNameTable(addressBus);
     }
     
+    /**
+     * @param {number} dot
+     * @param {number} scanline
+     */
     renderTile(dot, scanline) {
         if (!this.showBackground) return;
         
-        let offset = this.fineScrollX;
-        let pixels = this.bkgPixelsBuffer.subarray(offset, offset+8);
+        const offset = this.fineScrollX;
+        const pixels = this.bkgPixelsBuffer.subarray(offset, offset+8);
         
         if (this.sprite0 && !this.sprite0Hit) {
             if (this.sprite0Layer.subarray(dot, dot+8).some((e,i) => (e && pixels[i])))
@@ -418,22 +588,23 @@ export class PPU {
         this.bkgLayer.writePixels(dot, scanline, pixels);
     }
     
-    //== Sprites ====================================================//
+    //== Sprites ========================================================================//
     clearSecondaryOAM() {
         this.oamSecondary.fill(0xFF);
         this.oamIndex = 0;
     }
+    /** @param {number} scanline */
     evaluateSprites(scanline) {
-        let spritesList = this.oamPrimary;
-        let sprites     = this.oamSecondary;
+        const spritesList = this.oamPrimary;
+        const sprites     = this.oamSecondary;
         
-        let height = this.spriteHeight;
+        const height = this.spriteHeight;
         
         while (this.oamAddress < 256) {
-            let y = spritesList[this.oamAddress];
+            const y = spritesList[this.oamAddress];
             
-            let top    = y + height; //Sprite's coordinates are bottom-left
-            let bottom = y;
+            const top    = y + height; //Sprite's coordinates are bottom-left
+            const bottom = y;
             
             if (this.oamIndex === 32) {
                 this.oamAddress++; //This causes the 'Sprite overflow bug'
@@ -459,31 +630,41 @@ export class PPU {
         this.oamIndex = 0;
     }
     
+    /**
+     * @param {number} patternIndex
+     * @param {number} row
+     * @private 
+     */
     fetchSprPatternTable(patternIndex, row) {
         let offset = this.sprPatternTable;
         if (this.sprite8x16) {
-            offset = (patternIndex & 0x1) << 12;
-            patternIndex &= 0xFE;
+            if (patternIndex & 0x1) {
+                offset = 0x1000;
+                patternIndex &= 0xFE;
+            } else {
+                offset = 0x0000;
+            }
         }
-        let address = offset + patternIndex*16 + row;
-        return this.read(address)*256 + this.read(address+8);
+        const address = offset + patternIndex*16 + row;
+        return this.readData(address)*256 + this.readData(address+8);
     }
     
+    /** @param {number} scanline */
     fetchSprite(scanline) {
         if (!this.showSprites) return;
         
-        let addressBus = this.addressBus;     //
+        const addressBus = this.addressBus;     //
         this.fetchNameTable(addressBus);      // Garbage fetch
         this.fetchAttributeTable(addressBus); //
         
         this.oamAddress = 0x00;
         
-        let sprites = this.oamSecondary;
+        const sprites = this.oamSecondary;
         
         if (this.sprite0)
             this.sprite0 = (this.oamIndex === 0);
         
-        let y = sprites[this.oamIndex++];
+        const y = sprites[this.oamIndex++];
         let row = scanline - y;
         
         let patternIndex = sprites[this.oamIndex++];
@@ -495,7 +676,7 @@ export class PPU {
             attributes -= 0x80;
         }
         
-        let flip;
+        let flip = false;
         // Horizontal Flip
         if (attributes >= 0x40) {
             flip = true;
@@ -507,7 +688,7 @@ export class PPU {
             this.sprLayer = this.sprBehindLayer;
             attributes -= 0x20;
         } else
-            this.sprLayer = this.sprInFrontLayer;
+            this.sprLayer = this.sprBeforeLayer;
         
         // 8x16 Sprites
         if (row >= 8) {
@@ -515,25 +696,26 @@ export class PPU {
             patternIndex++;
         }
         
-        let pattern = this.fetchSprPatternTable(patternIndex, row);
+        const pattern = this.fetchSprPatternTable(patternIndex, row);
         this.setPatternPixels(this.sprPixelsBuffer, pattern, this.sprPalette, attributes, flip);
     }
         
     fetchNullSprite() {
         if (!this.showSprites) return;
         
-        let addressBus = this.addressBus;
+        const addressBus = this.addressBus;
         this.fetchNameTable(addressBus);
         this.fetchAttributeTable(addressBus);
         
-        this.fetchSprPatternTable(this.sprPatternTable, 0xFF);
+        this.fetchSprPatternTable(this.sprPatternTable, 0x00);
     }
     
+    /** @param {number} scanline */
     renderSprite(scanline) {
         if (!this.showSprites) return;
         
-        let x = this.oamSecondary[this.oamIndex++];
-        let pixels = this.sprPixelsBuffer;
+        const x = this.oamSecondary[this.oamIndex++];
+        const pixels = this.sprPixelsBuffer;
         
         if (this.sprite0)
             this.sprite0Layer.fill(0).set(pixels, x);
@@ -541,19 +723,28 @@ export class PPU {
         this.sprLayer.writePixels(x, scanline+1, pixels);
     }
     
-    //== Pixels Rendering ===========================================//
-    setPatternPixels(target, pattern, palette, paletteIndex, flip) {
+    //== Pixels Rendering ===============================================================//
+    /**
+     * 
+     * @param {Uint32Array} target Buffer of 8x 32-bit RGBA pixels
+     * @param {number} pattern
+     * @param {Uint8Array} palette
+     * @param {number} paletteIndex
+     * @param {boolean=} flip
+     */
+    setPatternPixels(target, pattern, palette, paletteIndex, flip = false) {
         if (paletteIndex >= 4) paletteIndex %= 4;
-        let paletteOffset = paletteIndex * 4;
+        const paletteOffset = paletteIndex * 4;
         
         for (let offset = 0; offset < 8; offset++) {
-            let colorIndex = bitplaneLookup[(pattern << offset) & 0x8080];
-            target[flip ? 7-offset : offset] = colorIndex ? pxlColors[palette[paletteOffset + colorIndex]] : 0x00000000;
+            const colorIndex = bitplaneLookup[(pattern << offset) & 0x8080];
+            const color      = pxlColors[palette[paletteOffset + colorIndex]];
+            target[flip ? 7-offset : offset] = colorIndex ? color : 0x00000000;
         }
     }
-    //== Output =====================================================//
+    //== Output =========================================================================//
     printFrame() {
-        this.output.schedule(cssColors[this.backdrop]);
+        this.bus.videoOutput.schedule(cssColors[this.backdrop]);
     }
 }
 
