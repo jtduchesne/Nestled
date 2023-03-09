@@ -1,7 +1,16 @@
+import { expect } from "chai";
+import sinon from "sinon";
+
 import Keyboard from "../../../src/Controllers/Devices/Keyboard";
 
 describe("Keyboard", function() {
     subject(() => new Keyboard);
+    
+    its('type',   () => is.expected.to.equal("Joypad"));
+    its('device', () => is.expected.to.equal("Keyboard"));
+    
+    its('empty',   () => is.expected.to.be.false);
+    its('present', () => is.expected.to.be.true);
     
     describe(".assignKey(buttonName, keyName)", function() {
         /*global $buttonName, $keyCode, $keyName */
@@ -40,7 +49,7 @@ describe("Keyboard", function() {
         context("if all the names are valid", function() {
             def('opts', () => ({start: "1", select: "2"}));
             
-            it("adds them to #keyMap", function() {
+            it("adds them to #keyHandlers", function() {
                 expect($subject.keyHandlers).to.be.empty;
                 $action;
                 expect($subject.keyHandlers[0x31]).to.equal($subject.getButtonHandler('start'));
@@ -57,7 +66,7 @@ describe("Keyboard", function() {
         context("if a key name is not valid", function() {
             def('opts', () => ({start: "1", select: "2", a: ""}));
             
-            it("adds only the valid ones to #keyMap", function() {
+            it("adds only the valid ones to #keyHandlers", function() {
                 expect($subject.keyHandlers).to.be.empty;
                 $action;
                 expect($subject.keyHandlers[0x31]).to.equal($subject.getButtonHandler('start'));
@@ -71,28 +80,74 @@ describe("Keyboard", function() {
         /*global $event, $keyDown */
         def('action', () => $subject.pressKey($event, $keyDown));
         beforeEach(function() {
+            $subject.buttonHandlers[3] = sinon.stub();
             $subject.assignKey('start', "Enter");
         });
         
+        def('event', () => ({keyCode: $keyCode, preventDefault: sinon.stub()}));
+        
         context("if event.keyCode is assigned to a button", function() {
-            def('event', () => ({keyCode: 13, preventDefault: () => undefined}));
+            def('keyCode', () => 13);
             
             context("and keyDown=true", function() {
                 def('keyDown', () => true);
                 
                 it("presses that button", function() {
-                    expect(() => $action).to.change($subject.states, '3');
-                    expect($subject.states[3]).to.equal(1);
+                    $action;
+                    expect($subject.buttonHandlers[3]).to.be.calledOnceWith(true);
+                });
+                it("calls event.preventDefault()", function() {
+                    $action;
+                    expect($event.preventDefault).to.be.calledOnce;
                 });
             });
             context("and keyDown=false", function() {
                 def('keyDown', () => false);
-                beforeEach(function() { $subject.pressKey($event, true); });
                 
                 it("releases that button", function() {
-                    expect(() => $action).to.change($subject.states, '3');
-                    expect($subject.states[3]).to.equal(0);
+                    $action;
+                    expect($subject.buttonHandlers[3]).to.be.calledOnceWith(false);
                 });
+                it("calls event.preventDefault()", function() {
+                    $action;
+                    expect($event.preventDefault).to.be.calledOnce;
+                });
+            });
+        });
+        context("if event.keyCode is not assigned to a button", function() {
+            def('keyCode', () => 32);
+            
+            it("does not press any button", function() {
+                const stub = sinon.stub();
+                $subject.buttonHandlers.fill(stub);
+                $action;
+                expect(stub).not.to.be.called;
+            });
+            it("does not call event.preventDefault()", function() {
+                $action;
+                expect($event.preventDefault).not.to.be.called;
+            });
+        });
+    });
+    
+    //-------------------------------------------------------------------------------//
+    
+    describe(".getAssignedKey(buttonName)", function() {
+        def('action', () => $subject.getAssignedKey($buttonName));
+        beforeEach(() => $subject.assignKey("start", "Enter"));
+        
+        context("if buttonName is assigned to a key", function() {
+            def('buttonName', () => "start");
+            
+            it("returns the name of the key", function() {
+                expect($action).to.equal("Enter");
+            });
+        });
+        context("if buttonName is not assigned to any key", function() {
+            def('buttonName', () => "select");
+            
+            it("returns an empty string", function() {
+                expect($action).to.equal("");
             });
         });
     });
