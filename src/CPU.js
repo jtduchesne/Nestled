@@ -246,7 +246,7 @@ export class CPU {
     //== Memory access ==================================================================//
     /**
      * @param {number} address 16-bit address
-     * @returns {number}
+     * @returns {number} 8-bit data
      */
     read(address) {
         if (address < 0x800) {
@@ -255,7 +255,7 @@ export class CPU {
             return this.ram[address & 0x7FF];
         } else if (address < 0x4018) {
             if (address < 0x4000){
-                return this.bus.ppu.readRegister(address);
+                return this.bus.ppu.read(address);
             } else if (address >= 0x4016) {
                 return this.bus.ctrlConnector.read(address);
             } else {
@@ -276,12 +276,9 @@ export class CPU {
             this.ram[address & 0x7FF] = data;
         } else if (address < 0x4018) {
             if (address < 0x4000) {
-                this.bus.ppu.writeRegister(address,data);
+                this.bus.ppu.write(address,data);
             } else if (address === 0x4014) {
-                const ppu = this.bus.ppu;
-                let dmaAddress = data * 256;
-                for(let count = 0; count < 256; count++)
-                    ppu.OAMData = this.read(dmaAddress++);
+                this.bus.ppu.doDMA(data * 256);
                 
                 if (this.cycle & 1) this.cycle += 513;
                 else this.cycle += 514;

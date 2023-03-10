@@ -191,7 +191,7 @@ describe("Cpu", function() {
                 expect($subject.read(0x1FFF)).to.equal($RAMData);
             });
             it("reads from PPU's registers when address is between [0x2000-3FFF]", function() {
-                const stub = sinon.stub($nes.ppu, 'readRegister');
+                const stub = sinon.stub($nes.ppu, 'read');
                 $subject.read(0x2000);
                 $subject.read(0x3FFF);
                 expect(stub).to.be.calledTwice;
@@ -232,16 +232,26 @@ describe("Cpu", function() {
                 expect($subject.ram[0]).to.equal(0xFF);
             });
             it("writes to PPU's registers when address is between [0x2000-3FFF]", function() {
-                const stub = sinon.stub($nes.ppu, 'writeRegister');
+                const stub = sinon.stub($nes.ppu, 'write');
                 $subject.write(0x2000, 0xFF);
                 $subject.write(0x3FFF, 0xFF);
                 expect(stub).to.be.calledTwice;
             });
-            it("writes to APU's registers when address is between [0x4000-4015]", function() {
+            it("writes to APU's registers when address is between [0x4000-4013]", function() {
                 const stub = sinon.stub($nes.apu, 'writeRegister');
                 $subject.write(0x4000, 0xFF);
-                $subject.write(0x4015, 0xFF);
+                $subject.write(0x4013, 0xFF);
                 expect(stub).to.be.calledTwice;
+            });
+            it("calls PPU's .doDMA() when address is [0x4014]", function() {
+                const stub = sinon.stub($nes.ppu, 'doDMA');
+                $subject.write(0x4014, 0xFF);
+                expect(stub).to.be.calledOnceWith(0xFF00);
+            });
+            it("writes to APU's registers when address is [0x4015]", function() {
+                const stub = sinon.stub($nes.apu, 'writeRegister');
+                $subject.write(0x4015, 0xFF);
+                expect(stub).to.be.calledOnce;
             });
             it("writes (strobe) to both Controllers when address is [0x4016]", function() {
                 const stub1 = sinon.stub($nes.ctrlConnector.controllers[1], 'write');
