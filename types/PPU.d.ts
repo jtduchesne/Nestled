@@ -6,12 +6,12 @@ export class PPU {
     /** @private */
     private bus;
     ntsc: boolean;
-    /** Internal Video RAM (or Character Internal RAM (CI-RAM) ) */
-    vram: Uint8Array;
-    /** @private */
-    private vramBank;
-    /** Internal Palette memory (2x 16-bytes) */
-    palette: Uint8Array[];
+    /** Internal Video RAM (or Character Internal RAM (CI-RAM) )
+     * @type {[Uint8Array, Uint8Array]} */
+    vram: [Uint8Array, Uint8Array];
+    /** Internal Palette memory (2x 16-bytes)
+     * @type {[Uint8Array, Uint8Array]} */
+    palette: [Uint8Array, Uint8Array];
     /** @type {1|32} */
     addressIncrement: 1 | 32;
     /** @type {0x0000 | 0x1000} */
@@ -173,21 +173,22 @@ export class PPU {
      * @private
      */
     private writeData;
-    /** The first color of background palette */
+    /** The first color of background palette
+     * @type {number} 6-bit color index */
     get backdrop(): number;
-    /** Background palette (4x 4-bytes) */
+    /** Background palette (4x 4-bytes)*/
     get bkgPalette(): Uint8Array;
     /** Sprite palette (4x 4-bytes) */
     get sprPalette(): Uint8Array;
     /**
      * @param {number} address 16-bit address
-     * @returns {number} 8-bit data
+     * @returns {number} 6-bit color index
      * @private
      */
     private readPalette;
     /**
      * @param {number} address 16-bit address
-     * @param {number} data 8-bit data
+     * @param {number} data 6-bit color index
      * @private
      */
     private writePalette;
@@ -197,24 +198,38 @@ export class PPU {
     resetY(): void;
     /**
      * @param {number} bus 16-bit address bus
+     * @returns {number} 8-bit pattern index
      * @private
      */
     private fetchNameTable;
     /**
      * @param {number} bus 16-bit address bus
+     * @returns {number} 2-bit palette index
      * @private
      */
     private fetchAttributeTable;
     /**
-     * @param {number} patternIndex
-     * @param {number} row
+     * @param {number} patternIndex 8-bit pattern index
+     * @param {number} row 3-bit fine Y-Scroll value
+     * @returns {number} 16-bit pattern
      * @private
      */
     private fetchBkgPatternTable;
+    /**
+     * @param {number} pattern 16-bit pattern
+     * @param {number} paletteIndex 2-bit palette index
+     * @private
+     */
+    private fillBkgPixelsBuffer;
+    /** Fetch the next tile and fill the buffer. */
     fetchTile(): void;
+    /** Garbage fetch of a tile. */
     fetchNullTile(): void;
+    /** Garbage fetch of 2 pattern indexes. */
     fetchNullNTs(): void;
     /**
+     * Draw 8 pixels from the buffer, according to fine X scrolling, to the screen
+     * at given position.
      * @param {number} dot
      * @param {number} scanline
      */
@@ -223,25 +238,31 @@ export class PPU {
     /** @param {number} scanline */
     evaluateSprites(scanline: number): void;
     /**
-     * @param {number} patternIndex
-     * @param {number} row
+     * @param {number} patternIndex 8-bit pattern index
+     * @param {number} row 3-bit sprite row
+     * @returns {number} 16-bit pattern
      * @private
      */
     private fetchSprPatternTable;
-    /** @param {number} scanline */
-    fetchSprite(scanline: number): void;
-    fetchNullSprite(): void;
-    /** @param {number} scanline */
-    renderSprite(scanline: number): void;
     /**
-     *
-     * @param {Uint32Array} target Buffer of 8x 32-bit RGBA pixels
-     * @param {number} pattern
-     * @param {Uint8Array} palette
-     * @param {number} paletteIndex
-     * @param {boolean=} flip
+     * @param {number} pattern 16-bit pattern
+     * @param {number} paletteIndex 2-bit palette index
+     * @param {boolean} flip Is pattern flipped horizontally ?
+     * @private
      */
-    setPatternPixels(target: Uint32Array, pattern: number, palette: Uint8Array, paletteIndex: number, flip?: boolean | undefined): void;
+    private fillSprPixelsBuffer;
+    /**
+     * Fetch the next sprite and fill the buffer.
+     * @param {number} scanline
+     */
+    fetchSprite(scanline: number): void;
+    /** Garbage fetch of a sprite. */
+    fetchNullSprite(): void;
+    /**
+     * Draw the content of the buffer at the appropriate X position on the next scanline.
+     * @param {number} scanline
+     */
+    renderSprite(scanline: number): void;
     printFrame(): void;
 }
 export default PPU;
