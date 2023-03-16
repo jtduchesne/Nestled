@@ -1807,18 +1807,18 @@ describe("Ppu", function() {
                     def('attributes', () => 0x20);
                     beforeEach(() => { $subject.sprLayer = null; });
                     
-                    it("sets #sprLayer to reference #sprBehindLayer", function() {
+                    it("sets #sprLayer to reference NES.videoOutput.sprBehindLayer", function() {
                         expect(() => $action).to.change($subject, 'sprLayer');
-                        expect($subject.sprLayer).to.equal($subject.sprBehindLayer);
+                        expect($subject.sprLayer).to.equal($nes.videoOutput.sprBehindLayer);
                     });
                 });
                 context("if 'Is Behind' attribute is not set", function() {
                     def('attributes', () => ~0x20);
                     beforeEach(() => { $subject.sprLayer = null; });
                     
-                    it("sets #sprLayer to reference #sprBeforeLayer", function() {
+                    it("sets #sprLayer to reference NES.videoOutput.sprBeforeLayer", function() {
                         expect(() => $action).to.change($subject, 'sprLayer');
-                        expect($subject.sprLayer).to.equal($subject.sprBeforeLayer);
+                        expect($subject.sprLayer).to.equal($nes.videoOutput.sprBeforeLayer);
                     });
                 });
             });

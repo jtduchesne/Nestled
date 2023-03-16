@@ -9,15 +9,15 @@ import AudioOutput from './AudioOutput.js';
 
 export class NES {
     constructor() {
-        this.cpu = new CPU(this);
-        this.apu = new APU(this);
-        this.ppu = new PPU(this);
-        this.engine = new Engine(this);
-        
         this.cartConnector = new CartConnector;
         this.ctrlConnector = new CtrlConnector;
         this.videoOutput = new VideoOutput;
         this.audioOutput = new AudioOutput;
+        
+        this.cpu = new CPU(this);
+        this.apu = new APU(this);
+        this.ppu = new PPU(this);
+        this.engine = new Engine(this);
         
         this.isPowered = false;
     }

@@ -46,3 +46,11 @@ global.AudioBuffer = class {
         return this.buffer;
     }
 };
+
+global.ImageData = class {
+    constructor(width, height) {
+        this.data = {
+            buffer: new ArrayBuffer(width * height)
+        };
+    }
+};

@@ -3,28 +3,20 @@ export class VideoBuffer {
         this.width  = width;
         this.height = height;
         
-        this.createNewBuffer();
+        this.frame = new ImageData(width, height);
+        this.image = new ImageData(width, height);
+        this.data  = new Uint32Array(this.image.data.buffer);
     }
     
-    createNewBuffer() {
-        if (typeof ImageData === 'function') {
-            this.image = new ImageData(this.width, this.height);
-            this.data  = new Uint32Array(this.image.data.buffer);
-        } else {
-            this.image = null;
-            this.data  = new Uint32Array(this.width * this.height);
-        }
-    }
-    
-    //===============================================================//
+    //===================================================================================//
     writePixels(x, y, values) {
         this.data.set(values, y*this.width + x);
     }
     
-    getFrame() {
-        let frame = this.image;
-        this.createNewBuffer();
-        return frame;
+    setFrame() {
+        this.frame = this.image;
+        this.image = new ImageData(this.width, this.height);
+        this.data  = new Uint32Array(this.image.data.buffer);
     }
 }
 

@@ -2,7 +2,7 @@
  * @typedef {import('./NES.js').NES} NES
  */
 
-import { VideoBuffer, Colors } from './Video/index.js';
+import { Colors } from './Video/index.js';
 const { pxlColors, cssColors } = Colors;
 
 /** @type {Readonly<Record<number, number>>} */
@@ -110,10 +110,8 @@ export class PPU {
         /** @private */ this.sprPixelsBuffer = new Uint32Array(8);
         
         //Layers
-        /** @private */ this.bkgLayer       = new VideoBuffer(256 +8, 240 +16);
-        /** @private */ this.sprBehindLayer = new VideoBuffer(256 +8, 240 +16);
-        /** @private */ this.sprBeforeLayer = new VideoBuffer(256 +8, 240 +16);
-        /** @private */ this.sprLayer       = this.sprBeforeLayer;
+        /** @private */ this.bkgLayer = this.bus.videoOutput.bkgLayer;
+        /** @private */ this.sprLayer = this.bus.videoOutput.sprBeforeLayer;
         
         //Used for Sprite0 hit detection
         /** @private */ this.sprite0Layer = new Uint32Array(264);
@@ -138,9 +136,6 @@ export class PPU {
         
         this.ntsc = (this.bus.cartConnector.metadata.tvSystem === "NTSC");
         
-        this.bus.videoOutput.addLayer(this.sprBehindLayer);
-        this.bus.videoOutput.addLayer(this.bkgLayer);
-        this.bus.videoOutput.addLayer(this.sprBeforeLayer);
         this.bus.videoOutput.start();
         
         this.isPowered = true;
@@ -744,10 +739,10 @@ export class PPU {
         
         // Behind Background
         if (attributes >= 0x20) {
-            this.sprLayer = this.sprBehindLayer;
+            this.sprLayer = this.bus.videoOutput.sprBehindLayer;
             attributes -= 0x20;
         } else
-            this.sprLayer = this.sprBeforeLayer;
+            this.sprLayer = this.bus.videoOutput.sprBeforeLayer;
         
         if (attributes > 0x03)
             attributes &= 0x03;
