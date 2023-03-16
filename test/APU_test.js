@@ -355,11 +355,11 @@ describe("APU", function() {
     
     /*global $address, $data*/
     
-    describe(".readRegister(address)", function() {
+    describe(".read(address)", function() {
         beforeEach(function() {
             sinon.stub($subject, 'status').get(() => 0xAA);
         });
-        def('action', () => $subject.readRegister($address));
+        def('action', () => $subject.read($address));
         
         context("when address is invalid", function() {
             def('address', () => 0x0000);
@@ -380,15 +380,15 @@ describe("APU", function() {
         });
     });
     
-    describe(".writeRegister(address, data)", function() {
-        def('action', () => $subject.writeRegister($address, $data));
+    describe(".write(address, data)", function() {
+        def('action', () => $subject.write($address, $data));
         def('data', () => 0xAA);
         
         context("when address is 0x4000", function() {
             def('address', () => 0x4000);
             
-            it("delegates to Pulse1.writeRegister(address, data)", function() {
-                const spy = sinon.spy($subject.pulse1, 'writeRegister');
+            it("delegates to Pulse1.write(address, data)", function() {
+                const spy = sinon.spy($subject.pulse1, 'write');
                 $action;
                 expect(spy).to.be.calledOnceWith($address, $data);
             });
@@ -396,8 +396,8 @@ describe("APU", function() {
         context("when address is 0x4004", function() {
             def('address', () => 0x4004);
             
-            it("delegates to Pulse2.writeRegister(address, data)", function() {
-                const spy = sinon.spy($subject.pulse2, 'writeRegister');
+            it("delegates to Pulse2.write(address, data)", function() {
+                const spy = sinon.spy($subject.pulse2, 'write');
                 $action;
                 expect(spy).to.be.calledOnceWith($address, $data);
             });
@@ -405,8 +405,8 @@ describe("APU", function() {
         context("when address is 0x4008", function() {
             def('address', () => 0x4008);
             
-            it("delegates to Triangle.writeRegister(address, data)", function() {
-                const spy = sinon.spy($subject.triangle, 'writeRegister');
+            it("delegates to Triangle.write(address, data)", function() {
+                const spy = sinon.spy($subject.triangle, 'write');
                 $action;
                 expect(spy).to.be.calledOnceWith($address, $data);
             });
@@ -414,8 +414,8 @@ describe("APU", function() {
         context("when address is 0x400C", function() {
             def('address', () => 0x400C);
             
-            it("delegates to Noise.writeRegister(address, data)", function() {
-                const spy = sinon.spy($subject.noise, 'writeRegister');
+            it("delegates to Noise.write(address, data)", function() {
+                const spy = sinon.spy($subject.noise, 'write');
                 $action;
                 expect(spy).to.be.calledOnceWith($address, $data);
             });
@@ -423,8 +423,8 @@ describe("APU", function() {
         context("when address is 0x4010", function() {
             def('address', () => 0x4010);
             
-            it("delegates to DMC.writeRegister(address, data)", function() {
-                const spy = sinon.spy($subject.dmc, 'writeRegister');
+            it("delegates to DMC.write(address, data)", function() {
+                const spy = sinon.spy($subject.dmc, 'write');
                 $action;
                 expect(spy).to.be.calledOnceWith($address, $data);
             });

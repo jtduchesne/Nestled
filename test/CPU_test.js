@@ -200,7 +200,7 @@ describe("Cpu", function() {
                 expect(stub).to.be.calledTwice;
             });
             it("reads from APU when address is [0x4015]", function() {
-                const stub = sinon.stub($nes.apu, 'readRegister');
+                const stub = sinon.stub($nes.apu, 'read');
                 $subject.read(0x4015);
                 expect(stub).to.be.calledOnce;
             });
@@ -240,7 +240,7 @@ describe("Cpu", function() {
                 expect(stub).to.be.calledTwice;
             });
             it("writes to APU when address is between [0x4000-4013]", function() {
-                const stub = sinon.stub($nes.apu, 'writeRegister');
+                const stub = sinon.stub($nes.apu, 'write');
                 $subject.write(0x4000, 0xFF);
                 $subject.write(0x4013, 0xFF);
                 expect(stub).to.be.calledTwice;
@@ -251,7 +251,7 @@ describe("Cpu", function() {
                 expect(stub).to.be.calledOnceWith(0xFF00);
             });
             it("writes to APU when address is [0x4015]", function() {
-                const stub = sinon.stub($nes.apu, 'writeRegister');
+                const stub = sinon.stub($nes.apu, 'write');
                 $subject.write(0x4015, 0xFF);
                 expect(stub).to.be.calledOnce;
             });
@@ -263,7 +263,7 @@ describe("Cpu", function() {
                 expect(stub2).to.be.calledOnceWith(0x1);
             });
             it("writes to APU when address is [0x4017]", function() {
-                const stub = sinon.stub($nes.apu, 'writeRegister');
+                const stub = sinon.stub($nes.apu, 'write');
                 $subject.write(0x4017, 0xFF);
                 expect(stub).to.be.calledOnce;
             });
