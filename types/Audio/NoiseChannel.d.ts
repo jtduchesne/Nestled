@@ -9,7 +9,7 @@ export class NoiseChannel extends EnvelopeGenerator {
      * @param {number} address 16-bit address between 0x400C-0x400F
      * @param {number} data 8-bit data
      */
-    writeRegister(address: number, data: number): void;
+    write(address: number, data: number): void;
     doCycle(): void;
     /**
      * 4-bit output value

@@ -59,12 +59,12 @@ export class APU {
      * @param {number} address 16-bit address
      * @returns {number}
      */
-    readRegister(address: number): number;
+    read(address: number): number;
     /**
      * @param {number} address 16-bit address between 0x4000-0x4017
      * @param {number} data 8-bit data
      */
-    writeRegister(address: number, data: number): void;
+    write(address: number, data: number): void;
     /**
      * @param {number} count The number of (CPU) cycles to execute
      */
