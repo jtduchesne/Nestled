@@ -2,9 +2,6 @@
  * @typedef {import('./NES.js').NES} NES
  */
 
-import { Colors } from './Video/index.js';
-const { pxlColors, cssColors } = Colors;
-
 /** @type {Readonly<Record<number, number>>} */
 const bitplaneLookup = Object.freeze({
     0x0000: 0,
@@ -547,6 +544,8 @@ export class PPU {
         this.bkgPixelsBuffer.copyWithin(0, 8);
         const target = this.bkgPixelsBuffer.subarray(8);
         
+        const colors = this.bus.videoOutput.colors;
+        
         const palette = this.bkgPalette;
         
         if (paletteIndex >= 4) paletteIndex %= 4;
@@ -555,7 +554,7 @@ export class PPU {
         for (let offset = 0; offset < 8; offset++) {
             const colorIndex = bitplaneLookup[(pattern << offset) & 0x8080];
             if (colorIndex)
-                target[offset] = pxlColors[palette[paletteOffset + colorIndex]];
+                target[offset] = colors[palette[paletteOffset + colorIndex]];
             else
                 target[offset] = 0x00000000;
         }
@@ -686,6 +685,8 @@ export class PPU {
     fillSprPixelsBuffer(pattern, paletteIndex, flip) {
         const target = this.sprPixelsBuffer;
         
+        const colors = this.bus.videoOutput.colors;
+        
         const palette = this.sprPalette;
         
         if (paletteIndex >= 4) paletteIndex %= 4;
@@ -694,7 +695,7 @@ export class PPU {
         for (let offset = 0; offset < 8; offset++) {
             const colorIndex = bitplaneLookup[(pattern << offset) & 0x8080];
             if (colorIndex)
-                target[flip ? 7-offset : offset] = pxlColors[palette[paletteOffset + colorIndex]];
+                target[flip ? 7-offset : offset] = colors[palette[paletteOffset + colorIndex]];
             else
                 target[flip ? 7-offset : offset] = 0x00000000;
         }
@@ -786,7 +787,7 @@ export class PPU {
     
     //== Output =========================================================================//
     printFrame() {
-        this.bus.videoOutput.schedule(cssColors[this.backdrop]);
+        this.bus.videoOutput.schedule(this.backdrop);
     }
 }
 

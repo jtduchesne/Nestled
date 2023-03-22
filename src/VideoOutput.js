@@ -1,4 +1,5 @@
-import VideoBuffer from "./Video/VideoBuffer.js";
+import { Colors, VideoBuffer } from "./Video/index.js";
+const { cssColors, pxlColors } = Colors;
 
 const width  = 256;
 const height = 240;
@@ -62,12 +63,14 @@ export class VideoOutput {
     
     //===================================================================================//
     
-    schedule(cssBackdrop) {
+    get colors() { return pxlColors; }
+    
+    schedule(backdrop) {
         if (this.connected) {
             this.layers.forEach((layer) => layer.setFrame());
             
             this.scheduled = window.requestAnimationFrame(() => {
-                this.context.fillStyle = cssBackdrop;
+                this.context.fillStyle = cssColors[backdrop];
                 this.context.fillRect(0, 0, this.canvas.width, this.canvas.height);
                 
                 this.layers.forEach(({ frame }) => {
