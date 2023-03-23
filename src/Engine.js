@@ -222,7 +222,6 @@ export class Engine {
         while (dot < 320) {
             cpu.doInstructions(cyclesBeforeScanline + dot/3);
             ppu.fetchSprite(scanline);
-            ppu.renderSprite(scanline);
             dot += 8;
         }
         

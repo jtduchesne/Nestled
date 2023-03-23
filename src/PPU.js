@@ -594,9 +594,16 @@ export class PPU {
         const offset = this.fineScrollX;
         const pixels = this.bkgPixelsBuffer.subarray(offset, offset+8);
         
-        if (this.sprite0 && !this.sprite0Hit) {
-            if (this.sprite0Layer.subarray(dot, dot+8).some((e,i) => (e && pixels[i])))
-                this.sprite0Hit = true;
+        if (!this.sprite0Hit) {
+            const sprite0Y = this.oamPrimary[0];
+            if ((sprite0Y < scanline+8) && (sprite0Y+8 > scanline)) {
+                const sprite0X = this.oamPrimary[3];
+                if ((sprite0X < dot+8) && (sprite0X+8 > dot)) {
+                    this.sprite0Hit = this.sprite0Layer.subarray(dot, dot+8).some(
+                        (pixel, i) => (pixel && pixels[i])
+                    );
+                }
+            }
         }
         
         this.bkgLayer.writePixels(dot, scanline, pixels);
@@ -615,32 +622,31 @@ export class PPU {
         
         const height = this.spriteHeight;
         
+        let y = 0, top = 0, bottom = 0;
         while (this.oamAddress < 256) {
-            const y = spritesList[this.oamAddress];
+            y = spritesList[this.oamAddress];
             
-            const top    = y + height; //Sprite's coordinates are bottom-left
-            const bottom = y;
+            top    = y + height;
+            bottom = y;
             
-            if (this.oamIndex === 32) {
-                this.oamAddress++; //This causes the 'Sprite overflow bug'
-                this.oamIndex++;
-            } else {
-                if (this.oamIndex < 32)
-                    sprites[this.oamIndex] = y;
+            if (this.oamIndex < 32) {
+                sprites[this.oamIndex] = y;
+                
                 if (scanline >= bottom && scanline < top) {
-                    if (this.oamIndex < 32) {
-                        if (this.oamAddress === 0)
-                            this.sprite0 = true;
-                        for (let i=1; i<4; i++)
-                            sprites[this.oamIndex+i] = spritesList[this.oamAddress+i];
-                        this.oamIndex += 4;
-                    } else {
-                        this.spriteOverflow = true;
-                        break;
-                    }
+                    if (this.oamAddress === 0) this.sprite0 = true;
+                    
+                    for (let i=1; i<4; i++)
+                        sprites[this.oamIndex+i] = spritesList[this.oamAddress+i];
+                    
+                    this.oamIndex += 4;
                 }
-                this.oamAddress += 4;
+            } else {
+                if (scanline >= bottom && scanline < top) {
+                    this.spriteOverflow = true;
+                    break;
+                }
             }
+            this.oamAddress += 4;
         }
         this.oamIndex = 0;
     }
@@ -669,6 +675,7 @@ export class PPU {
      * @param {number} pattern 16-bit pattern
      * @param {number} paletteIndex 2-bit palette index
      * @param {boolean} flip Is pattern flipped horizontally ?
+     * @returns {Uint32Array} The 8-pixels sprite buffer
      * @private
      */
     fillSprPixelsBuffer(pattern, paletteIndex, flip) {
@@ -685,10 +692,11 @@ export class PPU {
         } else {
             target.fill(0);
         }
+        return target;
     }
     
     /**
-     * Fetch the next sprite and fill the buffer.
+     * Fetch the next sprite and process it for the next scanline.
      * @param {number} scanline
      */
     fetchSprite(scanline) {
@@ -702,15 +710,12 @@ export class PPU {
         
         const sprites = this.oamSecondary;
         
-        if (this.sprite0)
-            this.sprite0 = (this.oamIndex === 0);
-        
-        const y = sprites[this.oamIndex++];
-        let row = scanline - y;
-        
+        const y          = sprites[this.oamIndex++];
         let patternIndex = sprites[this.oamIndex++];
         let attributes   = sprites[this.oamIndex++];
+        const x          = sprites[this.oamIndex++];
         
+        let row = scanline - y;
         // Vertical Flip
         if (attributes >= 0x80) {
             row = this.spriteHeight - row - 1;
@@ -741,7 +746,14 @@ export class PPU {
         }
         
         const pattern = this.fetchSprPatternTable(patternIndex, row);
-        this.fillSprPixelsBuffer(pattern, attributes, flip);
+        const pixels  = this.fillSprPixelsBuffer(pattern, attributes, flip);
+        
+        if (this.sprite0) {
+            this.sprite0Layer.set(pixels, x);
+            this.sprite0 = false;
+        }
+        
+        this.sprLayer.writePixels(x, scanline+1, pixels);
     }
     
     /** Garbage fetch of a sprite. */
@@ -753,22 +765,6 @@ export class PPU {
         this.fetchAttributeTable(addressBus);
         
         this.fetchSprPatternTable(0x00, 0);
-    }
-    
-    /**
-     * Draw the content of the buffer at the appropriate X position on the next scanline.
-     * @param {number} scanline
-     */
-    renderSprite(scanline) {
-        if (!this.showSprites) return;
-        
-        const x = this.oamSecondary[this.oamIndex++];
-        const pixels = this.sprPixelsBuffer;
-        
-        if (this.sprite0)
-            this.sprite0Layer.fill(0).set(pixels, x);
-        
-        this.sprLayer.writePixels(x, scanline+1, pixels);
     }
     
     //== Output =========================================================================//
