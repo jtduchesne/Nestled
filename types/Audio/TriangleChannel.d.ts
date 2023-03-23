@@ -8,7 +8,7 @@ export class TriangleChannel extends LinearCounter {
      * @param {number} address 16-bit address between 0x4008-0x400B
      * @param {number} data 8-bit data
      */
-    writeRegister(address: number, data: number): void;
+    write(address: number, data: number): void;
     doCycle(): void;
     /**
      * 4-bit output value

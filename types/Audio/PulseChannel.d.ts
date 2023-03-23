@@ -15,7 +15,7 @@ export class PulseChannel extends SweepUnit {
      * @param {number} address 16-bit address between 0x4000-0x4007
      * @param {number} data 8-bit data
      */
-    writeRegister(address: number, data: number): void;
+    write(address: number, data: number): void;
     doCycle(): void;
     /**
      * 4-bit output value

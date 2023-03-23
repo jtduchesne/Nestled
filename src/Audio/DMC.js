@@ -122,7 +122,7 @@ export class DMC {
      * @param {number} address 16-bit address between 0x4010-0x4013
      * @param {number} data 8-bit data
      */
-    writeRegister(address, data) {
+    write(address, data) {
         switch (address) {
         case 0x4010: this.rate    = data; break;
         case 0x4011: this.load    = data; break;

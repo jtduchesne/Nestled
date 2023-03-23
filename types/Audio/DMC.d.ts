@@ -48,7 +48,7 @@ export class DMC {
      * @param {number} address 16-bit address between 0x4010-0x4013
      * @param {number} data 8-bit data
      */
-    writeRegister(address: number, data: number): void;
+    write(address: number, data: number): void;
     doCycle(): void;
     /** @private */
     private updateSampleBuffer;

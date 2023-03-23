@@ -12,7 +12,7 @@ describe("APU", function() {
     its('bus', () => is.expected.to.equal($nes));
     
     its('cycle',       () => is.expected.to.equal(0));
-    its('toggle',      () => is.expected.to.be.false);
+    its('toggle',      () => is.expected.to.be.true);
     its('counterMode', () => is.expected.to.equal(0));
     its('irqDisabled', () => is.expected.to.be.false);
     its('irq',         () => is.expected.to.be.false);
@@ -355,11 +355,11 @@ describe("APU", function() {
     
     /*global $address, $data*/
     
-    describe(".readRegister(address)", function() {
+    describe(".read(address)", function() {
         beforeEach(function() {
             sinon.stub($subject, 'status').get(() => 0xAA);
         });
-        def('action', () => $subject.readRegister($address));
+        def('action', () => $subject.read($address));
         
         context("when address is invalid", function() {
             def('address', () => 0x0000);
@@ -380,15 +380,15 @@ describe("APU", function() {
         });
     });
     
-    describe(".writeRegister(address, data)", function() {
-        def('action', () => $subject.writeRegister($address, $data));
+    describe(".write(address, data)", function() {
+        def('action', () => $subject.write($address, $data));
         def('data', () => 0xAA);
         
         context("when address is 0x4000", function() {
             def('address', () => 0x4000);
             
-            it("delegates to Pulse1.writeRegister(address, data)", function() {
-                const spy = sinon.spy($subject.pulse1, 'writeRegister');
+            it("delegates to Pulse1.write(address, data)", function() {
+                const spy = sinon.spy($subject.pulse1, 'write');
                 $action;
                 expect(spy).to.be.calledOnceWith($address, $data);
             });
@@ -396,8 +396,8 @@ describe("APU", function() {
         context("when address is 0x4004", function() {
             def('address', () => 0x4004);
             
-            it("delegates to Pulse2.writeRegister(address, data)", function() {
-                const spy = sinon.spy($subject.pulse2, 'writeRegister');
+            it("delegates to Pulse2.write(address, data)", function() {
+                const spy = sinon.spy($subject.pulse2, 'write');
                 $action;
                 expect(spy).to.be.calledOnceWith($address, $data);
             });
@@ -405,8 +405,8 @@ describe("APU", function() {
         context("when address is 0x4008", function() {
             def('address', () => 0x4008);
             
-            it("delegates to Triangle.writeRegister(address, data)", function() {
-                const spy = sinon.spy($subject.triangle, 'writeRegister');
+            it("delegates to Triangle.write(address, data)", function() {
+                const spy = sinon.spy($subject.triangle, 'write');
                 $action;
                 expect(spy).to.be.calledOnceWith($address, $data);
             });
@@ -414,8 +414,8 @@ describe("APU", function() {
         context("when address is 0x400C", function() {
             def('address', () => 0x400C);
             
-            it("delegates to Noise.writeRegister(address, data)", function() {
-                const spy = sinon.spy($subject.noise, 'writeRegister');
+            it("delegates to Noise.write(address, data)", function() {
+                const spy = sinon.spy($subject.noise, 'write');
                 $action;
                 expect(spy).to.be.calledOnceWith($address, $data);
             });
@@ -423,8 +423,8 @@ describe("APU", function() {
         context("when address is 0x4010", function() {
             def('address', () => 0x4010);
             
-            it("delegates to DMC.writeRegister(address, data)", function() {
-                const spy = sinon.spy($subject.dmc, 'writeRegister');
+            it("delegates to DMC.write(address, data)", function() {
+                const spy = sinon.spy($subject.dmc, 'write');
                 $action;
                 expect(spy).to.be.calledOnceWith($address, $data);
             });
@@ -469,24 +469,24 @@ describe("APU", function() {
             it("increases #cycle by [count]/2", function() {
                 expect(() => $action).to.increase($subject, 'cycle').by($expected);
             });
-            it("does not set #toggle", function() {
+            it("does not clear #toggle", function() {
                 expect(() => $action).not.to.change($subject, 'toggle');
-                expect($subject.toggle).to.be.false;
+                expect($subject.toggle).to.be.true;
             });
             it("calls .doCycle() [count]/2 times", function() {
                 $action;
                 expect($subject.doCycle.callCount).to.equal($expected);
             });
             
-            context("and #toggle is set", function() {
-                beforeEach(() => { $subject.toggle = true; });
+            context("and #toggle is clear", function() {
+                beforeEach(() => { $subject.toggle = false; });
                 
                 it("still increases #cycle by [count]/2", function() {
                     expect(() => $action).to.increase($subject, 'cycle').by($expected);
                 });
-                it("does not clear #toggle", function() {
+                it("does not set #toggle", function() {
                     expect(() => $action).not.to.change($subject, 'toggle');
-                    expect($subject.toggle).to.be.true;
+                    expect($subject.toggle).to.be.false;
                 });
                 it("still calls .doCycle() [count]/2 times", function() {
                     $action;
@@ -498,31 +498,31 @@ describe("APU", function() {
             def('count',    () => 5);
             def('expected', () => 3);
             
-            it("increases #cycle by [count]/2", function() {
-                expect(() => $action).to.increase($subject, 'cycle').by($expected);
+            it("increases #cycle by [count]/2 (rounded)", function() {
+                expect(() => $action).to.increase($subject, 'cycle').by($expected -1);
             });
-            it("sets #toggle", function() {
+            it("clears #toggle", function() {
                 expect(() => $action).to.change($subject, 'toggle');
-                expect($subject.toggle).to.be.true;
+                expect($subject.toggle).to.be.false;
             });
-            it("calls .doCycle() [count]/2 times", function() {
+            it("calls .doCycle() [count]/2 (rounded) times", function() {
                 $action;
-                expect($subject.doCycle.callCount).to.equal($expected);
+                expect($subject.doCycle.callCount).to.equal($expected -1);
             });
             
-            context("and #toggle is set", function() {
-                beforeEach(() => { $subject.toggle = true; });
+            context("and #toggle is clear", function() {
+                beforeEach(() => { $subject.toggle = false; });
                 
-                it("increases #cycle by [count]/2 -1", function() {
-                    expect(() => $action).to.increase($subject, 'cycle').by($expected - 1);
+                it("increases #cycle by [count]/2", function() {
+                    expect(() => $action).to.increase($subject, 'cycle').by($expected);
                 });
-                it("clears #toggle", function() {
+                it("sets #toggle", function() {
                     expect(() => $action).to.change($subject, 'toggle');
-                    expect($subject.toggle).to.be.false;
+                    expect($subject.toggle).to.be.true;
                 });
-                it("calls .doCycle() [count]/2 -1 times", function() {
+                it("calls .doCycle() [count]/2 times", function() {
                     $action;
-                    expect($subject.doCycle.callCount).to.equal($expected - 1);
+                    expect($subject.doCycle.callCount).to.equal($expected);
                 });
             });
         });

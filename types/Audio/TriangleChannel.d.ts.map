@@ -1,1 +1,1 @@
-{"version":3,"file":"TriangleChannel.d.ts","sourceRoot":"","sources":["../../src/Audio/TriangleChannel.js"],"names":[],"mappings":"AAQA;;GAEG;AACH;IAIQ,eAAe;IACf,cAAc;IAqBlB;;;OAGG;IACH,uBAHW,MAAM,QACN,MAAM,QAQhB;IAGD,gBAaC;IAGD;;;OAGG;IACH,qBAEC;CACJ"}
+{"version":3,"file":"TriangleChannel.d.ts","sourceRoot":"","sources":["../../src/Audio/TriangleChannel.js"],"names":[],"mappings":"AAQA;;GAEG;AACH;IAIQ,eAAe;IACf,cAAc;IAqBlB;;;OAGG;IACH,eAHW,MAAM,QACN,MAAM,QAQhB;IAGD,gBAaC;IAGD;;;OAGG;IACH,qBAEC;CACJ"}

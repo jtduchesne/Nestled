@@ -23,8 +23,6 @@ export class CPU {
         /** @private */
         this.bus = bus;
         
-        this.cycle = 0;
-        
         /** Internal 2kb of RAM, located at `[0x0000-0x07FF]`. */
         this.ram   = new Uint8Array(0x800);
         /** Predefined memory page used for the Stack, located at `[0x0100-0x01FF]`. */
@@ -53,7 +51,7 @@ export class CPU {
          * supports using the *Status register* for carrying, overflow detection,
          * and so on.
          */
-        this.A = 0xFF;
+        this.A = 0x00;
         /**
          * **X index**
          * 
@@ -61,7 +59,7 @@ export class CPU {
          * loop counter easily, using `INC`/`DEC` and *Branch* instructions. Not being
          * the accumulator, it has limited addressing modes when loading and saving.
          */
-        this.X = 0xFF;
+        this.X = 0x00;
         /**
          * **Y index**
          * 
@@ -69,7 +67,7 @@ export class CPU {
          * loop counter easily, using `INC`/`DEC` and *Branch* instructions. Not being
          * the accumulator, it has limited addressing modes when loading and saving.
          */
-        this.Y = 0xFF;
+        this.Y = 0x00;
         /**
          * **Status Register**
          * 
@@ -79,14 +77,14 @@ export class CPU {
          * **P** has 6 bits used by the **ALU** but is byte-wide. `PHP`, `PLP`,
          * *Arithmetic*, *Testing*, and *Branch* instructions can access this register.
          */
-        this.P = 0xFF;
+        this.P = 0x30;
         /**
          * **Stack Pointer**
          * 
          * **S** is byte-wide and can be accessed using *Interrupts*, *Pulls*, *Pushes*,
          * and *Transfers*. It indexes into a 256 bytes stack at `[0x0100-0x01FF]`.
          */
-        this.SP = 0xFF;
+        this.SP = 0x00;
         /**
          * **Program Counter**
          * 
@@ -94,7 +92,7 @@ export class CPU {
          * increment, by an interrupt (*NMI*, *Reset*, *IRQ/BRQ*), or by using the
          * `RTS`/`JMP`/`JSR`/ *Branch* instructions.
          */
-        this.PC = 0xFFFF;
+        this.PC = 0x0000;
         
         /**
          * Addressing modes by opcode lookup table.
@@ -143,6 +141,8 @@ export class CPU {
             this.CPX, this.SBC,  this.NOP, this.NOP,  this.CPX,   this.SBC,   this.INC,   this.NOP,   this.INX, this.SBC,  this.NOP, this.NOP,  this.CPX,  this.SBC,  this.INC,  this.NOP,
             this.BEQ, this.SBC,  this.KIL, this.NOP,  this.NOP,   this.SBC,   this.INC,   this.NOP,   this.SED, this.SBC,  this.NOP, this.NOP,  this.NOP,  this.SBC,  this.INC,  this.NOP
         ].map((fn) => fn.bind(this));
+        
+        this.cycle = 0;
         
         /** @private */
         this.opcode  = 0x00;
@@ -230,7 +230,7 @@ export class CPU {
     }
     doReset() {
         this.SP = wrapByte(this.SP+3);
-        this.P &= ~0x04;
+        this.P |= 0x04;
         this.PC = this.resetVector();
         this.cycle += 7;
     }
@@ -254,12 +254,12 @@ export class CPU {
         } else if (address < 0x2000) {
             return this.ram[address & 0x7FF];
         } else if (address < 0x4018) {
-            if (address < 0x4000){
+            if (address < 0x4000) {
                 return this.bus.ppu.read(address);
             } else if (address >= 0x4016) {
                 return this.bus.ctrlConnector.read(address);
             } else {
-                return this.bus.apu.readRegister(address);
+                return this.bus.apu.read(address);
             }
         } else {
             return this.bus.cartConnector.cartridge.cpuRead(address);
@@ -285,7 +285,7 @@ export class CPU {
             } else if (address === 0x4016) {
                 this.bus.ctrlConnector.write(address, data);
             } else {
-                this.bus.apu.writeRegister(address, data);
+                this.bus.apu.write(address, data);
             }
         } else {
             this.bus.cartConnector.cartridge.cpuWrite(address, data);

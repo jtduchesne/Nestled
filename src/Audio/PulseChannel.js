@@ -56,7 +56,7 @@ export class PulseChannel extends SweepUnit {
      * @param {number} address 16-bit address between 0x4000-0x4007
      * @param {number} data 8-bit data
      */
-    writeRegister(address, data) {
+    write(address, data) {
         switch (address) {
         case 0x4000: case 0x4004: this.volume = data; break;
         case 0x4001: case 0x4005: this.sweep  = data; break;

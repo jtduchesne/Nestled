@@ -96,10 +96,10 @@ export class Keyboard extends Joypad {
     //== Buttons ============================================================================//
     /**
      * Get the name of the assigned key for the given button name.
-     * @param {ButtonName} name
+     * @param {ButtonName} buttonName
      */
-    getAssignedKey(name) {
-        return this.assignedKeys[name] || "";
+    getAssignedKey(buttonName) {
+        return this.assignedKeys[buttonName] || "";
     }
 }
 

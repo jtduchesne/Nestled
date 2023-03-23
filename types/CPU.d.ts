@@ -5,7 +5,6 @@ export class CPU {
     constructor(bus: NES);
     /** @private */
     private bus;
-    cycle: number;
     /** Internal 2kb of RAM, located at `[0x0000-0x07FF]`. */
     ram: Uint8Array;
     /** Predefined memory page used for the Stack, located at `[0x0100-0x01FF]`. */
@@ -86,6 +85,7 @@ export class CPU {
      * @private
      */
     private instructionLookup;
+    cycle: number;
     /** @private */
     private opcode;
     /** @private */

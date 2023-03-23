@@ -1,158 +1,83 @@
+import { expect } from "chai";
+
 import Joypad from "../../src/Controllers/Joypad";
 
 describe("Joypad", function() {
     subject(() => new Joypad);
     
-    function press(buttonName) {
-        $subject.getButtonHandler(buttonName)(true);
-    }
-    
-    its('type', () => is.expected.to.equal("Joypad"));
-    
-    its('states',   () => is.expected.to.be.an('array').and.have.lengthOf(8));
+    its('states',   () => is.expected.to.be.an('array').with.lengthOf(8).and.be.sealed);
+    its('data',     () => is.expected.to.be.an('array').and.be.empty);
     its('strobing', () => is.expected.to.be.false);
+    
+    its('type',   () => is.expected.to.equal("Joypad"));
+    its('device', () => is.expected.to.equal("None"));
     
     its('empty',   () => is.expected.to.be.false);
     its('present', () => is.expected.to.be.true);
     
     describe(".read()", function() {
-        /*global $halfStrobe, $fullStrobe */
-        def('halfStrobe', () => {
-            $subject.write(1);
-        });
-        def('fullStrobe', () => {
-            $subject.write(1);
-            $subject.write(0);
-        });
-        
-        context("if strobe is not done correctly", function() {
-            it("keeps reading the state of the first button (A)", function() {
-                press('a');
-                $halfStrobe;
-                expect($subject.read()).to.equal(1);
-                expect($subject.read()).to.equal(1);
-            });
-        });
-        context("if strobe is done correctly", function() {
-            it("reads #a the 1st time", function() {
-                press('a');
-                $fullStrobe;
-                
-                expect($subject.read()).to.equal(1);
-            });
-            it("reads #b the 2nd time", function() {
-                press('b');
-                $fullStrobe;
-                
-                for (var i=1; i<2; i++)
-                    expect($subject.read()).to.equal(0);
-                expect($subject.read()).to.equal(1);
-            });
-            it("reads #select the 3rd time", function() {
-                press('select');
-                $fullStrobe;
-                
-                for (var i=1; i<3; i++)
-                    expect($subject.read()).to.equal(0);
-                expect($subject.read()).to.equal(1);
-            });
-            it("reads #start the 4th time", function() {
-                press('start');
-                $fullStrobe;
-                
-                for (var i=1; i<4; i++)
-                    expect($subject.read()).to.equal(0);
-                expect($subject.read()).to.equal(1);
-            });
-            it("reads #up the 5th time", function() {
-                press('up');
-                $fullStrobe;
-                
-                for (var i=1; i<5; i++)
-                    expect($subject.read()).to.equal(0);
-                expect($subject.read()).to.equal(1);
-            });
-            it("reads #down the 6th time", function() {
-                press('down');
-                $fullStrobe;
-                
-                for (var i=1; i<6; i++)
-                    expect($subject.read()).to.equal(0);
-                expect($subject.read()).to.equal(1);
-            });
-            it("reads #left the 7th time", function() {
-                press('left');
-                $fullStrobe;
-                
-                for (var i=1; i<7; i++)
-                    expect($subject.read()).to.equal(0);
-                expect($subject.read()).to.equal(1);
-            });
-            it("reads #right the 8th time", function() {
-                press('right');
-                $fullStrobe;
-                
-                for (var i=1; i<8; i++)
-                    expect($subject.read()).to.equal(0);
-                expect($subject.read()).to.equal(1);
-            });
-            it("reads -1- after the 8th time", function() {
-                $fullStrobe;
-                
-                for (var i=1; i<=8; i++)
-                    expect($subject.read()).to.equal(0);
-                expect($subject.read()).to.equal(1);
-            });
-        });
-    });
-    
-    describe(".write(data)", function() {
-        /*global $data */
-        def('action', () => $subject.write($data));
         beforeEach(function() {
-            press('a');
-            press('up');
+            $subject.states[0] = 0;
+            $subject.states[1] = 1;
+            $subject.states[2] = 0;
         });
         
-        context("if data is 0", function() {
-            def('data', () => 0);
-            beforeEach(function() { $subject.strobing = true; });
-            
-            it("clears #strobing", function() {
-                expect(() => $action).to.change($subject, 'strobing');
-                expect($subject.strobing).to.be.false;
+        context("without a strobe", function() {
+            it("keeps reporting -1-", function() {
+                expect($subject.read()).to.equal(1);
+                expect($subject.read()).to.equal(1);
+                expect($subject.read()).to.equal(1);
             });
         });
-        context("if data is 1", function() {
-            def('data', () => 1);
-            beforeEach(function() { $subject.strobing = false; });
+        context("with a strobe", function() {
+            beforeEach(() => { $subject.strobe(); });
             
-            it("sets #strobing", function() {
-                expect(() => $action).to.change($subject, 'strobing');
-                expect($subject.strobing).to.be.true;
+            it("reports one bit at a time from #states", function() {
+                expect($subject.read()).to.equal(0);
+                expect($subject.read()).to.equal(1);
+                expect($subject.read()).to.equal(0);
+            });
+            it("keeps reporting -1- after 8 reads", function() {
+                for (let i = 1; i <= 8; i++)
+                    $subject.read();
+                expect($subject.read()).to.equal(1);
+                expect($subject.read()).to.equal(1);
+                expect($subject.read()).to.equal(1);
+            });
+        });
+        
+        context("if #strobing is kept set", function() {
+            beforeEach(() => { $subject.strobing = true; });
+            
+            it("keeps reporting the first bit of #states", function() {
+                expect($subject.read()).to.equal(0);
+                expect($subject.read()).to.equal(0);
+                expect($subject.read()).to.equal(0);
             });
         });
     });
     
     describe(".strobe()", function() {
         def('action', () => $subject.strobe());
+        
         beforeEach(function() {
-            press('a');
-            press('select');
-            press('up');
-            press('left');
+            $subject.states[0] =
+            $subject.states[2] =
+            $subject.states[4] =
+            $subject.states[6] = 1;
         });
         
-        it("loads button states into #data", function() {
+        it("copies button states into #data", function() {
             expect(() => $action).to.change($subject, 'data');
-            expect($subject.data).to.have.ordered.members([1,0,1,0,1,0,1,0]);
+            expect($subject.data).to.deep.equal([1,0,1,0,1,0,1,0]);
+            expect($subject.data).not.to.equal($subject.states);
         });
     });
     
     //-------------------------------------------------------------------------------//
+    /*global $name */
     
     describe(".getButtonHandler(name)", function() {
-        /*global $name */
         def('action', () => $subject.getButtonHandler($name));
         
         context("if a name is valid", function() {
@@ -163,7 +88,42 @@ describe("Joypad", function() {
             });
         });
         context("if a name is not valid", function() {
-            def('name', () => 'invalid');
+            def('name', () => 'unknown_button');
+            
+            it("throws an error containing the invalid name", function() {
+                expect(() => $action).to.throw($name);
+            });
+        });
+    });
+    
+    describe(".pressButton(name, pressDown)", function() {
+        /*global $pressDown*/
+        def('action', () => $subject.pressButton($name, $pressDown));
+        
+        context("if the name is valid", function() {
+            def('name', () => 'a');
+            
+            context("and pressDown is -true-", function() {
+                beforeEach(() => { $subject.states[0] = 0; });
+                def('pressDown', () => true);
+                
+                it("sets its state to -1-", function() {
+                    expect(() => $action).to.change($subject.states, '0');
+                    expect($subject.states[0]).to.equal(1);
+                });
+            });
+            context("and pressDown is -false-", function() {
+                beforeEach(() => { $subject.states[0] = 1; });
+                def('pressDown', () => false);
+                
+                it("sets its state to -0-", function() {
+                    expect(() => $action).to.change($subject.states, '0');
+                    expect($subject.states[0]).to.equal(0);
+                });
+            });
+        });
+        context("if the name is not valid", function() {
+            def('name', () => 'unknown_button');
             
             it("throws an error containing the invalid name", function() {
                 expect(() => $action).to.throw($name);

@@ -16,7 +16,7 @@ export class Joypad extends Controller {
         /** @type {(0|1)[]} @private */
         this.states = Object.seal(new Array(8).fill(0));
         /** @type {(0|1)[]} @private */
-        this.data   = [...this.states];
+        this.data   = [];
         
         /** @type {ButtonHandler[]} */
         this.buttonHandlers = this.states.map((v, i, a) => (

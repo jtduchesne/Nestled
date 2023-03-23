@@ -23,13 +23,12 @@ export class PPU {
         
         this.ntsc = true;
         
-        /** Internal Video RAM (or Character Internal RAM (CI-RAM) ) */
-        this.vram = new Uint8Array(0x800);
-        /** @private */
-        this.vramBank = [this.vram.subarray(0x000, 0x400),
-                         this.vram.subarray(0x400, 0x800)];
+        /** Internal Video RAM (or Character Internal RAM (CI-RAM) )
+         * @type {[Uint8Array, Uint8Array]} */
+        this.vram = [new Uint8Array(0x400), new Uint8Array(0x400)];
         
-        /** Internal Palette memory (2x 16-bytes) */
+        /** Internal Palette memory (2x 16-bytes)
+         * @type {[Uint8Array, Uint8Array]} */
         this.palette = [new Uint8Array(4*4), new Uint8Array(4*4)];
         
         //-----------------------------------------------------------------------//
@@ -403,7 +402,7 @@ export class PPU {
     readData(address) {
         const cartridge = this.bus.cartConnector.cartridge;
         if (cartridge.ciramEnabled(address))
-            return this.vramBank[cartridge.ciramA10(address)][address & 0x3FF];
+            return this.vram[cartridge.ciramA10(address)][address & 0x3FF];
         else
             return cartridge.ppuRead(address);
     }
@@ -415,41 +414,43 @@ export class PPU {
     writeData(address, data) {
         const cartridge = this.bus.cartConnector.cartridge;
         if (cartridge.ciramEnabled(address))
-            this.vramBank[cartridge.ciramA10(address)][address & 0x3FF] = data;
+            this.vram[cartridge.ciramA10(address)][address & 0x3FF] = data;
         else
             cartridge.ppuWrite(address, data);
     }
     
     //== Palettes =======================================================================//
-    /** The first color of background palette */
+    /** The first color of background palette
+     * @type {number} 6-bit color index */
     get backdrop() { return this.palette[0][0]; }
     
-    /** Background palette (4x 4-bytes) */
+    /** Background palette (4x 4-bytes)*/
     get bkgPalette() { return this.palette[0]; }
     /** Sprite palette (4x 4-bytes) */
     get sprPalette() { return this.palette[1]; }
     
     /**
      * @param {number} address 16-bit address
-     * @returns {number} 8-bit data
+     * @returns {number} 6-bit color index
      * @private
      */
     readPalette(address) {
         if (address & 0x3)
             return this.palette[(address & 0x10) >>> 4][address & 0x0F];
         else
-            return this.palette[0][0x00];
+            return this.backdrop;
     }
     /**
      * @param {number} address 16-bit address
-     * @param {number} data 8-bit data
+     * @param {number} data 6-bit color index
      * @private
      */
     writePalette(address, data) {
+        if (data > 0x3F) data &= 0x3F;
         if (address & 0x3)
             this.palette[(address & 0x10) >>> 4][address & 0x0F] = data;
         else
-            this.palette[0][address & 0x0F] = data;
+            this.bkgPalette[address & 0x0F] = data;
     }
     
     //== Scrolling ======================================================================//
@@ -512,6 +513,7 @@ export class PPU {
     //== Background =====================================================================//
     /**
      * @param {number} bus 16-bit address bus
+     * @returns {number} 8-bit pattern index
      * @private
      */
     fetchNameTable(bus) {
@@ -520,6 +522,7 @@ export class PPU {
     }
     /**
      * @param {number} bus 16-bit address bus
+     * @returns {number} 2-bit palette index
      * @private
      */
     fetchAttributeTable(bus) {
@@ -530,15 +533,40 @@ export class PPU {
         return (this.readData(address) >>> offset) & 0x3;
     }
     /**
-     * @param {number} patternIndex
-     * @param {number} row
+     * @param {number} patternIndex 8-bit pattern index
+     * @param {number} row 3-bit fine Y-Scroll value
+     * @returns {number} 16-bit pattern
      * @private
      */
     fetchBkgPatternTable(patternIndex, row) {
-        let address = this.bkgPatternTable + patternIndex*16 + row;
+        const address = this.bkgPatternTable + patternIndex*16 + row;
         return this.readData(address)*256 + this.readData(address+8);
     }
     
+    /**
+     * @param {number} pattern 16-bit pattern
+     * @param {number} paletteIndex 2-bit palette index
+     * @private
+     */
+    fillBkgPixelsBuffer(pattern, paletteIndex) {
+        this.bkgPixelsBuffer.copyWithin(0, 8);
+        const target = this.bkgPixelsBuffer.subarray(8);
+        
+        const palette = this.bkgPalette;
+        
+        if (paletteIndex >= 4) paletteIndex %= 4;
+        const paletteOffset = paletteIndex * 4;
+        
+        for (let offset = 0; offset < 8; offset++) {
+            const colorIndex = bitplaneLookup[(pattern << offset) & 0x8080];
+            if (colorIndex)
+                target[offset] = pxlColors[palette[paletteOffset + colorIndex]];
+            else
+                target[offset] = 0x00000000;
+        }
+    }
+    
+    /** Fetch the next tile and fill the buffer. */
     fetchTile() {
         if (!this.showBackground) return;
 
@@ -549,19 +577,20 @@ export class PPU {
         
         const pattern = this.fetchBkgPatternTable(patternIndex, this.fineScrollY);
         
-        this.bkgPixelsBuffer.copyWithin(0, 8);
-        const target = this.bkgPixelsBuffer.subarray(8);
-        this.setPatternPixels(target, pattern, this.bkgPalette, paletteIndex);
+        this.fillBkgPixelsBuffer(pattern, paletteIndex);
     }
     
+    /** Garbage fetch of a tile. */
     fetchNullTile() {
         if (!this.showBackground) return;
         
         const addressBus = this.addressBus;
+        
         const patternIndex = this.fetchNameTable(addressBus);
         this.fetchAttributeTable(addressBus);
         this.fetchBkgPatternTable(patternIndex, this.fineScrollY);
     }
+    /** Garbage fetch of 2 pattern indexes. */
     fetchNullNTs() {
         if (!this.showBackground) return;
         
@@ -571,6 +600,8 @@ export class PPU {
     }
     
     /**
+     * Draw 8 pixels from the buffer, according to fine X scrolling, to the screen
+     * at given position.
      * @param {number} dot
      * @param {number} scanline
      */
@@ -593,6 +624,7 @@ export class PPU {
         this.oamSecondary.fill(0xFF);
         this.oamIndex = 0;
     }
+    
     /** @param {number} scanline */
     evaluateSprites(scanline) {
         const spritesList = this.oamPrimary;
@@ -631,8 +663,9 @@ export class PPU {
     }
     
     /**
-     * @param {number} patternIndex
-     * @param {number} row
+     * @param {number} patternIndex 8-bit pattern index
+     * @param {number} row 3-bit sprite row
+     * @returns {number} 16-bit pattern
      * @private 
      */
     fetchSprPatternTable(patternIndex, row) {
@@ -649,11 +682,37 @@ export class PPU {
         return this.readData(address)*256 + this.readData(address+8);
     }
     
-    /** @param {number} scanline */
+    /**
+     * @param {number} pattern 16-bit pattern
+     * @param {number} paletteIndex 2-bit palette index
+     * @param {boolean} flip Is pattern flipped horizontally ?
+     * @private
+     */
+    fillSprPixelsBuffer(pattern, paletteIndex, flip) {
+        const target = this.sprPixelsBuffer;
+        
+        const palette = this.sprPalette;
+        
+        if (paletteIndex >= 4) paletteIndex %= 4;
+        const paletteOffset = paletteIndex * 4;
+        
+        for (let offset = 0; offset < 8; offset++) {
+            const colorIndex = bitplaneLookup[(pattern << offset) & 0x8080];
+            if (colorIndex)
+                target[flip ? 7-offset : offset] = pxlColors[palette[paletteOffset + colorIndex]];
+            else
+                target[flip ? 7-offset : offset] = 0x00000000;
+        }
+    }
+    
+    /**
+     * Fetch the next sprite and fill the buffer.
+     * @param {number} scanline
+     */
     fetchSprite(scanline) {
         if (!this.showSprites) return;
         
-        const addressBus = this.addressBus;     //
+        const addressBus = this.addressBus;   //
         this.fetchNameTable(addressBus);      // Garbage fetch
         this.fetchAttributeTable(addressBus); //
         
@@ -690,6 +749,9 @@ export class PPU {
         } else
             this.sprLayer = this.sprBeforeLayer;
         
+        if (attributes > 0x03)
+            attributes &= 0x03;
+        
         // 8x16 Sprites
         if (row >= 8) {
             row -= 8;
@@ -697,9 +759,10 @@ export class PPU {
         }
         
         const pattern = this.fetchSprPatternTable(patternIndex, row);
-        this.setPatternPixels(this.sprPixelsBuffer, pattern, this.sprPalette, attributes, flip);
+        this.fillSprPixelsBuffer(pattern, attributes, flip);
     }
-        
+    
+    /** Garbage fetch of a sprite. */
     fetchNullSprite() {
         if (!this.showSprites) return;
         
@@ -707,10 +770,13 @@ export class PPU {
         this.fetchNameTable(addressBus);
         this.fetchAttributeTable(addressBus);
         
-        this.fetchSprPatternTable(this.sprPatternTable, 0x00);
+        this.fetchSprPatternTable(0x00, 0);
     }
     
-    /** @param {number} scanline */
+    /**
+     * Draw the content of the buffer at the appropriate X position on the next scanline.
+     * @param {number} scanline
+     */
     renderSprite(scanline) {
         if (!this.showSprites) return;
         
@@ -723,25 +789,6 @@ export class PPU {
         this.sprLayer.writePixels(x, scanline+1, pixels);
     }
     
-    //== Pixels Rendering ===============================================================//
-    /**
-     * 
-     * @param {Uint32Array} target Buffer of 8x 32-bit RGBA pixels
-     * @param {number} pattern
-     * @param {Uint8Array} palette
-     * @param {number} paletteIndex
-     * @param {boolean=} flip
-     */
-    setPatternPixels(target, pattern, palette, paletteIndex, flip = false) {
-        if (paletteIndex >= 4) paletteIndex %= 4;
-        const paletteOffset = paletteIndex * 4;
-        
-        for (let offset = 0; offset < 8; offset++) {
-            const colorIndex = bitplaneLookup[(pattern << offset) & 0x8080];
-            const color      = pxlColors[palette[paletteOffset + colorIndex]];
-            target[flip ? 7-offset : offset] = colorIndex ? color : 0x00000000;
-        }
-    }
     //== Output =========================================================================//
     printFrame() {
         this.bus.videoOutput.schedule(cssColors[this.backdrop]);

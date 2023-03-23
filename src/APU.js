@@ -1,3 +1,5 @@
+/** @typedef {import('./NES.js').NES} NES */
+
 import {
     PulseChannel,
     TriangleChannel,
@@ -12,7 +14,7 @@ const FIVESTEP = 0x80;
 
 export class APU {
     /**
-     * @param {import('./NES.js').NES} bus
+     * @param {NES} bus
      */
     constructor(bus) {
         /** @private */
@@ -33,14 +35,14 @@ export class APU {
         
         /** If IRQ is disabled at the moment */
         this.irqDisabled = false;
-        /** If an IRQ has happened, this is cleared after reading 0x4015 */
+        /** If an IRQ has happened. This is cleared after reading 0x4015 */
         this.irq         = false;
         
         /** @private */
         this.counterMode = FOURSTEP;
         
         /** @private */
-        this.toggle = false;
+        this.toggle = true;
         this.cycle  = 0;
         
         /** @private */
@@ -162,7 +164,7 @@ export class APU {
      * @param {number} address 16-bit address
      * @returns {number}
      */
-    readRegister(address) {
+    read(address) {
         if (address === 0x4015)
             return this.status;
         else
@@ -172,17 +174,17 @@ export class APU {
      * @param {number} address 16-bit address between 0x4000-0x4017
      * @param {number} data 8-bit data
      */
-    writeRegister(address, data) {
+    write(address, data) {
         if (address <= 0x4003)
-            this.pulse1.writeRegister(address, data);
+            this.pulse1.write(address, data);
         else if (address <= 0x4007)
-            this.pulse2.writeRegister(address, data);
+            this.pulse2.write(address, data);
         else if (address <= 0x400B)
-            this.triangle.writeRegister(address, data);
+            this.triangle.write(address, data);
         else if (address <= 0x400F)
-            this.noise.writeRegister(address, data);
+            this.noise.write(address, data);
         else if (address <= 0x4013)
-            this.dmc.writeRegister(address, data);
+            this.dmc.write(address, data);
         else if (address === 0x4015)
             this.status = data;
         else if (address === 0x4017)
@@ -191,7 +193,7 @@ export class APU {
     
     //== Execution ======================================================================//
     /**
-     * @param {number} count The number of (cpu) cycles to execute
+     * @param {number} count The number of (CPU) cycles to execute
      */
     doCycles(count) {
         while (count--) {
