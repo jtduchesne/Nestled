@@ -2,14 +2,6 @@
  * @typedef {import('./NES.js').NES} NES
  */
 
-/** @type {Readonly<Record<number, number>>} */
-const bitplaneLookup = Object.freeze({
-    0x0000: 0,
-    0x8000: 1,
-    0x0080: 2,
-    0x8080: 3,
-});
-
 export class PPU {
     /**
      * @param {NES} bus
@@ -542,21 +534,18 @@ export class PPU {
      */
     fillBkgPixelsBuffer(pattern, paletteIndex) {
         this.bkgPixelsBuffer.copyWithin(0, 8);
-        const target = this.bkgPixelsBuffer.subarray(8);
+        const target = this.bkgPixelsBuffer.subarray(8, 16);
         
-        const colors = this.bus.videoOutput.colors;
-        
-        const palette = this.bkgPalette;
-        
-        if (paletteIndex >= 4) paletteIndex %= 4;
-        const paletteOffset = paletteIndex * 4;
-        
-        for (let offset = 0; offset < 8; offset++) {
-            const colorIndex = bitplaneLookup[(pattern << offset) & 0x8080];
-            if (colorIndex)
-                target[offset] = colors[palette[paletteOffset + colorIndex]];
-            else
-                target[offset] = 0x00000000;
+        if (pattern) {
+            const colors = this.bus.videoOutput.colors;
+            const palette = paletteIndex * 4;
+            
+            for (let index = 0; index < 8; index++) {
+                const color = interpretPattern(pattern, index, false);
+                target[index] = color ? colors[this.bkgPalette[palette + color]] : 0;
+            }
+        } else {
+            target.fill(0);
         }
     }
     
@@ -685,19 +674,16 @@ export class PPU {
     fillSprPixelsBuffer(pattern, paletteIndex, flip) {
         const target = this.sprPixelsBuffer;
         
-        const colors = this.bus.videoOutput.colors;
-        
-        const palette = this.sprPalette;
-        
-        if (paletteIndex >= 4) paletteIndex %= 4;
-        const paletteOffset = paletteIndex * 4;
-        
-        for (let offset = 0; offset < 8; offset++) {
-            const colorIndex = bitplaneLookup[(pattern << offset) & 0x8080];
-            if (colorIndex)
-                target[flip ? 7-offset : offset] = colors[palette[paletteOffset + colorIndex]];
-            else
-                target[flip ? 7-offset : offset] = 0x00000000;
+        if (pattern) {
+            const colors = this.bus.videoOutput.colors;
+            const palette = paletteIndex * 4;
+            
+            for (let index = 0; index < 8; index++) {
+                const color = interpretPattern(pattern, index, flip);
+                target[index] = color ? colors[this.sprPalette[palette + color]] : 0;
+            }
+        } else {
+            target.fill(0);
         }
     }
     
@@ -789,6 +775,31 @@ export class PPU {
     printFrame() {
         this.bus.videoOutput.schedule(this.backdrop);
     }
+}
+
+/** @type {Readonly<Record<number, number>>} */
+const bitplaneLookup = Object.freeze({
+    0x0000: 0,
+    0x0100: 1,
+    0x8000: 1,
+    0x0001: 2,
+    0x0080: 2,
+    0x0101: 3,
+    0x8080: 3,
+});
+
+/**
+ * Extract a single pixel from the given *pattern*.
+ * @param {number} pattern 16-bit pattern
+ * @param {number} index The index of the pixel to extract
+ * @param {boolean} flip Is pattern flipped horizontally ?
+ * @returns {number} 2-bit color index
+ */
+function interpretPattern(pattern, index, flip = false) {
+    if (flip)
+        return bitplaneLookup[(pattern >> index) & 0x0101];
+    else
+        return bitplaneLookup[(pattern << index) & 0x8080];
 }
 
 export default PPU;
