@@ -14,9 +14,6 @@ describe("Engine", function() {
         $nes.ppu.powerOn();
     });
     
-    its('frame',   () => is.expected.to.equal(0));
-    its('dropped', () => is.expected.to.equal(0));
-    
     its('fps',         () => is.expected.to.equal(60));
     its('performance', () => is.expected.to.equal(1));
     
@@ -25,20 +22,10 @@ describe("Engine", function() {
         afterEach(function() { $subject.powerOff(); });
         
         beforeEach(function() {
-            $subject.frame = 60;
-            $subject.dropped = 1;
             $subject.fps = 59;
             $subject.performance = 0.983;
         });
         
-        it("resets #frame", function() {
-            expect(() => $action).to.change($subject, 'frame');
-            expect($subject.dropped).to.equal(0);
-        });
-        it("resets #dropped", function() {
-            expect(() => $action).to.change($subject, 'dropped');
-            expect($subject.dropped).to.equal(0);
-        });
         it("resets #fps to 60", function() {
             expect(() => $action).to.change($subject, 'fps');
             expect($subject.fps).to.equal(60);
@@ -82,20 +69,10 @@ describe("Engine", function() {
         beforeEach(function() {
             $subject.powerOn();
             
-            $subject.frame = 60;
-            $subject.dropped = 1;
             $subject.fps = 59;
             $subject.performance = 0.983;
         });
         
-        it("does not reset #frame", function() {
-            expect(() => $action).not.to.change($subject, 'frame');
-            expect($subject.frame).to.equal(60);
-        });
-        it("does not reset #dropped", function() {
-            expect(() => $action).not.to.change($subject, 'dropped');
-            expect($subject.dropped).to.equal(1);
-        });
         it("does not reset #fps", function() {
             expect(() => $action).not.to.change($subject, 'fps');
             expect($subject.fps).to.equal(59);
@@ -118,21 +95,11 @@ describe("Engine", function() {
         beforeEach(function() {
             $subject.powerOn();
             
-            $subject.frame = 60;
-            $subject.dropped = 1;
             $subject.fps = 59;
             $subject.performance = 0.983;
         });
         afterEach(function() { $subject.powerOff(); });
         
-        it("does not change #frame", function() {
-            expect(() => $action).not.to.change($subject, 'frame');
-            expect($subject.frame).to.equal(60);
-        });
-        it("does not change #dropped", function() {
-            expect(() => $action).not.to.change($subject, 'dropped');
-            expect($subject.dropped).to.equal(1);
-        });
         it("does not change #fps", function() {
             expect(() => $action).not.to.change($subject, 'fps');
             expect($subject.fps).to.equal(59);
@@ -152,14 +119,6 @@ describe("Engine", function() {
                 $subject.pause();
             });
             
-            it("does not change #frame", function() {
-                expect(() => $action).not.to.change($subject, 'frame');
-                expect($subject.frame).to.equal(60);
-            });
-            it("does not change #dropped", function() {
-                expect(() => $action).not.to.change($subject, 'dropped');
-                expect($subject.dropped).to.equal(1);
-            });
             it("does not change #fps", function() {
                 expect(() => $action).not.to.change($subject, 'fps');
                 expect($subject.fps).to.equal(59);
@@ -196,11 +155,6 @@ describe("Engine", function() {
         
         def('action', () => $subject.coldBoot());
         
-        it("resets cpu#cycleOffset", function() {
-            $nes.cpu.cycleOffset = 1234;
-            expect(() => $action).to.change($nes.cpu, 'cycleOffset');
-            expect($nes.cpu.cycleOffset).to.equal(0);
-        });
         it("sets ppu#vblank 3 times", function(done) {
             let count = 0;
             Object.defineProperty($nes.ppu, 'vblank', {

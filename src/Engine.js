@@ -27,9 +27,6 @@ export class Engine {
     }
     
     init() {
-        this.frame = 0;
-        this.dropped = 0;
-        
         this.fps = 60;
         this.performance = 1.0;
         
@@ -77,8 +74,6 @@ export class Engine {
     coldBoot() {
         let cpu = this.cpu;
         let ppu = this.ppu;
-        
-        cpu.cycleOffset = 0;
         
         cpu.doInstructions(2279); // 1.275ms after boot
         ppu.vblank = true;
@@ -173,8 +168,6 @@ export class Engine {
         this.doPreRenderLine(cpu, ppu);
         
         cpu.cycle -= cyclesPerFrame;
-        
-        this.frame++;
     }
     
     skipFrame(cpu, ppu) {
@@ -185,9 +178,6 @@ export class Engine {
         cpu.doInstructions(cyclesPerFrame);
         
         cpu.cycle -= cyclesPerFrame;
-        
-        this.frame++;
-        this.dropped++;
     }
     
     doScanline(cpu, ppu, scanline) {
