@@ -1,15 +1,14 @@
 const frameTime = 1000/60;
 
-const renderLines = 239;
+const renderLines = 240;
 const vblankStart = 241;
 const vblankEnd   = 261;
 
 const cyclesPerScanline = 341/3;
 const cyclesPerFrame    = (341*261 + 340.5)/3;
 
-const cyclesBeforeVBlankStart   = vblankStart * cyclesPerScanline;
-const cyclesBeforeVBlankEnd     = vblankEnd * cyclesPerScanline - 8;
-const cyclesBeforePreRenderLine = 261*cyclesPerScanline;
+const cyclesBeforeVBlankStart = vblankStart * cyclesPerScanline;
+const cyclesBeforeVBlankEnd   = vblankEnd * cyclesPerScanline;
 
 export class Engine {
     constructor(nes) {
@@ -18,43 +17,27 @@ export class Engine {
         this.firstLoop = this.firstLoop.bind(this);
         this.mainLoop  = this.mainLoop.bind(this);
         
-        this.runningLoop = null;
+        this.runningLoop = 0;
         
-        this.init();
+        this.lastTimestamp = 0;
+        
+        this.stats = new Stats;
         
         this.isPowered = false;
         this.isPaused = false;
     }
     
-    init() {
-        this.frame = 0;
-        this.dropped = 0;
-        
-        this.fps = 60;
-        this.performance = 1.0;
-        
-        this._delta = 0.0;
-        this._lastTimestamp = 0.0;
-        this._frameTimeThisSecond = 0.0;
-        this._framesThisSecond = 0;
-        this._fps = 60;
-    }
-    
     //=======================================================================================//
     
     powerOn() {
-        this.cpu = this.bus.cpu;
-        this.ppu = this.bus.ppu;
-        
-        this.init();
         this.coldBoot();
         
         this.isPowered = true;
         this.isPaused = false;
     }
     powerOff() {
-        clearTimeout(this.runningLoop);
-        this.runningLoop = null;
+        cancelAnimationFrame(this.runningLoop);
+        this.runningLoop = 0;
         
         this.isPowered = false;
         this.isPaused = false;
@@ -62,11 +45,11 @@ export class Engine {
     
     pause() {
         if (this.isPaused) {
-            this.runningLoop = setTimeout(this.firstLoop, 0);
+            this.runningLoop = requestAnimationFrame(this.firstLoop);
             this.isPaused = false;
         } else {
-            clearTimeout(this.runningLoop);
-            this.runningLoop = null;
+            cancelAnimationFrame(this.runningLoop);
+            this.runningLoop = 0;
             this.isPaused = this.isPowered;
         }
         return this.isPaused;
@@ -75,125 +58,87 @@ export class Engine {
     //=======================================================================================//
     
     coldBoot() {
-        let cpu = this.cpu;
-        let ppu = this.ppu;
+        this.doBoot(this.bus.cpu, this.bus.ppu);
         
-        cpu.cycleOffset = 0;
+        this.runningLoop = requestAnimationFrame(this.firstLoop);
+    }
+    
+    firstLoop(timestamp) {
+        this.runningLoop = requestAnimationFrame(this.mainLoop);
         
+        this.lastTimestamp = timestamp;
+        
+        this.doFrame(this.bus.cpu, this.bus.ppu);
+        
+        this.stats.addFrame(timestamp);
+    }
+    
+    mainLoop(timestamp) {
+        this.runningLoop = requestAnimationFrame(this.mainLoop);
+        
+        let delta = (timestamp - this.lastTimestamp);
+        this.lastTimestamp = timestamp;
+        
+        if (delta > 1000) {
+            this.pause();
+            return;
+        }
+        
+        while ((delta -= frameTime) >= frameTime) {
+            this.skipFrame(this.bus.cpu, this.bus.ppu);
+            this.stats.dropFrame();
+        }
+        this.doFrame(this.bus.cpu, this.bus.ppu);
+        
+        this.stats.addFrame(timestamp);
+    }
+    
+    //=======================================================================================//
+    
+    doBoot(cpu, ppu) {
         cpu.doInstructions(2279); // 1.275ms after boot
         ppu.vblank = true;
         cpu.doInstructions(4757); // 2.662ms after boot
         ppu.vblank = true;
         
-        cpu.doInstructions(cyclesBeforeVBlankStart);
-        ppu.doVBlank();
-        cpu.doInstructions(cyclesBeforeVBlankEnd);
-        ppu.endVBlank();
-        
+        this.doVBlank(cpu, ppu);
         this.doPreFetch(cpu, ppu, 261);
         
-        this.runningLoop = setTimeout(this.firstLoop, 0);
+        cpu.cycle -= cyclesPerFrame;
     }
     
-    firstLoop() {
-        if (typeof window === 'undefined') return;
+    doFrame(cpu, ppu) {
+        for (let scanline = 0; scanline < renderLines; scanline++)
+            this.doScanline(cpu, ppu, scanline);
         
-        let timestamp = window.performance.now();
+        ppu.printFrame();
         
-        let cpu = this.cpu;
-        let ppu = this.ppu;
+        this.doVBlank(cpu, ppu);
+        this.doPreRenderLine(cpu, ppu);
         
-        this.doFrame(cpu, ppu);
-        
-        this.updateStats(window.performance.now() - timestamp);
-        
-        this._lastTimestamp = timestamp;
-        
-        this.runningLoop = setTimeout(this.mainLoop, 0);
+        cpu.cycle -= cyclesPerFrame;
     }
     
-    mainLoop() {
-        let timestamp = window.performance.now();
+    skipFrame(cpu, ppu) {
+        this.doVBlank(cpu, ppu);
+        cpu.doInstructions(cyclesPerFrame);
         
-        this._delta = (timestamp - this._lastTimestamp);
-        
-        if (this._delta >= frameTime) {
-            if (this._delta > 1000) {
-                this.pause();
-                return;
-            }
-            
-            let cpu = this.cpu;
-            let ppu = this.ppu;
-            
-            while ((this._delta -= frameTime) >= frameTime) {
-                this.skipFrame(cpu, ppu);
-                this._fps--;
-            }
-            this.doFrame(cpu, ppu);
-            
-            this.updateStats(window.performance.now() - timestamp);
-            
-            this._lastTimestamp = timestamp;
-        }
-        
-        this.runningLoop = setTimeout(this.mainLoop, 0);
-    }
-    
-    updateStats(frameTime) {
-        this._frameTimeThisSecond += frameTime;
-        this._framesThisSecond++;
-        
-        if (this._framesThisSecond >= this._fps) {
-            this.performance = 1000 / this._frameTimeThisSecond;
-            this.fps = this._fps;
-            
-            this._frameTimeThisSecond = 0.0;
-            this._framesThisSecond = 0;
-            this._fps = 60;
-        }
+        cpu.cycle -= cyclesPerFrame;
     }
     
     //=======================================================================================//
     
-    doFrame(cpu, ppu) {
-        for (let scanline = 0; scanline <= renderLines; scanline++)
-            this.doScanline(cpu, ppu, scanline);
-        
-        cpu.doInstructions(cyclesBeforeVBlankStart);
-        
-        ppu.printFrame();
-        
-        // VBlank
-        ppu.doVBlank();
-        cpu.doInstructions(cyclesBeforeVBlankEnd);
-        ppu.endVBlank();
-        
-        // Pre-render line
-        this.doPreRenderLine(cpu, ppu);
-        
-        cpu.cycle -= cyclesPerFrame;
-        
-        this.frame++;
-    }
-    
-    skipFrame(cpu, ppu) {
+    doVBlank(cpu, ppu) {
         cpu.doInstructions(cyclesBeforeVBlankStart);
         ppu.doVBlank();
         cpu.doInstructions(cyclesBeforeVBlankEnd);
         ppu.endVBlank();
-        cpu.doInstructions(cyclesPerFrame);
-        
-        cpu.cycle -= cyclesPerFrame;
-        
-        this.frame++;
-        this.dropped++;
     }
     
     doScanline(cpu, ppu, scanline) {
-        let cyclesBeforeScanline = scanline*cyclesPerScanline;
-        let dot = 0;
+        const cyclesBeforeScanline = scanline*cyclesPerScanline;
         
+        let dot = 0;
         ppu.clearSecondaryOAM();
         while (dot < 64) {
             cpu.doInstructions(cyclesBeforeScanline + dot/3);
@@ -229,9 +174,10 @@ export class Engine {
     }
     
     doPreRenderLine(cpu, ppu) {
-        let cyclesBeforeScanline = cyclesBeforePreRenderLine;
-        let dot = 0;
+        const scanline = 261;
+        const cyclesBeforeScanline = scanline*cyclesPerScanline;
         
+        let dot = 0;
         while (dot < 256) {
             cpu.doInstructions(cyclesBeforeScanline + dot/3);
             ppu.fetchNullTile();
@@ -257,13 +203,13 @@ export class Engine {
             dot += 8;
         }
         
-        this.doPreFetch(cpu, ppu, 261);
+        this.doPreFetch(cpu, ppu, scanline);
     }
     
     doPreFetch(cpu, ppu, scanline) {
-        let cyclesBeforeScanline = scanline*cyclesPerScanline;
-        let dot = 320;
+        const cyclesBeforeScanline = scanline*cyclesPerScanline;
         
+        let dot = 320;
         while (dot < 336) {
             cpu.doInstructions(cyclesBeforeScanline + dot/3);
             // First 2 tiles of next frame's background:
@@ -272,6 +218,37 @@ export class Engine {
             dot += 8;
         }
         ppu.fetchNullNTs();
+    }
+}
+
+class Stats {
+    constructor() {
+        this.fps = 60;
+        this.performance = 1.0;
+        
+        let frameTimeThisSecond = 0.0;
+        let framesThisSecond = 0;
+        let fps = 60;
+        
+        const refresh = () => {
+            this.performance = 1000 / frameTimeThisSecond;
+            this.fps = fps;
+            
+            frameTimeThisSecond = 0.0;
+            framesThisSecond = 0;
+            fps = 60;
+        };
+        
+        this.addFrame = (startTime) => {
+            frameTimeThisSecond += (performance.now() - startTime);
+            
+            if (++framesThisSecond >= fps)
+                refresh();
+        };
+        this.dropFrame = () => {
+            if (--fps <= framesThisSecond)
+                refresh();
+        };
     }
 }
 

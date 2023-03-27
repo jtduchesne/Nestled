@@ -54,3 +54,6 @@ global.ImageData = class {
         };
     }
 };
+
+global.requestAnimationFrame = (callback) => setTimeout(callback);
+global.cancelAnimationFrame  = (handle) => clearTimeout(handle);
