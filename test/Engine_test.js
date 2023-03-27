@@ -12,6 +12,7 @@ describe("Engine", function() {
         sinon.stub($nes.cpu, 'doInstructions');
         $nes.cpu.powerOn();
         $nes.ppu.powerOn();
+        sinon.stub($subject, 'firstLoop');
     });
     
     its('fps',         () => is.expected.to.equal(60));
@@ -49,11 +50,10 @@ describe("Engine", function() {
         it("calls .firstLoop() (asynchronously)", function() {
             const clock = sinon.useFakeTimers();
             
-            const spy = sinon.spy($subject, 'firstLoop');
             $action;
-            expect(spy).not.to.be.called;
+            expect($subject.firstLoop).not.to.be.called;
             clock.next();
-            expect(spy).to.be.calledOnce;
+            expect($subject.firstLoop).to.be.calledOnce;
             
             clock.restore();
         });
@@ -131,11 +131,8 @@ describe("Engine", function() {
             it("calls .firstLoop() (asynchronously)", function() {
                 const clock = sinon.useFakeTimers();
                 
-                const spy = sinon.spy($subject, 'firstLoop');
                 $action;
-                expect(spy).not.to.be.called;
-                clock.next();
-                expect(spy).to.be.calledOnce;
+                expect(() => clock.next()).to.increase($subject.firstLoop, 'callCount').by(1);
                 
                 clock.restore();
             });

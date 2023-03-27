@@ -75,24 +75,12 @@ export class Engine {
         let cpu = this.cpu;
         let ppu = this.ppu;
         
-        cpu.doInstructions(2279); // 1.275ms after boot
-        ppu.vblank = true;
-        cpu.doInstructions(4757); // 2.662ms after boot
-        ppu.vblank = true;
-        
-        cpu.doInstructions(cyclesBeforeVBlankStart);
-        ppu.doVBlank();
-        cpu.doInstructions(cyclesBeforeVBlankEnd);
-        ppu.endVBlank();
-        
-        this.doPreFetch(cpu, ppu, 261);
+        this.doBoot(cpu, ppu);
         
         this.runningLoop = setTimeout(this.firstLoop, 0);
     }
     
     firstLoop() {
-        if (typeof window === 'undefined') return;
-        
         let timestamp = window.performance.now();
         
         let cpu = this.cpu;
@@ -151,33 +139,44 @@ export class Engine {
     
     //=======================================================================================//
     
+    doBoot(cpu, ppu) {
+        cpu.doInstructions(2279); // 1.275ms after boot
+        ppu.vblank = true;
+        cpu.doInstructions(4757); // 2.662ms after boot
+        ppu.vblank = true;
+        
+        this.doVBlank(cpu, ppu);
+        this.doPreFetch(cpu, ppu, 261);
+        
+        cpu.cycle -= cyclesPerFrame;
+    }
+    
     doFrame(cpu, ppu) {
         for (let scanline = 0; scanline <= renderLines; scanline++)
             this.doScanline(cpu, ppu, scanline);
         
-        cpu.doInstructions(cyclesBeforeVBlankStart);
-        
         ppu.printFrame();
         
-        // VBlank
-        ppu.doVBlank();
-        cpu.doInstructions(cyclesBeforeVBlankEnd);
-        ppu.endVBlank();
-        
-        // Pre-render line
+        this.doVBlank(cpu, ppu);
         this.doPreRenderLine(cpu, ppu);
         
         cpu.cycle -= cyclesPerFrame;
     }
     
     skipFrame(cpu, ppu) {
+        this.doVBlank(cpu, ppu);
+        cpu.doInstructions(cyclesPerFrame);
+        
+        cpu.cycle -= cyclesPerFrame;
+    }
+    
+    //=======================================================================================//
+    
+    doVBlank(cpu, ppu) {
         cpu.doInstructions(cyclesBeforeVBlankStart);
         ppu.doVBlank();
         cpu.doInstructions(cyclesBeforeVBlankEnd);
         ppu.endVBlank();
-        cpu.doInstructions(cyclesPerFrame);
-        
-        cpu.cycle -= cyclesPerFrame;
     }
     
     doScanline(cpu, ppu, scanline) {
