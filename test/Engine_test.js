@@ -60,7 +60,7 @@ describe("Engine", function() {
         
         it("sets #runningLoop", function() {
             expect(() => $action).to.change($subject, 'runningLoop');
-            expect($subject.runningLoop).not.to.be.null;
+            expect($subject.runningLoop).not.to.equal(0);
         });
     });
     
@@ -82,9 +82,9 @@ describe("Engine", function() {
             expect($subject.performance).to.equal(0.983);
         });
         
-        it("sets #runningLoop to -null-", function() {
+        it("sets #runningLoop to -0-", function() {
             expect(() => $action).to.change($subject, 'runningLoop');
-            expect($subject.runningLoop).to.be.null;
+            expect($subject.runningLoop).to.equal(0);
         });
     });
     
@@ -109,9 +109,9 @@ describe("Engine", function() {
             expect($subject.performance).to.equal(0.983);
         });
         
-        it("sets #runningLoop to -null-", function() {
+        it("sets #runningLoop to -0-", function() {
             expect(() => $action).to.change($subject, 'runningLoop');
-            expect($subject.runningLoop).to.be.null;
+            expect($subject.runningLoop).to.equal(0);
         });
         
         describe("when already paused", function() {
@@ -139,7 +139,7 @@ describe("Engine", function() {
             
             it("sets #runningLoop", function() {
                 expect(() => $action).to.change($subject, 'runningLoop');
-                expect($subject.runningLoop).not.to.be.null;
+                expect($subject.runningLoop).not.to.equal(0);
             });
         });
     });
