@@ -46,7 +46,7 @@ export class Engine {
         this.isPaused = false;
     }
     powerOff() {
-        clearTimeout(this.runningLoop);
+        cancelAnimationFrame(this.runningLoop);
         this.runningLoop = 0;
         
         this.isPowered = false;
@@ -55,10 +55,10 @@ export class Engine {
     
     pause() {
         if (this.isPaused) {
-            this.runningLoop = setTimeout(this.firstLoop, 0);
+            this.runningLoop = requestAnimationFrame(this.firstLoop);
             this.isPaused = false;
         } else {
-            clearTimeout(this.runningLoop);
+            cancelAnimationFrame(this.runningLoop);
             this.runningLoop = 0;
             this.isPaused = this.isPowered;
         }
@@ -68,55 +68,39 @@ export class Engine {
     //=======================================================================================//
     
     coldBoot() {
-        const cpu = this.bus.cpu;
-        const ppu = this.bus.ppu;
+        this.doBoot(this.bus.cpu, this.bus.ppu);
         
-        this.doBoot(cpu, ppu);
-        
-        this.runningLoop = setTimeout(this.firstLoop, 0);
+        this.runningLoop = requestAnimationFrame(this.firstLoop);
     }
     
-    firstLoop() {
-        const timestamp = window.performance.now();
-        
-        const cpu = this.bus.cpu;
-        const ppu = this.bus.ppu;
-        
-        this.doFrame(cpu, ppu);
-        
-        this.updateStats(window.performance.now() - timestamp);
+    firstLoop(timestamp) {
+        this.runningLoop = requestAnimationFrame(this.mainLoop);
         
         this.lastTimestamp = timestamp;
         
-        this.runningLoop = setTimeout(this.mainLoop, 0);
+        this.doFrame(this.bus.cpu, this.bus.ppu);
+        
+        this.updateStats(performance.now() - timestamp);
     }
     
-    mainLoop() {
-        const timestamp = window.performance.now();
+    mainLoop(timestamp) {
+        this.runningLoop = requestAnimationFrame(this.mainLoop);
         
         let delta = (timestamp - this.lastTimestamp);
+        this.lastTimestamp = timestamp;
         
-        if (delta >= frameTime) {
-            if (delta > 1000) {
-                this.pause();
-                return;
-            }
-            
-            const cpu = this.bus.cpu;
-            const ppu = this.bus.ppu;
-            
-            while ((delta -= frameTime) >= frameTime) {
-                this.skipFrame(cpu, ppu);
-                this._fps--;
-            }
-            this.doFrame(cpu, ppu);
-            
-            this.updateStats(window.performance.now() - timestamp);
-            
-            this.lastTimestamp = timestamp;
+        if (delta > 1000) {
+            this.pause();
+            return;
         }
         
-        this.runningLoop = setTimeout(this.mainLoop, 0);
+        while ((delta -= frameTime) >= frameTime) {
+            this.skipFrame(this.bus.cpu, this.bus.ppu);
+            this._fps--;
+        }
+        this.doFrame(this.bus.cpu, this.bus.ppu);
+        
+        this.updateStats(performance.now() - timestamp);
     }
     
     updateStats(frameTime) {
