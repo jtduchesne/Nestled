@@ -15,32 +15,10 @@ describe("Engine", function() {
         sinon.stub($subject, 'firstLoop');
     });
     
-    its('fps',         () => is.expected.to.equal(60));
-    its('performance', () => is.expected.to.equal(1));
-    
     describe(".powerOn()", function() {
         def('action', () => $subject.powerOn());
         afterEach(function() { $subject.powerOff(); });
         
-        beforeEach(function() {
-            $subject.fps = 59;
-            $subject.performance = 0.983;
-        });
-        
-        it("resets #fps to 60", function() {
-            expect(() => $action).to.change($subject, 'fps');
-            expect($subject.fps).to.equal(60);
-        });
-        it("resets #performance to 1.0", function() {
-            expect(() => $action).to.change($subject, 'performance');
-            expect($subject.performance).to.equal(1.0);
-        });
-        
-        it("calls .init()", function() {
-            const spy = sinon.spy($subject, 'init');
-            $action;
-            expect(spy).to.be.calledOnce;
-        });
         it("calls .coldBoot()", function() {
             const spy = sinon.spy($subject, 'coldBoot');
             $action;
@@ -66,21 +44,7 @@ describe("Engine", function() {
     
     describe(".powerOff()", function() {
         def('action', () => $subject.powerOff());
-        beforeEach(function() {
-            $subject.powerOn();
-            
-            $subject.fps = 59;
-            $subject.performance = 0.983;
-        });
-        
-        it("does not reset #fps", function() {
-            expect(() => $action).not.to.change($subject, 'fps');
-            expect($subject.fps).to.equal(59);
-        });
-        it("does not reset #performance", function() {
-            expect(() => $action).not.to.change($subject, 'performance');
-            expect($subject.performance).to.equal(0.983);
-        });
+        beforeEach(function() { $subject.powerOn(); });
         
         it("sets #runningLoop to -0-", function() {
             expect(() => $action).to.change($subject, 'runningLoop');
@@ -92,22 +56,8 @@ describe("Engine", function() {
     
     describe(".pause()", function() {
         def('action', () => $subject.pause());
-        beforeEach(function() {
-            $subject.powerOn();
-            
-            $subject.fps = 59;
-            $subject.performance = 0.983;
-        });
+        beforeEach(function() { $subject.powerOn(); });
         afterEach(function() { $subject.powerOff(); });
-        
-        it("does not change #fps", function() {
-            expect(() => $action).not.to.change($subject, 'fps');
-            expect($subject.fps).to.equal(59);
-        });
-        it("does not change #performance", function() {
-            expect(() => $action).not.to.change($subject, 'performance');
-            expect($subject.performance).to.equal(0.983);
-        });
         
         it("sets #runningLoop to -0-", function() {
             expect(() => $action).to.change($subject, 'runningLoop');
@@ -117,15 +67,6 @@ describe("Engine", function() {
         describe("when already paused", function() {
             beforeEach(function() {
                 $subject.pause();
-            });
-            
-            it("does not change #fps", function() {
-                expect(() => $action).not.to.change($subject, 'fps');
-                expect($subject.fps).to.equal(59);
-            });
-            it("does not change #performance", function() {
-                expect(() => $action).not.to.change($subject, 'performance');
-                expect($subject.performance).to.equal(0.983);
             });
             
             it("calls .firstLoop() (asynchronously)", function() {

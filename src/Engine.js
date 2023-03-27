@@ -21,25 +21,15 @@ export class Engine {
         
         this.lastTimestamp = 0;
         
-        this.init();
+        this.stats = new Stats;
         
         this.isPowered = false;
         this.isPaused = false;
     }
     
-    init() {
-        this.fps = 60;
-        this.performance = 1.0;
-        
-        this._frameTimeThisSecond = 0.0;
-        this._framesThisSecond = 0;
-        this._fps = 60;
-    }
-    
     //=======================================================================================//
     
     powerOn() {
-        this.init();
         this.coldBoot();
         
         this.isPowered = true;
@@ -80,7 +70,7 @@ export class Engine {
         
         this.doFrame(this.bus.cpu, this.bus.ppu);
         
-        this.updateStats(performance.now() - timestamp);
+        this.stats.addFrame(timestamp);
     }
     
     mainLoop(timestamp) {
@@ -96,25 +86,11 @@ export class Engine {
         
         while ((delta -= frameTime) >= frameTime) {
             this.skipFrame(this.bus.cpu, this.bus.ppu);
-            this._fps--;
+            this.stats.dropFrame();
         }
         this.doFrame(this.bus.cpu, this.bus.ppu);
         
-        this.updateStats(performance.now() - timestamp);
-    }
-    
-    updateStats(frameTime) {
-        this._frameTimeThisSecond += frameTime;
-        this._framesThisSecond++;
-        
-        if (this._framesThisSecond >= this._fps) {
-            this.performance = 1000 / this._frameTimeThisSecond;
-            this.fps = this._fps;
-            
-            this._frameTimeThisSecond = 0.0;
-            this._framesThisSecond = 0;
-            this._fps = 60;
-        }
+        this.stats.addFrame(timestamp);
     }
     
     //=======================================================================================//
@@ -242,6 +218,37 @@ export class Engine {
             dot += 8;
         }
         ppu.fetchNullNTs();
+    }
+}
+
+class Stats {
+    constructor() {
+        this.fps = 60;
+        this.performance = 1.0;
+        
+        let frameTimeThisSecond = 0.0;
+        let framesThisSecond = 0;
+        let fps = 60;
+        
+        const refresh = () => {
+            this.performance = 1000 / frameTimeThisSecond;
+            this.fps = fps;
+            
+            frameTimeThisSecond = 0.0;
+            framesThisSecond = 0;
+            fps = 60;
+        };
+        
+        this.addFrame = (startTime) => {
+            frameTimeThisSecond += (performance.now() - startTime);
+            
+            if (++framesThisSecond >= fps)
+                refresh();
+        };
+        this.dropFrame = () => {
+            if (--fps <= framesThisSecond)
+                refresh();
+        };
     }
 }
 
