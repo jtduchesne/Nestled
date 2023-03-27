@@ -769,7 +769,7 @@ export class PPU {
     
     //== Output =========================================================================//
     printFrame() {
-        this.bus.videoOutput.schedule(this.backdrop);
+        this.bus.videoOutput.drawImage(this.backdrop);
     }
 }
 

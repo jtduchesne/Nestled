@@ -24,7 +24,7 @@ try {
     const pauseButton = document.getElementById('pause_button');
 
     const updateStats = (engine) =>
-        updateStatus(engine.fps + " FPS (" + engine.performance.toFixed(2) +"x)");
+        updateStatus(engine.stats.fps + " FPS (" + engine.stats.performance.toFixed(2) +"x)");
 
     let intervalId = null;
     powerButton.addEventListener('click', () => {

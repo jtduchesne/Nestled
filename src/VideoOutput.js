@@ -97,32 +97,29 @@ export class VideoOutput {
     /**
      * @param {number} backdrop 6-bit color index
      */
-    schedule(backdrop) {
+    drawImage(backdrop) {
         if (this.canvas) {
-            this.layers.forEach((layer) => layer.setFrame());
-            
             const outputWidth  = this.canvas.width;
             const outputHeight = this.canvas.height;
             
-            this.scheduled = window.requestAnimationFrame(() => {
-                const context    = this.context;
-                const offCanvas  = this.offCanvas;
-                const offContext = this.offContext;
+            const context    = this.context;
+            const offCanvas  = this.offCanvas;
+            const offContext = this.offContext;
+            
+            if (context && offCanvas && offContext) {
+                context.fillStyle = cssColors[backdrop];
+                context.fillRect(0, 0, outputWidth, outputHeight);
                 
-                if (context && offCanvas && offContext) {
-                    context.fillStyle = cssColors[backdrop];
-                    context.fillRect(0, 0, outputWidth, outputHeight);
-                    
-                    this.layers.forEach(({ frame }) => {
-                        offContext.putImageData(frame, 0, 0);
-                        context.drawImage(
-                            offCanvas,
-                            0, 0, width, height,
-                            0, 0, outputWidth, outputHeight
-                        );
-                    });
-                }
-            });
+                this.layers.forEach((layer) => {
+                    layer.setFrame();
+                    offContext.putImageData(layer.frame, 0, 0);
+                    context.drawImage(
+                        offCanvas,
+                        0, 0, width, height,
+                        0, 0, outputWidth, outputHeight
+                    );
+                });
+            }
         }
     }
 }
