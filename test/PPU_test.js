@@ -1681,7 +1681,7 @@ describe("Ppu", function() {
                 sinon.stub($subject, 'fetchNameTable');
                 sinon.stub($subject, 'fetchAttributeTable');
                 sinon.stub($subject, 'fetchSprPatternTable');
-                sinon.stub($subject, 'fillSprPixelsBuffer');
+                sinon.stub($subject, 'fillSprPixelsBuffer').returns(new Uint32Array(8));
             });
             def('action', () => $subject.fetchSprite($y));
             
@@ -1725,35 +1725,6 @@ describe("Ppu", function() {
                     $subject.oamAddress = 0xFF;
                     expect(() => $action).to.change($subject, 'oamAddress');
                     expect($subject.oamAddress).to.equal(0);
-                });
-                
-                context("if this is the first sprite of Secondary OAM", function() {
-                    beforeEach(() => { $subject.oamIndex = 0; });
-                    
-                    it("does not change #sprite0 if set", function() {
-                        $subject.sprite0 = true;
-                        expect(() => $action).not.to.change($subject, 'sprite0');
-                        expect($subject.sprite0).to.be.true;
-                    });
-                    it("does not change #sprite0 if not set", function() {
-                        $subject.sprite0 = false;
-                        expect(() => $action).not.to.change($subject, 'sprite0');
-                        expect($subject.sprite0).to.be.false;
-                    });
-                });
-                context("if this is not the first sprite of Secondary OAM", function() {
-                    beforeEach(() => { $subject.oamIndex = 4; });
-                    
-                    it("unsets #sprite0", function() {
-                        $subject.sprite0 = true;
-                        expect(() => $action).to.change($subject, 'sprite0');
-                        expect($subject.sprite0).to.be.false;
-                    });
-                    it("keeps #sprite0 not set", function() {
-                        $subject.sprite0 = false;
-                        expect(() => $action).not.to.change($subject, 'sprite0');
-                        expect($subject.sprite0).to.be.false;
-                    });
                 });
                 
                 context("if 'Vertical Flip' attribute is set", function() {
@@ -1807,18 +1778,18 @@ describe("Ppu", function() {
                     def('attributes', () => 0x20);
                     beforeEach(() => { $subject.sprLayer = null; });
                     
-                    it("sets #sprLayer to reference #sprBehindLayer", function() {
+                    it("sets #sprLayer to reference NES.videoOutput.sprBehindLayer", function() {
                         expect(() => $action).to.change($subject, 'sprLayer');
-                        expect($subject.sprLayer).to.equal($subject.sprBehindLayer);
+                        expect($subject.sprLayer).to.equal($nes.videoOutput.sprBehindLayer);
                     });
                 });
                 context("if 'Is Behind' attribute is not set", function() {
                     def('attributes', () => ~0x20);
                     beforeEach(() => { $subject.sprLayer = null; });
                     
-                    it("sets #sprLayer to reference #sprBeforeLayer", function() {
+                    it("sets #sprLayer to reference NES.videoOutput.sprBeforeLayer", function() {
                         expect(() => $action).to.change($subject, 'sprLayer');
-                        expect($subject.sprLayer).to.equal($subject.sprBeforeLayer);
+                        expect($subject.sprLayer).to.equal($nes.videoOutput.sprBeforeLayer);
                     });
                 });
             });

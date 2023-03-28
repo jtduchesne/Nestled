@@ -2,17 +2,6 @@
  * @typedef {import('./NES.js').NES} NES
  */
 
-import { VideoBuffer, Colors } from './Video/index.js';
-const { pxlColors, cssColors } = Colors;
-
-/** @type {Readonly<Record<number, number>>} */
-const bitplaneLookup = Object.freeze({
-    0x0000: 0,
-    0x8000: 1,
-    0x0080: 2,
-    0x8080: 3,
-});
-
 export class PPU {
     /**
      * @param {NES} bus
@@ -110,10 +99,8 @@ export class PPU {
         /** @private */ this.sprPixelsBuffer = new Uint32Array(8);
         
         //Layers
-        /** @private */ this.bkgLayer       = new VideoBuffer(256 +8, 240 +16);
-        /** @private */ this.sprBehindLayer = new VideoBuffer(256 +8, 240 +16);
-        /** @private */ this.sprBeforeLayer = new VideoBuffer(256 +8, 240 +16);
-        /** @private */ this.sprLayer       = this.sprBeforeLayer;
+        /** @private */ this.bkgLayer = this.bus.videoOutput.bkgLayer;
+        /** @private */ this.sprLayer = this.bus.videoOutput.sprBeforeLayer;
         
         //Used for Sprite0 hit detection
         /** @private */ this.sprite0Layer = new Uint32Array(264);
@@ -138,9 +125,6 @@ export class PPU {
         
         this.ntsc = (this.bus.cartConnector.metadata.tvSystem === "NTSC");
         
-        this.bus.videoOutput.addLayer(this.sprBehindLayer);
-        this.bus.videoOutput.addLayer(this.bkgLayer);
-        this.bus.videoOutput.addLayer(this.sprBeforeLayer);
         this.bus.videoOutput.start();
         
         this.isPowered = true;
@@ -550,19 +534,18 @@ export class PPU {
      */
     fillBkgPixelsBuffer(pattern, paletteIndex) {
         this.bkgPixelsBuffer.copyWithin(0, 8);
-        const target = this.bkgPixelsBuffer.subarray(8);
+        const target = this.bkgPixelsBuffer.subarray(8, 16);
         
-        const palette = this.bkgPalette;
-        
-        if (paletteIndex >= 4) paletteIndex %= 4;
-        const paletteOffset = paletteIndex * 4;
-        
-        for (let offset = 0; offset < 8; offset++) {
-            const colorIndex = bitplaneLookup[(pattern << offset) & 0x8080];
-            if (colorIndex)
-                target[offset] = pxlColors[palette[paletteOffset + colorIndex]];
-            else
-                target[offset] = 0x00000000;
+        if (pattern) {
+            const colors = this.bus.videoOutput.colors;
+            const palette = paletteIndex * 4;
+            
+            for (let index = 0; index < 8; index++) {
+                const color = interpretPattern(pattern, index, false);
+                target[index] = color ? colors[this.bkgPalette[palette + color]] : 0;
+            }
+        } else {
+            target.fill(0);
         }
     }
     
@@ -611,9 +594,16 @@ export class PPU {
         const offset = this.fineScrollX;
         const pixels = this.bkgPixelsBuffer.subarray(offset, offset+8);
         
-        if (this.sprite0 && !this.sprite0Hit) {
-            if (this.sprite0Layer.subarray(dot, dot+8).some((e,i) => (e && pixels[i])))
-                this.sprite0Hit = true;
+        if (!this.sprite0Hit) {
+            const sprite0Y = this.oamPrimary[0];
+            if ((sprite0Y < scanline+8) && (sprite0Y+8 > scanline)) {
+                const sprite0X = this.oamPrimary[3];
+                if ((sprite0X < dot+8) && (sprite0X+8 > dot)) {
+                    this.sprite0Hit = this.sprite0Layer.subarray(dot, dot+8).some(
+                        (pixel, i) => (pixel && pixels[i])
+                    );
+                }
+            }
         }
         
         this.bkgLayer.writePixels(dot, scanline, pixels);
@@ -632,32 +622,31 @@ export class PPU {
         
         const height = this.spriteHeight;
         
+        let y = 0, top = 0, bottom = 0;
         while (this.oamAddress < 256) {
-            const y = spritesList[this.oamAddress];
+            y = spritesList[this.oamAddress];
             
-            const top    = y + height; //Sprite's coordinates are bottom-left
-            const bottom = y;
+            top    = y + height;
+            bottom = y;
             
-            if (this.oamIndex === 32) {
-                this.oamAddress++; //This causes the 'Sprite overflow bug'
-                this.oamIndex++;
-            } else {
-                if (this.oamIndex < 32)
-                    sprites[this.oamIndex] = y;
+            if (this.oamIndex < 32) {
+                sprites[this.oamIndex] = y;
+                
                 if (scanline >= bottom && scanline < top) {
-                    if (this.oamIndex < 32) {
-                        if (this.oamAddress === 0)
-                            this.sprite0 = true;
-                        for (let i=1; i<4; i++)
-                            sprites[this.oamIndex+i] = spritesList[this.oamAddress+i];
-                        this.oamIndex += 4;
-                    } else {
-                        this.spriteOverflow = true;
-                        break;
-                    }
+                    if (this.oamAddress === 0) this.sprite0 = true;
+                    
+                    for (let i=1; i<4; i++)
+                        sprites[this.oamIndex+i] = spritesList[this.oamAddress+i];
+                    
+                    this.oamIndex += 4;
                 }
-                this.oamAddress += 4;
+            } else {
+                if (scanline >= bottom && scanline < top) {
+                    this.spriteOverflow = true;
+                    break;
+                }
             }
+            this.oamAddress += 4;
         }
         this.oamIndex = 0;
     }
@@ -686,27 +675,28 @@ export class PPU {
      * @param {number} pattern 16-bit pattern
      * @param {number} paletteIndex 2-bit palette index
      * @param {boolean} flip Is pattern flipped horizontally ?
+     * @returns {Uint32Array} The 8-pixels sprite buffer
      * @private
      */
     fillSprPixelsBuffer(pattern, paletteIndex, flip) {
         const target = this.sprPixelsBuffer;
         
-        const palette = this.sprPalette;
-        
-        if (paletteIndex >= 4) paletteIndex %= 4;
-        const paletteOffset = paletteIndex * 4;
-        
-        for (let offset = 0; offset < 8; offset++) {
-            const colorIndex = bitplaneLookup[(pattern << offset) & 0x8080];
-            if (colorIndex)
-                target[flip ? 7-offset : offset] = pxlColors[palette[paletteOffset + colorIndex]];
-            else
-                target[flip ? 7-offset : offset] = 0x00000000;
+        if (pattern) {
+            const colors = this.bus.videoOutput.colors;
+            const palette = paletteIndex * 4;
+            
+            for (let index = 0; index < 8; index++) {
+                const color = interpretPattern(pattern, index, flip);
+                target[index] = color ? colors[this.sprPalette[palette + color]] : 0;
+            }
+        } else {
+            target.fill(0);
         }
+        return target;
     }
     
     /**
-     * Fetch the next sprite and fill the buffer.
+     * Fetch the next sprite and process it for the next scanline.
      * @param {number} scanline
      */
     fetchSprite(scanline) {
@@ -720,15 +710,12 @@ export class PPU {
         
         const sprites = this.oamSecondary;
         
-        if (this.sprite0)
-            this.sprite0 = (this.oamIndex === 0);
-        
-        const y = sprites[this.oamIndex++];
-        let row = scanline - y;
-        
+        const y          = sprites[this.oamIndex++];
         let patternIndex = sprites[this.oamIndex++];
         let attributes   = sprites[this.oamIndex++];
+        const x          = sprites[this.oamIndex++];
         
+        let row = scanline - y;
         // Vertical Flip
         if (attributes >= 0x80) {
             row = this.spriteHeight - row - 1;
@@ -744,10 +731,10 @@ export class PPU {
         
         // Behind Background
         if (attributes >= 0x20) {
-            this.sprLayer = this.sprBehindLayer;
+            this.sprLayer = this.bus.videoOutput.sprBehindLayer;
             attributes -= 0x20;
         } else
-            this.sprLayer = this.sprBeforeLayer;
+            this.sprLayer = this.bus.videoOutput.sprBeforeLayer;
         
         if (attributes > 0x03)
             attributes &= 0x03;
@@ -759,7 +746,14 @@ export class PPU {
         }
         
         const pattern = this.fetchSprPatternTable(patternIndex, row);
-        this.fillSprPixelsBuffer(pattern, attributes, flip);
+        const pixels  = this.fillSprPixelsBuffer(pattern, attributes, flip);
+        
+        if (this.sprite0) {
+            this.sprite0Layer.set(pixels, x);
+            this.sprite0 = false;
+        }
+        
+        this.sprLayer.writePixels(x, scanline+1, pixels);
     }
     
     /** Garbage fetch of a sprite. */
@@ -773,26 +767,35 @@ export class PPU {
         this.fetchSprPatternTable(0x00, 0);
     }
     
-    /**
-     * Draw the content of the buffer at the appropriate X position on the next scanline.
-     * @param {number} scanline
-     */
-    renderSprite(scanline) {
-        if (!this.showSprites) return;
-        
-        const x = this.oamSecondary[this.oamIndex++];
-        const pixels = this.sprPixelsBuffer;
-        
-        if (this.sprite0)
-            this.sprite0Layer.fill(0).set(pixels, x);
-        
-        this.sprLayer.writePixels(x, scanline+1, pixels);
-    }
-    
     //== Output =========================================================================//
     printFrame() {
-        this.bus.videoOutput.schedule(cssColors[this.backdrop]);
+        this.bus.videoOutput.drawImage(this.backdrop);
     }
+}
+
+/** @type {Readonly<Record<number, number>>} */
+const bitplaneLookup = Object.freeze({
+    0x0000: 0,
+    0x0100: 1,
+    0x8000: 1,
+    0x0001: 2,
+    0x0080: 2,
+    0x0101: 3,
+    0x8080: 3,
+});
+
+/**
+ * Extract a single pixel from the given *pattern*.
+ * @param {number} pattern 16-bit pattern
+ * @param {number} index The index of the pixel to extract
+ * @param {boolean} flip Is pattern flipped horizontally ?
+ * @returns {number} 2-bit color index
+ */
+function interpretPattern(pattern, index, flip = false) {
+    if (flip)
+        return bitplaneLookup[(pattern >> index) & 0x0101];
+    else
+        return bitplaneLookup[(pattern << index) & 0x8080];
 }
 
 export default PPU;

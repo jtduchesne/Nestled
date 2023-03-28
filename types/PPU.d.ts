@@ -1,3 +1,6 @@
+/**
+ * @typedef {import('./NES.js').NES} NES
+ */
 export class PPU {
     /**
      * @param {NES} bus
@@ -76,8 +79,6 @@ export class PPU {
     /** @private */ private bkgPixelsBuffer;
     /** @private */ private sprPixelsBuffer;
     /** @private */ private bkgLayer;
-    /** @private */ private sprBehindLayer;
-    /** @private */ private sprBeforeLayer;
     /** @private */ private sprLayer;
     /** @private */ private sprite0Layer;
     /** @private */ private sprite0;
@@ -248,21 +249,17 @@ export class PPU {
      * @param {number} pattern 16-bit pattern
      * @param {number} paletteIndex 2-bit palette index
      * @param {boolean} flip Is pattern flipped horizontally ?
+     * @returns {Uint32Array} The 8-pixels sprite buffer
      * @private
      */
     private fillSprPixelsBuffer;
     /**
-     * Fetch the next sprite and fill the buffer.
+     * Fetch the next sprite and process it for the next scanline.
      * @param {number} scanline
      */
     fetchSprite(scanline: number): void;
     /** Garbage fetch of a sprite. */
     fetchNullSprite(): void;
-    /**
-     * Draw the content of the buffer at the appropriate X position on the next scanline.
-     * @param {number} scanline
-     */
-    renderSprite(scanline: number): void;
     printFrame(): void;
 }
 export default PPU;

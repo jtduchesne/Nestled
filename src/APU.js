@@ -164,7 +164,7 @@ export class APU {
      * @param {number} address 16-bit address
      * @returns {number}
      */
-    readRegister(address) {
+    read(address) {
         if (address === 0x4015)
             return this.status;
         else
@@ -174,17 +174,17 @@ export class APU {
      * @param {number} address 16-bit address between 0x4000-0x4017
      * @param {number} data 8-bit data
      */
-    writeRegister(address, data) {
+    write(address, data) {
         if (address <= 0x4003)
-            this.pulse1.writeRegister(address, data);
+            this.pulse1.write(address, data);
         else if (address <= 0x4007)
-            this.pulse2.writeRegister(address, data);
+            this.pulse2.write(address, data);
         else if (address <= 0x400B)
-            this.triangle.writeRegister(address, data);
+            this.triangle.write(address, data);
         else if (address <= 0x400F)
-            this.noise.writeRegister(address, data);
+            this.noise.write(address, data);
         else if (address <= 0x4013)
-            this.dmc.writeRegister(address, data);
+            this.dmc.write(address, data);
         else if (address === 0x4015)
             this.status = data;
         else if (address === 0x4017)

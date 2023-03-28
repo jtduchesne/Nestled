@@ -259,7 +259,7 @@ export class CPU {
             } else if (address >= 0x4016) {
                 return this.bus.ctrlConnector.read(address);
             } else {
-                return this.bus.apu.readRegister(address);
+                return this.bus.apu.read(address);
             }
         } else {
             return this.bus.cartConnector.cartridge.cpuRead(address);
@@ -285,7 +285,7 @@ export class CPU {
             } else if (address === 0x4016) {
                 this.bus.ctrlConnector.write(address, data);
             } else {
-                this.bus.apu.writeRegister(address, data);
+                this.bus.apu.write(address, data);
             }
         } else {
             this.bus.cartConnector.cartridge.cpuWrite(address, data);

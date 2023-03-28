@@ -39,7 +39,7 @@ export class NoiseChannel extends EnvelopeGenerator {
      * @param {number} address 16-bit address between 0x400C-0x400F
      * @param {number} data 8-bit data
      */
-    writeRegister(address, data) {
+    write(address, data) {
         switch (address) {
         case 0x400C: this.volume = data; break;
         case 0x400E: this.timer  = data; break;

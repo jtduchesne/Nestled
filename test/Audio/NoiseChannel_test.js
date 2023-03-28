@@ -216,8 +216,8 @@ describe("NoiseChannel", function() {
     //-----------------------------------------------------------------------------------//
     /*global $address, $data*/
     
-    describe(".writeRegister(address, data)", function() {
-        def('action', () => $subject.writeRegister($address, $data));
+    describe(".write(address, data)", function() {
+        def('action', () => $subject.write($address, $data));
         def('data', () => 0xAA);
         
         context("when address is 0x400C", function() {
