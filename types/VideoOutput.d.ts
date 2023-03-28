@@ -40,7 +40,7 @@ export class VideoOutput {
     /**
      * @param {number} backdrop 6-bit color index
      */
-    schedule(backdrop: number): void;
+    drawImage(backdrop: number): void;
 }
 export default VideoOutput;
 import { VideoBuffer } from "./Video/index.js";
