@@ -1,3 +1,9 @@
+/**
+ * @typedef {import('./NES.js').NES} NES
+ * @typedef {import('./CPU.js').CPU} CPU
+ * @typedef {import('./PPU.js').PPU} PPU
+ */
+
 const frameTime = 1000/60;
 
 const renderLines = 240;
@@ -11,15 +17,20 @@ const cyclesBeforeVBlankStart = vblankStart * cyclesPerScanline;
 const cyclesBeforeVBlankEnd   = vblankEnd * cyclesPerScanline;
 
 export class Engine {
-    constructor(nes) {
-        this.bus = nes;
+    /**
+     * @param {NES} bus
+     */
+    constructor(bus) {
+        /** @private */
+        this.bus = bus;
         
-        this.firstLoop = this.firstLoop.bind(this);
-        this.mainLoop  = this.mainLoop.bind(this);
+        /** @private */ this.firstLoop = this.firstLoop.bind(this);
+        /** @private */ this.mainLoop  = this.mainLoop.bind(this);
         
+        /** @private */
         this.runningLoop = 0;
-        
-        this.lastTimestamp = 0;
+        /** @private */
+        this.lastTime = 0;
         
         this.stats = new Stats;
         
@@ -63,21 +74,23 @@ export class Engine {
         this.runningLoop = requestAnimationFrame(this.firstLoop);
     }
     
-    firstLoop(timestamp) {
+    /** @type {FrameRequestCallback} */
+    firstLoop(time) {
         this.runningLoop = requestAnimationFrame(this.mainLoop);
         
-        this.lastTimestamp = timestamp;
+        this.lastTime = time;
         
         this.doFrame(this.bus.cpu, this.bus.ppu);
         
-        this.stats.addFrame(timestamp);
+        this.stats.addFrame(time);
     }
     
-    mainLoop(timestamp) {
+    /** @type {FrameRequestCallback} */
+    mainLoop(time) {
         this.runningLoop = requestAnimationFrame(this.mainLoop);
         
-        let delta = (timestamp - this.lastTimestamp);
-        this.lastTimestamp = timestamp;
+        let delta = (time - this.lastTime);
+        this.lastTime = time;
         
         if (delta > 1000) {
             this.pause();
@@ -90,11 +103,15 @@ export class Engine {
         }
         this.doFrame(this.bus.cpu, this.bus.ppu);
         
-        this.stats.addFrame(timestamp);
+        this.stats.addFrame(time);
     }
     
     //=======================================================================================//
     
+    /**
+     * @param {CPU} cpu
+     * @param {PPU} ppu
+     */
     doBoot(cpu, ppu) {
         cpu.doInstructions(2279); // 1.275ms after boot
         ppu.vblank = true;
@@ -107,6 +124,10 @@ export class Engine {
         cpu.cycle -= cyclesPerFrame;
     }
     
+    /**
+     * @param {CPU} cpu
+     * @param {PPU} ppu
+     */
     doFrame(cpu, ppu) {
         for (let scanline = 0; scanline < renderLines; scanline++)
             this.doScanline(cpu, ppu, scanline);
@@ -119,6 +140,10 @@ export class Engine {
         cpu.cycle -= cyclesPerFrame;
     }
     
+    /**
+     * @param {CPU} cpu
+     * @param {PPU} ppu
+     */
     skipFrame(cpu, ppu) {
         this.doVBlank(cpu, ppu);
         cpu.doInstructions(cyclesPerFrame);
@@ -128,6 +153,12 @@ export class Engine {
     
     //=======================================================================================//
     
+    /**
+     * Vertical blanking lines (241-260).
+     * The VBlank flag of the PPU is set at scanline 241, where the VBlank NMI also occurs.
+     * @param {CPU} cpu
+     * @param {PPU} ppu
+     */
     doVBlank(cpu, ppu) {
         cpu.doInstructions(cyclesBeforeVBlankStart);
         ppu.doVBlank();
@@ -135,6 +166,13 @@ export class Engine {
         ppu.endVBlank();
     }
     
+    /**
+     * This is a visible scanline, which also processes the graphics to be displayed on
+     * the screen.
+     * @param {CPU} cpu
+     * @param {PPU} ppu
+     * @param {number} scanline
+     */
     doScanline(cpu, ppu, scanline) {
         const cyclesBeforeScanline = scanline*cyclesPerScanline;
         
@@ -173,6 +211,14 @@ export class Engine {
         this.doPreFetch(cpu, ppu, scanline);
     }
     
+    /**
+     * This is a dummy scanline, whose sole purpose is to fill the shift registers with
+     * the data for the first two tiles of the next scanline. Although no pixels are
+     * rendered for this scanline, the PPU still makes the same memory accesses it would
+     * for a regular scanline.
+     * @param {CPU} cpu
+     * @param {PPU} ppu
+     */
     doPreRenderLine(cpu, ppu) {
         const scanline = 261;
         const cyclesBeforeScanline = scanline*cyclesPerScanline;
@@ -203,16 +249,22 @@ export class Engine {
             dot += 8;
         }
         
+        // Fetch the first 2 tiles of next frame
         this.doPreFetch(cpu, ppu, scanline);
     }
     
+    /**
+     * Fetch the first 2 tiles for the next scanline.
+     * @param {CPU} cpu
+     * @param {PPU} ppu
+     * @param {number} scanline
+     */
     doPreFetch(cpu, ppu, scanline) {
         const cyclesBeforeScanline = scanline*cyclesPerScanline;
         
         let dot = 320;
         while (dot < 336) {
             cpu.doInstructions(cyclesBeforeScanline + dot/3);
-            // First 2 tiles of next frame's background:
             ppu.fetchTile();
             ppu.incrementX();
             dot += 8;
@@ -239,6 +291,7 @@ class Stats {
             fps = 60;
         };
         
+        /** @param {number} startTime */
         this.addFrame = (startTime) => {
             frameTimeThisSecond += (performance.now() - startTime);
             
