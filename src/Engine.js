@@ -119,7 +119,7 @@ export class Engine {
         ppu.vblank = true;
         
         this.doVBlank(cpu, ppu);
-        this.doPreFetch(cpu, ppu, 261);
+        this.doPreRenderLine(cpu, ppu);
         
         cpu.cycle -= cyclesPerFrame;
     }
@@ -177,6 +177,8 @@ export class Engine {
         const cyclesBeforeScanline = scanline*cyclesPerScanline;
         
         let dot = 0;
+        
+        // Background (and sprites evaluation)
         ppu.clearSecondaryOAM();
         while (dot < 64) {
             cpu.doInstructions(cyclesBeforeScanline + dot/3);
@@ -198,17 +200,32 @@ export class Engine {
         cpu.doInstructions(cyclesBeforeScanline + dot/3);
         ppu.renderTile(dot, scanline);
         ppu.fetchNullTile();
+        ppu.incrementX();
         ppu.incrementY();
         ppu.resetX();
         dot += 8;
         
+        // Sprites
         while (dot < 320) {
             cpu.doInstructions(cyclesBeforeScanline + dot/3);
             ppu.fetchSprite(scanline);
             dot += 8;
         }
         
-        this.doPreFetch(cpu, ppu, scanline);
+        // First 2 tiles of next scanline
+        while (dot < 336) {
+            cpu.doInstructions(cyclesBeforeScanline + dot/3);
+            ppu.fetchTile();
+            ppu.incrementX();
+            dot += 8;
+        }
+        
+        // Garbage fetches
+        cpu.doInstructions(cyclesBeforeScanline + dot/3);
+        ppu.fetchNullNTs();
+        dot += 4.5;
+        
+        cpu.doInstructions(cyclesBeforeScanline + dot/3);
     }
     
     /**
@@ -224,15 +241,25 @@ export class Engine {
         const cyclesBeforeScanline = scanline*cyclesPerScanline;
         
         let dot = 0;
-        while (dot < 256) {
+        
+        // Background
+        while (dot < 248) {
             cpu.doInstructions(cyclesBeforeScanline + dot/3);
             ppu.fetchNullTile();
             ppu.incrementX();
             dot += 8;
         }
+        
+        // HBlank
+        cpu.doInstructions(cyclesBeforeScanline + dot/3);
+        ppu.fetchNullTile();
+        ppu.incrementX();
         ppu.incrementY();
         ppu.resetX();
-        while (dot < 279) {
+        dot += 8;
+        
+        // Sprites
+        while (dot < 280) {
             cpu.doInstructions(cyclesBeforeScanline + dot/3);
             ppu.fetchNullSprite();
             dot += 8;
@@ -249,27 +276,20 @@ export class Engine {
             dot += 8;
         }
         
-        // Fetch the first 2 tiles of next frame
-        this.doPreFetch(cpu, ppu, scanline);
-    }
-    
-    /**
-     * Fetch the first 2 tiles for the next scanline.
-     * @param {CPU} cpu
-     * @param {PPU} ppu
-     * @param {number} scanline
-     */
-    doPreFetch(cpu, ppu, scanline) {
-        const cyclesBeforeScanline = scanline*cyclesPerScanline;
-        
-        let dot = 320;
+        // First 2 tiles of next frame
         while (dot < 336) {
             cpu.doInstructions(cyclesBeforeScanline + dot/3);
             ppu.fetchTile();
             ppu.incrementX();
             dot += 8;
         }
+        
+        // Garbage fetches
+        cpu.doInstructions(cyclesBeforeScanline + dot/3);
         ppu.fetchNullNTs();
+        dot += 4.5;
+        
+        cpu.doInstructions(cyclesBeforeScanline + dot/3);
     }
 }
 

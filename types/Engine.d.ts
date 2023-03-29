@@ -57,13 +57,6 @@ export class Engine {
      * @param {PPU} ppu
      */
     doPreRenderLine(cpu: CPU, ppu: PPU): void;
-    /**
-     * Fetch the first 2 tiles for the next scanline.
-     * @param {CPU} cpu
-     * @param {PPU} ppu
-     * @param {number} scanline
-     */
-    doPreFetch(cpu: CPU, ppu: PPU, scanline: number): void;
 }
 export default Engine;
 export type NES = import('./NES.js').NES;
