@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import sinon from "sinon";
 
-import NES from "../src";
+import { NES } from "../src";
 
 describe("Cpu", function() {
     def('nes', () => new NES); /*global $nes*/
