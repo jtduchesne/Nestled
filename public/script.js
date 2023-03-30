@@ -45,7 +45,7 @@ try {
     resetButton.addEventListener('click', () => nes.pressReset(), false);
 
     pauseButton.addEventListener('click', () => {
-        if (nes.pause()) {
+        if (nes.engine.pause()) {
             pauseButton.innerText = "Resume";
             updateStatus(nes.game.name + " paused");
         } else {

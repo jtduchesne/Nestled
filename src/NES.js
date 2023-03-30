@@ -46,11 +46,6 @@ export class NES {
         this.ppu.reset();
     }
     
-    //== Engine =============================================================================//
-    pause() {
-        return this.engine.pause();
-    }
-    
     //== Front red LED ======================================================================//
     // (Yes, it is a fully-fledged part of the NES !)
     get frontLEDState() { return this.isPowered ? this.engine.isPaused ? "paused" : "on" : "off"; }
