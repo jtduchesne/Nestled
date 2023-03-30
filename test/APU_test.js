@@ -20,14 +20,14 @@ describe("APU", function() {
     
     describe(".powerOn()", function() {
         beforeEach(function() {
-            sinon.stub($nes.audioOutput, 'start');
+            sinon.stub($nes.audio, 'start');
         });
 
         def('action', () => $subject.powerOn());
         
-        it("starts the audioOutput", function() {
+        it("starts the audio", function() {
             $action;
-            expect($nes.audioOutput.start).to.be.calledOnce;
+            expect($nes.audio.start).to.be.calledOnce;
         });
         it("sets #cyclesPerSample", function() {
             expect(() => $action).to.change($subject, 'cyclesPerSample');
@@ -40,14 +40,14 @@ describe("APU", function() {
     });
     describe(".powerOff()", function() {
         beforeEach(function() {
-            sinon.stub($nes.audioOutput, 'stop');
+            sinon.stub($nes.audio, 'stop');
         });
         
         def('action', () => $subject.powerOff());
         
-        it("stops the audioOutput", function() {
+        it("stops the audio", function() {
             $action;
-            expect($nes.audioOutput.stop).to.be.calledOnce;
+            expect($nes.audio.stop).to.be.calledOnce;
         });
     });
     

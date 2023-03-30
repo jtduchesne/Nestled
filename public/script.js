@@ -23,20 +23,20 @@ try {
     const resetButton = document.getElementById('reset_button');
     const pauseButton = document.getElementById('pause_button');
 
-    const updateStats = (engine) =>
-        updateStatus(engine.stats.fps + " FPS (" + engine.stats.performance.toFixed(2) +"x)");
+    const updateStats = ({ fps, performance }) =>
+        updateStatus(fps + " FPS (" + performance.toFixed(2) +"x)");
 
     let intervalId = null;
     powerButton.addEventListener('click', () => {
         if (nes.pressPower()) {
             resetButton.disabled = false;
             pauseButton.disabled = false;
-            updateStatus(nes.cartConnector.metadata.name + " started");
-            intervalId = setInterval(() => updateStats(nes.engine), 1000);
+            updateStatus(nes.game.name + " started");
+            intervalId = setInterval(() => updateStats(nes.engine.stats), 1000);
         } else {
             resetButton.setAttribute("disabled", "disabled");
             pauseButton.setAttribute("disabled", "disabled");
-            updateStatus(nes.cartConnector.metadata.name + " stopped");
+            updateStatus(nes.game.name + " stopped");
             clearInterval(intervalId);
         }
         updateFrontLED();
@@ -47,10 +47,10 @@ try {
     pauseButton.addEventListener('click', () => {
         if (nes.pause()) {
             pauseButton.innerText = "Resume";
-            updateStatus(nes.cartConnector.metadata.name + " paused");
+            updateStatus(nes.game.name + " paused");
         } else {
             pauseButton.innerText = "Pause";
-            updateStatus(nes.cartConnector.metadata.name + " resumed");
+            updateStatus(nes.game.name + " resumed");
         }
         updateFrontLED();
     }, false);
@@ -60,11 +60,11 @@ try {
         left: "A", up: "W", down: "S", right: "D",
         select: "Shift", start: "Enter", b: "K", a: "L"
     });
-    nes.insertController(joypad);
+    nes.controllers.insert(joypad);
 
     //-------------------------------------------------------------------------------------------//
     const screenOutput = document.getElementById('screen');
-    nes.connectVideo(screenOutput);
+    nes.video.connect(screenOutput);
 
     //-------------------------------------------------------------------------------------------//
     const volumeInput = document.getElementById('volume');
@@ -80,12 +80,10 @@ try {
     fileInput.value = "";
 
     fileInput.addEventListener('change', (e) => {
-        nes.insertCartridge(e.target.files[0]);
+        nes.game.load(e.target.files[0]);
     }, false);
     fileInput.addEventListener('click', () => {
-        if (nes.isPowered)
-            nes.powerOff();
-        nes.removeCartridge();
+        nes.game.unload();
     }, false);
 
     //-------------------------------------------------------------------------------------------//

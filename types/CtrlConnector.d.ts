@@ -1,8 +1,8 @@
 export class CtrlConnector {
-    controllers: {
-        1: Controller;
-        2: Controller;
-    };
+    /** @private */
+    private controllers;
+    get 1(): Controller;
+    get 2(): Controller;
     /**
      * Insert a *Controller-derived* class into given port.
      * @param {Controller} controller

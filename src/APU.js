@@ -57,13 +57,13 @@ export class APU {
     //===================================================================================//
     
     powerOn() {
-        this.bus.audioOutput.start();
+        this.bus.audio.start();
         
-        this.cyclesPerSample   = cyclesFrequency / this.bus.audioOutput.sampleRate;
-        this.cyclesUntilSample = this.cyclesPerSample * this.bus.audioOutput.speedAdjustment;
+        this.cyclesPerSample   = cyclesFrequency / this.bus.audio.sampleRate;
+        this.cyclesUntilSample = this.cyclesPerSample * this.bus.audio.speedAdjustment;
     }
     powerOff() {
-        this.bus.audioOutput.stop();
+        this.bus.audio.stop();
     }
     
     reset() {
@@ -246,7 +246,7 @@ export class APU {
         
         if (--this.cyclesUntilSample <= 0) {
             this.doSample();
-            this.cyclesUntilSample += this.cyclesPerSample * this.bus.audioOutput.speedAdjustment;
+            this.cyclesUntilSample += this.cyclesPerSample * this.bus.audio.speedAdjustment;
         }
     }
     
@@ -270,7 +270,7 @@ export class APU {
         const pulses = this.pulse1.output + this.pulse2.output;
         const others = 3*this.triangle.output + 2*this.noise.output + this.dmc.output;
         
-        this.bus.audioOutput.writeSample(pulsesSamples[pulses] + othersSamples[others]);
+        this.bus.audio.writeSample(pulsesSamples[pulses] + othersSamples[others]);
     }
 }
 

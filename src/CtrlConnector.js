@@ -4,8 +4,12 @@ import { Controller } from "./Controllers/index.js";
 
 export class CtrlConnector {
     constructor() {
+        /** @private */
         this.controllers = Object.seal({1: new Controller, 2: new Controller});
     }
+    
+    get 1() { return this.controllers[1]; }
+    get 2() { return this.controllers[2]; }
     
     //=======================================================================================//
     /**

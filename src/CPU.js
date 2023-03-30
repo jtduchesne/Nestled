@@ -157,7 +157,7 @@ export class CPU {
         this.cycle = 0;
         
         //Interrupt vectors optimizations
-        const cart = this.bus.cartConnector.cartridge;
+        const cart = this.bus.game.cartridge;
         this.nmiVector   = () => cart.cpuRead(0xFFFA) + cart.cpuRead(0xFFFB)*256;
         this.resetVector = () => cart.cpuRead(0xFFFC) + cart.cpuRead(0xFFFD)*256;
         this.irqVector   = () => cart.cpuRead(0xFFFE) + cart.cpuRead(0xFFFF)*256;
@@ -257,12 +257,12 @@ export class CPU {
             if (address < 0x4000) {
                 return this.bus.ppu.read(address);
             } else if (address >= 0x4016) {
-                return this.bus.ctrlConnector.read(address);
+                return this.bus.controllers.read(address);
             } else {
                 return this.bus.apu.read(address);
             }
         } else {
-            return this.bus.cartConnector.cartridge.cpuRead(address);
+            return this.bus.game.cartridge.cpuRead(address);
         }
     }
     /**
@@ -283,12 +283,12 @@ export class CPU {
                 if (this.cycle & 1) this.cycle += 513;
                 else this.cycle += 514;
             } else if (address === 0x4016) {
-                this.bus.ctrlConnector.write(address, data);
+                this.bus.controllers.write(address, data);
             } else {
                 this.bus.apu.write(address, data);
             }
         } else {
-            this.bus.cartConnector.cartridge.cpuWrite(address, data);
+            this.bus.game.cartridge.cpuWrite(address, data);
         }
     }
     

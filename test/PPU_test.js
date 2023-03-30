@@ -11,7 +11,7 @@ describe("Ppu", function() {
     subject(() => $nes.ppu);
     
     /*global $cartridge*/
-    def('cartridge', () => $nes.cartConnector.cartridge);
+    def('cartridge', () => $nes.game.cartridge);
     
     /*global $VRAMData, $VRAM0Data, $VRAM1Data */
     def(['VRAMData','VRAM0Data','VRAM1Data']);
@@ -86,7 +86,7 @@ describe("Ppu", function() {
     
     describe(".powerOn()", function() {
         beforeEach(function() {
-            sinon.stub($nes.videoOutput, 'start');
+            sinon.stub($nes.video, 'start');
             setEveryProperties($subject);
             $subject.isPowered = false;
         });
@@ -140,9 +140,9 @@ describe("Ppu", function() {
             expect($subject.readBuffer).to.equal(0x00);
         });
         
-        it("starts the videoOutput", function() {
+        it("starts the video", function() {
             $action;
-            expect($nes.videoOutput.start).to.be.calledOnce;
+            expect($nes.video.start).to.be.calledOnce;
         });
         it("sets #isPowered", function() {
             expect(() => $action).to.change($subject, 'isPowered');
@@ -152,15 +152,15 @@ describe("Ppu", function() {
     
     describe(".powerOff()", function() {
         beforeEach(function() {
-            sinon.stub($nes.videoOutput, 'stop');
+            sinon.stub($nes.video, 'stop');
             $subject.isPowered = true;
         });
         
         def('action', () => $subject.powerOff());
         
-        it("stops the videoOutput", function() {
+        it("stops the video", function() {
             $action;
-            expect($nes.videoOutput.stop).to.be.calledOnce;
+            expect($nes.video.stop).to.be.calledOnce;
         });
         it("clears #isPowered", function() {
             expect(() => $action).to.change($subject, 'isPowered');
@@ -737,7 +737,7 @@ describe("Ppu", function() {
     
     context("Data", function() {
         beforeEach(function() {
-            if ($mapper) $nes.cartConnector.cartridge = new $mapper;
+            if ($mapper) $nes.game.cartridge = new $mapper;
             $cartridge.horiMirroring = $horiMirroring || false;
             $cartridge.vertMirroring = $vertMirroring || false;
         });
@@ -1778,18 +1778,18 @@ describe("Ppu", function() {
                     def('attributes', () => 0x20);
                     beforeEach(() => { $subject.sprLayer = null; });
                     
-                    it("sets #sprLayer to reference NES.videoOutput.sprBehindLayer", function() {
+                    it("sets #sprLayer to reference NES.video.sprBehindLayer", function() {
                         expect(() => $action).to.change($subject, 'sprLayer');
-                        expect($subject.sprLayer).to.equal($nes.videoOutput.sprBehindLayer);
+                        expect($subject.sprLayer).to.equal($nes.video.sprBehindLayer);
                     });
                 });
                 context("if 'Is Behind' attribute is not set", function() {
                     def('attributes', () => ~0x20);
                     beforeEach(() => { $subject.sprLayer = null; });
                     
-                    it("sets #sprLayer to reference NES.videoOutput.sprBeforeLayer", function() {
+                    it("sets #sprLayer to reference NES.video.sprBeforeLayer", function() {
                         expect(() => $action).to.change($subject, 'sprLayer');
-                        expect($subject.sprLayer).to.equal($nes.videoOutput.sprBeforeLayer);
+                        expect($subject.sprLayer).to.equal($nes.video.sprBeforeLayer);
                     });
                 });
             });
