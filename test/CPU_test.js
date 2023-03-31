@@ -1,15 +1,15 @@
 import { expect } from "chai";
 import sinon from "sinon";
 
-import NES from "../src";
+import { NES } from "../src";
 
 describe("Cpu", function() {
     def('nes', () => new NES); /*global $nes*/
     
     subject(() => $nes.cpu);
     
-    beforeEach("stub NES.audioOutput", function() {
-        sinon.stub($nes.audioOutput);
+    beforeEach("stub NES.audio", function() {
+        sinon.stub($nes.audio);
     });
     
     /*global $RAMData */
@@ -50,8 +50,8 @@ describe("Cpu", function() {
     describe(".powerOn()", function() {
         beforeEach(function() {
             setEveryProperties($subject);
-            sinon.stub($nes.cartConnector.cartridge, 'cpuRead').returns(0xA5);
-            sinon.stub($nes.apu, 'powerOn');
+            sinon.stub($nes.game.cartridge, 'cpuRead').returns(0xA5);
+            $subject.isPowered = false;
         });
         def('action', () => $subject.powerOn());
         
@@ -85,21 +85,21 @@ describe("Cpu", function() {
             expect($subject.cycle).to.equal(0);
         });
         
-        it("calls NES.apu.powerOn()", function() {
-            $action;
-            expect($nes.apu.powerOn).to.be.calledOnce;
+        it("sets #isPowered to -true-", function() {
+            expect(() => $action).to.change($subject, 'isPowered');
+            expect($subject.isPowered).to.be.true;
         });
     });
     
     describe(".powerOff()", function() {
         beforeEach(function() {
-            sinon.stub($nes.apu, 'powerOff');
+            $subject.isPowered = true;
         });
         def('action', () => $subject.powerOff());
         
-        it("calls NES.apu.powerOff()", function() {
-            $action;
-            expect($nes.apu.powerOff).to.be.calledOnce;
+        it("sets #isPowered to -false-", function() {
+            expect(() => $action).to.change($subject, 'isPowered');
+            expect($subject.isPowered).to.be.false;
         });
     });
     
@@ -107,7 +107,6 @@ describe("Cpu", function() {
         beforeEach(function() {
             setEveryProperties($subject);
             sinon.stub($subject, 'resetVector').returns($resetVector);
-            sinon.stub($nes.apu, 'reset');
         });
         def('action', () => $subject.reset());
         
@@ -132,9 +131,8 @@ describe("Cpu", function() {
             expect($subject.PC).to.equal($resetVector);
         });
         
-        it("calls NES.apu.reset()", function() {
-            $action;
-            expect($nes.apu.reset).to.be.calledOnce;
+        it("does not change #isPowered", function() {
+            expect(() => $action).not.to.change($subject, 'isPowered');
         });
     });
     
@@ -205,7 +203,7 @@ describe("Cpu", function() {
                 expect(stub).to.be.calledOnce;
             });
             it("reads from Controller 1 when address is [0x4016]", function() {
-                const stub = sinon.stub($nes.ctrlConnector.controllers[1], 'read');
+                const stub = sinon.stub($nes.controllers[1], 'read');
                 $subject.read(0x4016);
                 expect(stub).to.be.calledOnce;
             });
@@ -213,7 +211,7 @@ describe("Cpu", function() {
                 expect($subject.read(0x4016)).to.equal(0x40);
             });
             it("reads from Controller 2 when address is [0x4017]", function() {
-                const stub = sinon.stub($nes.ctrlConnector.controllers[2], 'read');
+                const stub = sinon.stub($nes.controllers[2], 'read');
                 $subject.read(0x4017);
                 expect(stub).to.be.calledOnce;
             });
@@ -221,7 +219,7 @@ describe("Cpu", function() {
                 expect($subject.read(0x4017)).to.equal(0x40);
             });
             it("reads from Cartridge when address is between [0x6000-FFFF]", function() {
-                const stub = sinon.stub($nes.cartConnector.cartridge, 'cpuRead');
+                const stub = sinon.stub($nes.game.cartridge, 'cpuRead');
                 $subject.read(0x6000);
                 $subject.read(0x8000);
                 $subject.read(0xFFFF);
@@ -256,8 +254,8 @@ describe("Cpu", function() {
                 expect(stub).to.be.calledOnce;
             });
             it("writes (strobe) to both Controllers when address is [0x4016]", function() {
-                const stub1 = sinon.stub($nes.ctrlConnector.controllers[1], 'write');
-                const stub2 = sinon.stub($nes.ctrlConnector.controllers[2], 'write');
+                const stub1 = sinon.stub($nes.controllers[1], 'write');
+                const stub2 = sinon.stub($nes.controllers[2], 'write');
                 $subject.write(0x4016, 0xFF);
                 expect(stub1).to.be.calledOnceWith(0x1);
                 expect(stub2).to.be.calledOnceWith(0x1);
@@ -268,7 +266,7 @@ describe("Cpu", function() {
                 expect(stub).to.be.calledOnce;
             });
             it("writes to Cartridge when address is between [0x6000, 0xFFFF]", function() {
-                const stub = sinon.stub($nes.cartConnector.cartridge, 'cpuWrite');
+                const stub = sinon.stub($nes.game.cartridge, 'cpuWrite');
                 $subject.write(0x6000, 0xFF);
                 $subject.write(0x8000, 0xFF);
                 $subject.write(0xFFFF, 0xFF);

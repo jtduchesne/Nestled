@@ -5,6 +5,8 @@
  * @typedef {(fnFetchOperand:FetchOperandFunc) => void} InstructionFunc
  */
 
+import { Powered } from './Power.js';
+
 /** Number of cycles by opcode lookup table. */
 const cyclesLookup = [7,6,2,8,3,3,5,5,3,2,2,2,4,4,6,6, 2,5,2,8,4,4,6,6,2,4,2,7,4,4,7,7,
                       6,6,2,8,3,3,5,5,4,2,2,2,4,4,6,6, 2,5,2,8,4,4,6,6,2,4,2,7,4,4,7,7,
@@ -15,11 +17,13 @@ const cyclesLookup = [7,6,2,8,3,3,5,5,3,2,2,2,4,4,6,6, 2,5,2,8,4,4,6,6,2,4,2,7,4
                       2,6,2,8,3,3,5,5,2,2,2,2,4,4,6,6, 2,5,2,8,4,4,6,6,2,4,2,7,4,4,7,7,
                       2,6,3,8,3,3,5,5,2,2,2,2,4,4,6,6, 2,5,2,8,4,4,6,6,2,4,2,7,4,4,7,7];
 
-export class CPU {
+export class CPU extends Powered {
     /**
      * @param {NES} bus
      */
     constructor(bus) {
+        super();
+        
         /** @private */
         this.bus = bus;
         
@@ -148,8 +152,6 @@ export class CPU {
         this.opcode  = 0x00;
         /** @private */
         this.operand = 0x00;
-        
-        this.isPowered = false;
     }
     
     //== Power ==========================================================================//
@@ -157,7 +159,7 @@ export class CPU {
         this.cycle = 0;
         
         //Interrupt vectors optimizations
-        const cart = this.bus.cartConnector.cartridge;
+        const cart = this.bus.game.cartridge;
         this.nmiVector   = () => cart.cpuRead(0xFFFA) + cart.cpuRead(0xFFFB)*256;
         this.resetVector = () => cart.cpuRead(0xFFFC) + cart.cpuRead(0xFFFD)*256;
         this.irqVector   = () => cart.cpuRead(0xFFFE) + cart.cpuRead(0xFFFF)*256;
@@ -174,18 +176,13 @@ export class CPU {
         //Program counter
         this.PC = this.resetVector();
         
-        this.bus.apu.powerOn();
-        
-        this.isPowered = true;
+        return super.powerOn();
     }
     powerOff() {
-        this.bus.apu.powerOff();
-        
-        this.isPowered = false;
+        return super.powerOff();
     }
     
     reset() {
-        this.bus.apu.reset();
         this.doReset();
     }
     
@@ -257,12 +254,12 @@ export class CPU {
             if (address < 0x4000) {
                 return this.bus.ppu.read(address);
             } else if (address >= 0x4016) {
-                return this.bus.ctrlConnector.read(address);
+                return this.bus.controllers.read(address);
             } else {
                 return this.bus.apu.read(address);
             }
         } else {
-            return this.bus.cartConnector.cartridge.cpuRead(address);
+            return this.bus.game.cartridge.cpuRead(address);
         }
     }
     /**
@@ -283,12 +280,12 @@ export class CPU {
                 if (this.cycle & 1) this.cycle += 513;
                 else this.cycle += 514;
             } else if (address === 0x4016) {
-                this.bus.ctrlConnector.write(address, data);
+                this.bus.controllers.write(address, data);
             } else {
                 this.bus.apu.write(address, data);
             }
         } else {
-            this.bus.cartConnector.cartridge.cpuWrite(address, data);
+            this.bus.game.cartridge.cpuWrite(address, data);
         }
     }
     

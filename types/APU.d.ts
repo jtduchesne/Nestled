@@ -1,4 +1,4 @@
-export class APU {
+export class APU extends Powered {
     /**
      * @param {NES} bus
      */
@@ -38,9 +38,6 @@ export class APU {
     private cyclesPerSample;
     /** @private */
     private cyclesUntilSample;
-    powerOn(): void;
-    powerOff(): void;
-    reset(): void;
     /** @private */
     private set counter(arg);
     /**
@@ -77,6 +74,7 @@ export class APU {
 }
 export default APU;
 export type NES = import('./NES.js').NES;
+import { Powered } from "./Power.js";
 import { PulseChannel } from "./Audio/index.js";
 import { TriangleChannel } from "./Audio/index.js";
 import { NoiseChannel } from "./Audio/index.js";

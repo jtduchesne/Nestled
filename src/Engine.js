@@ -4,6 +4,8 @@
  * @typedef {import('./PPU.js').PPU} PPU
  */
 
+import { Powered } from './Power.js';
+
 const frameTime = 1000/60;
 
 const renderLines = 240;
@@ -16,11 +18,13 @@ const cyclesPerFrame    = (341*261 + 340.5)/3;
 const cyclesBeforeVBlankStart = vblankStart * cyclesPerScanline;
 const cyclesBeforeVBlankEnd   = vblankEnd * cyclesPerScanline;
 
-export class Engine {
+export class Engine extends Powered {
     /**
      * @param {NES} bus
      */
     constructor(bus) {
+        super();
+        
         /** @private */
         this.bus = bus;
         
@@ -34,7 +38,6 @@ export class Engine {
         
         this.stats = new Stats;
         
-        this.isPowered = false;
         this.isPaused = false;
     }
     
@@ -43,15 +46,15 @@ export class Engine {
     powerOn() {
         this.coldBoot();
         
-        this.isPowered = true;
         this.isPaused = false;
+        return super.powerOn();
     }
     powerOff() {
         cancelAnimationFrame(this.runningLoop);
         this.runningLoop = 0;
         
-        this.isPowered = false;
         this.isPaused = false;
+        return super.powerOff();
     }
     
     pause() {
@@ -68,13 +71,16 @@ export class Engine {
     
     //=======================================================================================//
     
+    /** @private */
     coldBoot() {
         this.doBoot(this.bus.cpu, this.bus.ppu);
         
         this.runningLoop = requestAnimationFrame(this.firstLoop);
     }
     
-    /** @type {FrameRequestCallback} */
+    /**
+     * @type {FrameRequestCallback}
+     * @private */
     firstLoop(time) {
         this.runningLoop = requestAnimationFrame(this.mainLoop);
         
@@ -85,7 +91,9 @@ export class Engine {
         this.stats.addFrame(time);
     }
     
-    /** @type {FrameRequestCallback} */
+    /**
+     * @type {FrameRequestCallback}
+     * @private */
     mainLoop(time) {
         this.runningLoop = requestAnimationFrame(this.mainLoop);
         
@@ -111,6 +119,7 @@ export class Engine {
     /**
      * @param {CPU} cpu
      * @param {PPU} ppu
+     * @private
      */
     doBoot(cpu, ppu) {
         cpu.doInstructions(2279); // 1.275ms after boot
@@ -127,6 +136,7 @@ export class Engine {
     /**
      * @param {CPU} cpu
      * @param {PPU} ppu
+     * @private
      */
     doFrame(cpu, ppu) {
         for (let scanline = 0; scanline < renderLines; scanline++)
@@ -143,6 +153,7 @@ export class Engine {
     /**
      * @param {CPU} cpu
      * @param {PPU} ppu
+     * @private
      */
     skipFrame(cpu, ppu) {
         this.doVBlank(cpu, ppu);
@@ -158,6 +169,7 @@ export class Engine {
      * The VBlank flag of the PPU is set at scanline 241, where the VBlank NMI also occurs.
      * @param {CPU} cpu
      * @param {PPU} ppu
+     * @private
      */
     doVBlank(cpu, ppu) {
         cpu.doInstructions(cyclesBeforeVBlankStart);
@@ -172,6 +184,7 @@ export class Engine {
      * @param {CPU} cpu
      * @param {PPU} ppu
      * @param {number} scanline
+     * @private
      */
     doScanline(cpu, ppu, scanline) {
         const cyclesBeforeScanline = scanline*cyclesPerScanline;
@@ -235,6 +248,7 @@ export class Engine {
      * for a regular scanline.
      * @param {CPU} cpu
      * @param {PPU} ppu
+     * @private
      */
     doPreRenderLine(cpu, ppu) {
         const scanline = 261;

@@ -1,53 +1,62 @@
-export class Engine {
+export class Engine extends Powered {
     /**
      * @param {NES} bus
      */
     constructor(bus: NES);
     /** @private */
     private bus;
-    firstLoop(time: number): void;
-    mainLoop(time: number): void;
+    /**
+     * @type {FrameRequestCallback}
+     * @private */
+    private firstLoop;
+    /**
+     * @type {FrameRequestCallback}
+     * @private */
+    private mainLoop;
     /** @private */
     private runningLoop;
     /** @private */
     private lastTime;
     stats: Stats;
-    isPowered: boolean;
     isPaused: boolean;
-    powerOn(): void;
-    powerOff(): void;
     pause(): boolean;
-    coldBoot(): void;
+    /** @private */
+    private coldBoot;
     /**
      * @param {CPU} cpu
      * @param {PPU} ppu
+     * @private
      */
-    doBoot(cpu: CPU, ppu: PPU): void;
+    private doBoot;
     /**
      * @param {CPU} cpu
      * @param {PPU} ppu
+     * @private
      */
-    doFrame(cpu: CPU, ppu: PPU): void;
+    private doFrame;
     /**
      * @param {CPU} cpu
      * @param {PPU} ppu
+     * @private
      */
-    skipFrame(cpu: CPU, ppu: PPU): void;
+    private skipFrame;
     /**
      * Vertical blanking lines (241-260).
      * The VBlank flag of the PPU is set at scanline 241, where the VBlank NMI also occurs.
      * @param {CPU} cpu
      * @param {PPU} ppu
+     * @private
      */
-    doVBlank(cpu: CPU, ppu: PPU): void;
+    private doVBlank;
     /**
      * This is a visible scanline, which also processes the graphics to be displayed on
      * the screen.
      * @param {CPU} cpu
      * @param {PPU} ppu
      * @param {number} scanline
+     * @private
      */
-    doScanline(cpu: CPU, ppu: PPU, scanline: number): void;
+    private doScanline;
     /**
      * This is a dummy scanline, whose sole purpose is to fill the shift registers with
      * the data for the first two tiles of the next scanline. Although no pixels are
@@ -55,13 +64,15 @@ export class Engine {
      * for a regular scanline.
      * @param {CPU} cpu
      * @param {PPU} ppu
+     * @private
      */
-    doPreRenderLine(cpu: CPU, ppu: PPU): void;
+    private doPreRenderLine;
 }
 export default Engine;
 export type NES = import('./NES.js').NES;
 export type CPU = import('./CPU.js').CPU;
 export type PPU = import('./PPU.js').PPU;
+import { Powered } from "./Power.js";
 declare class Stats {
     fps: number;
     performance: number;
