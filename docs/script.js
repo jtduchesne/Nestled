@@ -60,16 +60,22 @@
 
   //-------------------------------------------------------------------------------------------//
 
-    const joypad1 = new Nestled.Devices.Keyboard({
+    const keys = {
         left: "A", up: "W", down: "S", right: "D",
         select: "Shift", start: "Enter", b: "K", a: "L"
-    });
+    };
+
+    const controllersInfo = document.getElementById('controllers_info');
+    controllersInfo.title = "Controllers (both) :\n" +
+                            Object.keys(keys).reduce((prev, v, i) => (
+                                prev + v[0].toUpperCase() + v.slice(1) + `: '${keys[v]}'` +
+                                       ((i === 3 || i === 5) ? "\n" : " ")
+                            ), "");
+
+    const joypad1 = new Nestled.Devices.Keyboard(keys);
     nes.controllers.insert(joypad1, 1);
 
-    const joypad2 = new Nestled.Devices.Keyboard({
-        left: "A", up: "W", down: "S", right: "D",
-        select: "Shift", start: "Enter", b: "K", a: "L"
-    });
+    const joypad2 = new Nestled.Devices.Keyboard(keys);
     nes.controllers.insert(joypad2, 2);
 
   //-------------------------------------------------------------------------------------------//

@@ -45,6 +45,11 @@ button {
     margin-right: 1px;
 }
 
+#controllers_info {
+    font-size: .8em;
+    cursor: default;
+}
+
 #file_select_row {
     border: 1px solid lightgray;
     border-radius: .5em;
