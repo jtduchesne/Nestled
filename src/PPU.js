@@ -1,12 +1,14 @@
-/**
- * @typedef {import('./NES.js').NES} NES
- */
+/** @typedef {import('./NES.js').NES} NES */
 
-export class PPU {
+import { Powered } from './Power.js';
+
+export class PPU extends Powered {
     /**
      * @param {NES} bus
      */
     constructor(bus) {
+        super();
+        
         /** @private */
         this.bus = bus;
         
@@ -99,14 +101,12 @@ export class PPU {
         /** @private */ this.sprPixelsBuffer = new Uint32Array(8);
         
         //Layers
-        /** @private */ this.bkgLayer = this.bus.videoOutput.bkgLayer;
-        /** @private */ this.sprLayer = this.bus.videoOutput.sprBeforeLayer;
+        /** @private */ this.bkgLayer = this.bus.video.bkgLayer;
+        /** @private */ this.sprLayer = this.bus.video.sprBeforeLayer;
         
         //Used for Sprite0 hit detection
         /** @private */ this.sprite0Layer = new Uint32Array(264);
         /** @private */ this.sprite0      = false;
-        
-        this.isPowered = false;
     }
     
     //== Power ==========================================================================//
@@ -123,16 +123,16 @@ export class PPU {
         
         this.writeToggle   = false;
         
-        this.ntsc = (this.bus.cartConnector.metadata.tvSystem === "NTSC");
+        this.ntsc = (this.bus.game.metadata.tvSystem === "NTSC");
         
-        this.bus.videoOutput.start();
+        this.bus.video.start();
         
-        this.isPowered = true;
+        return super.powerOn();
     }
     powerOff() {
-        this.bus.videoOutput.stop();
+        this.bus.video.stop();
         
-        this.isPowered = false;
+        return super.powerOff();
     }
     
     reset() {
@@ -384,7 +384,7 @@ export class PPU {
      * @private
      */
     readData(address) {
-        const cartridge = this.bus.cartConnector.cartridge;
+        const cartridge = this.bus.game.cartridge;
         if (cartridge.ciramEnabled(address))
             return this.vram[cartridge.ciramA10(address)][address & 0x3FF];
         else
@@ -396,7 +396,7 @@ export class PPU {
      * @private
      */
     writeData(address, data) {
-        const cartridge = this.bus.cartConnector.cartridge;
+        const cartridge = this.bus.game.cartridge;
         if (cartridge.ciramEnabled(address))
             this.vram[cartridge.ciramA10(address)][address & 0x3FF] = data;
         else
@@ -537,7 +537,7 @@ export class PPU {
         const target = this.bkgPixelsBuffer.subarray(8, 16);
         
         if (pattern) {
-            const colors = this.bus.videoOutput.colors;
+            const colors = this.bus.video.colors;
             const palette = paletteIndex * 4;
             
             for (let index = 0; index < 8; index++) {
@@ -682,7 +682,7 @@ export class PPU {
         const target = this.sprPixelsBuffer;
         
         if (pattern) {
-            const colors = this.bus.videoOutput.colors;
+            const colors = this.bus.video.colors;
             const palette = paletteIndex * 4;
             
             for (let index = 0; index < 8; index++) {
@@ -731,10 +731,10 @@ export class PPU {
         
         // Behind Background
         if (attributes >= 0x20) {
-            this.sprLayer = this.bus.videoOutput.sprBehindLayer;
+            this.sprLayer = this.bus.video.sprBehindLayer;
             attributes -= 0x20;
         } else
-            this.sprLayer = this.bus.videoOutput.sprBeforeLayer;
+            this.sprLayer = this.bus.video.sprBeforeLayer;
         
         if (attributes > 0x03)
             attributes &= 0x03;
@@ -769,7 +769,7 @@ export class PPU {
     
     //== Output =========================================================================//
     printFrame() {
-        this.bus.videoOutput.drawImage(this.backdrop);
+        this.bus.video.drawImage(this.backdrop);
     }
 }
 

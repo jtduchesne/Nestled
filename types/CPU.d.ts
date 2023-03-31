@@ -1,4 +1,4 @@
-export class CPU {
+export class CPU extends Powered {
     /**
      * @param {NES} bus
      */
@@ -90,10 +90,6 @@ export class CPU {
     private opcode;
     /** @private */
     private operand;
-    isPowered: boolean;
-    powerOn(): void;
-    powerOff(): void;
-    reset(): void;
     /**
      * Execute instructions up to a given limit of CPU cycles, the limit being based on
      * the number of cycle since the beginning of the current frame.
@@ -440,4 +436,5 @@ export type NES = import('./NES.js').NES;
 export type FetchOperandFunc = (implied?: any) => any;
 export type AddressingModeFunc = FetchOperandFunc;
 export type InstructionFunc = (fnFetchOperand: FetchOperandFunc) => void;
+import { Powered } from "./Power.js";
 //# sourceMappingURL=CPU.d.ts.map

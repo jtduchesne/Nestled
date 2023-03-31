@@ -8,12 +8,12 @@ import { Controller } from "../src/Controllers";
 describe("CtrlConnector", function() {
     subject(() => new CtrlConnector);
     
-    its('controllers', () => is.expected.to.be.an('object').that.has.keys(1, 2));
+    its('1', () => is.expected.to.be.an.instanceOf(Controller).and.have.property('empty', true));
+    its('2', () => is.expected.to.be.an.instanceOf(Controller).and.have.property('empty', true));
     
-    it("has 2 empty controllers on creation", function() {
-        expect($subject.controllers[1]).to.be.an.instanceOf(Controller).and.have.property('empty', true);
-        expect($subject.controllers[2]).to.be.an.instanceOf(Controller).and.have.property('empty', true);
-    });
+    its('controllers', () => is.expected.to.be.an('object').that.has.keys(1, 2));
+    its('1', () => is.expected.to.equal($subject.controllers[1]));
+    its('2', () => is.expected.to.equal($subject.controllers[2]));
     
     //-------------------------------------------------------------------------------//
     
@@ -27,24 +27,24 @@ describe("CtrlConnector", function() {
             def('port', () => 1);
             
             it("sets given controller into port 1", function() {
-                expect(() => $action).to.change($subject.controllers, '1');
-                expect($subject.controllers[1]).to.equal($controller);
+                expect(() => $action).to.change($subject, '1');
+                expect($subject[1]).to.equal($controller);
             });
             it("does not change controller into port 2", function() {
-                expect(() => $action).not.to.change($subject.controllers, '2');
-                expect($subject.controllers[2]).not.to.equal($controller);
+                expect(() => $action).not.to.change($subject, '2');
+                expect($subject[2]).not.to.equal($controller);
             });
         });
         context("when port = 2", function() {
             def('port', () => 2);
             
             it("does not change controller into port 1", function() {
-                expect(() => $action).not.to.change($subject.controllers, '1');
-                expect($subject.controllers[1]).not.to.equal($controller);
+                expect(() => $action).not.to.change($subject, '1');
+                expect($subject[1]).not.to.equal($controller);
             });
             it("sets given controller into port 2", function() {
-                expect(() => $action).to.change($subject.controllers, '2');
-                expect($subject.controllers[2]).to.equal($controller);
+                expect(() => $action).to.change($subject, '2');
+                expect($subject[2]).to.equal($controller);
             });
         });
         context("when port = 3", function() {
@@ -63,24 +63,24 @@ describe("CtrlConnector", function() {
             def('port', () => 1);
             
             it("sets an empty controller into port 1", function() {
-                expect(() => $action).to.change($subject.controllers, '1');
-                expect($subject.controllers[1]).to.still.be.an.instanceOf(Controller).and
-                                                        .have.property('empty', true);
+                expect(() => $action).to.change($subject, '1');
+                expect($subject[1]).to.still.be.an.instanceOf(Controller).and
+                                            .have.property('empty', true);
             });
             it("does not change controller into port 2", function() {
-                expect(() => $action).not.to.change($subject.controllers, '2');
+                expect(() => $action).not.to.change($subject, '2');
             });
         });
         context("when port = 2", function() {
             def('port', () => 2);
             
             it("does not change controller into port 1", function() {
-                expect(() => $action).not.to.change($subject.controllers, '1');
+                expect(() => $action).not.to.change($subject, '1');
             });
             it("sets given controller into port 2", function() {
-                expect(() => $action).to.change($subject.controllers, '2');
-                expect($subject.controllers[2]).to.still.be.an.instanceOf(Controller).and
-                                                        .have.property('empty', true);
+                expect(() => $action).to.change($subject, '2');
+                expect($subject[2]).to.still.be.an.instanceOf(Controller).and
+                                            .have.property('empty', true);
             });
         });
         context("when port = 3", function() {
