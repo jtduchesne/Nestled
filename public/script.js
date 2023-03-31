@@ -57,11 +57,17 @@ try {
     }, false);
 
     //-------------------------------------------------------------------------------------------//
-    const joypad = new Devices.Keyboard({
+    const joypad1 = new Devices.Keyboard({
         left: "A", up: "W", down: "S", right: "D",
         select: "Shift", start: "Enter", b: "K", a: "L"
     });
-    nes.controllers.insert(joypad);
+    nes.controllers.insert(joypad1, 1);
+
+    const joypad2 = new Devices.Keyboard({
+        left: "A", up: "W", down: "S", right: "D",
+        select: "Shift", start: "Enter", b: "K", a: "L"
+    });
+    nes.controllers.insert(joypad2, 2);
 
     //-------------------------------------------------------------------------------------------//
     const screenOutput = document.getElementById('screen');
