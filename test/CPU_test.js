@@ -8,10 +8,6 @@ describe("Cpu", function() {
     
     subject(() => $nes.cpu);
     
-    beforeEach("stub NES.audio", function() {
-        sinon.stub($nes.audio);
-    });
-    
     /*global $RAMData */
     def('RAMData');
     beforeEach("fill RAM", function() {
