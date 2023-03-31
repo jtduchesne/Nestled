@@ -1,6 +1,6 @@
 {
   "name": "nestled",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "description": "Javascript NES emulator",
   "type": "module",
   "main": "./dist/nestled.umd.js",
