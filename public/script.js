@@ -32,11 +32,10 @@ try {
             resetButton.disabled = false;
             pauseButton.disabled = false;
             updateStatus(nes.game.name + " started");
-            intervalId = setInterval(() => updateStats(nes.engine.stats), 1000);
+            intervalId = setInterval(() => updateStats(nes.engine), 1000);
         } else {
             resetButton.setAttribute("disabled", "disabled");
             pauseButton.setAttribute("disabled", "disabled");
-            updateStatus(nes.game.name + " stopped");
             clearInterval(intervalId);
         }
         updateFrontLED();

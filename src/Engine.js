@@ -6,6 +6,43 @@
 
 import { Powered } from './Power.js';
 
+class Stats extends Powered {
+    constructor() {
+        super();
+        
+        /** Number of Frames properly rendered Per Second. */
+        this.fps = 60;
+        /** Emulation performance in percentage of the real hardware speed. */
+        this.performance = 1.0;
+        
+        let frameTimeThisSecond = 0.0;
+        let framesThisSecond = 0;
+        let fps = 60;
+        
+        const update = () => {
+            this.performance = 1000 / frameTimeThisSecond;
+            this.fps = fps;
+            
+            frameTimeThisSecond = 0.0;
+            framesThisSecond = 0;
+            fps = 60;
+        };
+        
+        /** @param {number} startTime @protected */
+        this.addFrame = (startTime) => {
+            frameTimeThisSecond += (performance.now() - startTime);
+            
+            if (++framesThisSecond >= fps)
+                update();
+        };
+        /** @protected */
+        this.dropFrame = () => {
+            if (--fps <= framesThisSecond)
+                update();
+        };
+    }
+}
+
 const frameTime = 1000/60;
 
 const renderLines = 240;
@@ -18,7 +55,7 @@ const cyclesPerFrame    = (341*261 + 340.5)/3;
 const cyclesBeforeVBlankStart = vblankStart * cyclesPerScanline;
 const cyclesBeforeVBlankEnd   = vblankEnd * cyclesPerScanline;
 
-export class Engine extends Powered {
+export class Engine extends Stats {
     /**
      * @param {NES} bus
      */
@@ -35,8 +72,6 @@ export class Engine extends Powered {
         this.runningLoop = 0;
         /** @private */
         this.lastTime = 0;
-        
-        this.stats = new Stats;
         
         this.isPaused = false;
     }
@@ -88,7 +123,7 @@ export class Engine extends Powered {
         
         this.doFrame(this.bus.cpu, this.bus.ppu);
         
-        this.stats.addFrame(time);
+        this.addFrame(time);
     }
     
     /**
@@ -107,11 +142,11 @@ export class Engine extends Powered {
         
         while ((delta -= frameTime) >= frameTime) {
             this.skipFrame(this.bus.cpu, this.bus.ppu);
-            this.stats.dropFrame();
+            this.dropFrame();
         }
         this.doFrame(this.bus.cpu, this.bus.ppu);
         
-        this.stats.addFrame(time);
+        this.addFrame(time);
     }
     
     //=======================================================================================//
@@ -304,38 +339,6 @@ export class Engine extends Powered {
         dot += 4.5;
         
         cpu.doInstructions(cyclesBeforeScanline + dot/3);
-    }
-}
-
-class Stats {
-    constructor() {
-        this.fps = 60;
-        this.performance = 1.0;
-        
-        let frameTimeThisSecond = 0.0;
-        let framesThisSecond = 0;
-        let fps = 60;
-        
-        const refresh = () => {
-            this.performance = 1000 / frameTimeThisSecond;
-            this.fps = fps;
-            
-            frameTimeThisSecond = 0.0;
-            framesThisSecond = 0;
-            fps = 60;
-        };
-        
-        /** @param {number} startTime */
-        this.addFrame = (startTime) => {
-            frameTimeThisSecond += (performance.now() - startTime);
-            
-            if (++framesThisSecond >= fps)
-                refresh();
-        };
-        this.dropFrame = () => {
-            if (--fps <= framesThisSecond)
-                refresh();
-        };
     }
 }
 

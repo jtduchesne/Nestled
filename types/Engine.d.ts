@@ -1,4 +1,4 @@
-export class Engine extends Powered {
+export class Engine extends Stats {
     /**
      * @param {NES} bus
      */
@@ -17,7 +17,6 @@ export class Engine extends Powered {
     private runningLoop;
     /** @private */
     private lastTime;
-    stats: Stats;
     isPaused: boolean;
     pause(): boolean;
     /** @private */
@@ -72,12 +71,15 @@ export default Engine;
 export type NES = import('./NES.js').NES;
 export type CPU = import('./CPU.js').CPU;
 export type PPU = import('./PPU.js').PPU;
-import { Powered } from "./Power.js";
-declare class Stats {
+declare class Stats extends Powered {
+    /** Number of Frames properly rendered Per Second. */
     fps: number;
+    /** Emulation performance in percentage of the real hardware speed. */
     performance: number;
-    /** @param {number} startTime */
-    addFrame: (startTime: number) => void;
-    dropFrame: () => void;
+    /** @param {number} startTime @protected */
+    protected addFrame: (startTime: number) => void;
+    /** @protected */
+    protected dropFrame: () => void;
 }
+import { Powered } from "./Power.js";
 //# sourceMappingURL=Engine.d.ts.map

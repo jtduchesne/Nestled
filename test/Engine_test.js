@@ -33,6 +33,9 @@ describe("Engine", function() {
     its('isPowered', () => is.expected.to.be.false);
     its('isPaused',  () => is.expected.to.be.false);
     
+    its('fps',         () => is.expected.to.equal(60));
+    its('performance', () => is.expected.to.equal(1.0));
+    
     //-------------------------------------------------------------------------------//
     
     describe(".powerOn()", function() {
