@@ -4,6 +4,8 @@
  * @typedef {import('./PPU.js').PPU} PPU
  */
 
+import { Powered } from './Power.js';
+
 const frameTime = 1000/60;
 
 const renderLines = 240;
@@ -16,11 +18,13 @@ const cyclesPerFrame    = (341*261 + 340.5)/3;
 const cyclesBeforeVBlankStart = vblankStart * cyclesPerScanline;
 const cyclesBeforeVBlankEnd   = vblankEnd * cyclesPerScanline;
 
-export class Engine {
+export class Engine extends Powered {
     /**
      * @param {NES} bus
      */
     constructor(bus) {
+        super();
+        
         /** @private */
         this.bus = bus;
         
@@ -34,7 +38,6 @@ export class Engine {
         
         this.stats = new Stats;
         
-        this.isPowered = false;
         this.isPaused = false;
     }
     
@@ -43,15 +46,15 @@ export class Engine {
     powerOn() {
         this.coldBoot();
         
-        this.isPowered = true;
         this.isPaused = false;
+        return super.powerOn();
     }
     powerOff() {
         cancelAnimationFrame(this.runningLoop);
         this.runningLoop = 0;
         
-        this.isPowered = false;
         this.isPaused = false;
+        return super.powerOff();
     }
     
     pause() {

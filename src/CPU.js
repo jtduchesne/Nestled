@@ -5,6 +5,8 @@
  * @typedef {(fnFetchOperand:FetchOperandFunc) => void} InstructionFunc
  */
 
+import { Powered } from './Power.js';
+
 /** Number of cycles by opcode lookup table. */
 const cyclesLookup = [7,6,2,8,3,3,5,5,3,2,2,2,4,4,6,6, 2,5,2,8,4,4,6,6,2,4,2,7,4,4,7,7,
                       6,6,2,8,3,3,5,5,4,2,2,2,4,4,6,6, 2,5,2,8,4,4,6,6,2,4,2,7,4,4,7,7,
@@ -15,11 +17,13 @@ const cyclesLookup = [7,6,2,8,3,3,5,5,3,2,2,2,4,4,6,6, 2,5,2,8,4,4,6,6,2,4,2,7,4
                       2,6,2,8,3,3,5,5,2,2,2,2,4,4,6,6, 2,5,2,8,4,4,6,6,2,4,2,7,4,4,7,7,
                       2,6,3,8,3,3,5,5,2,2,2,2,4,4,6,6, 2,5,2,8,4,4,6,6,2,4,2,7,4,4,7,7];
 
-export class CPU {
+export class CPU extends Powered {
     /**
      * @param {NES} bus
      */
     constructor(bus) {
+        super();
+        
         /** @private */
         this.bus = bus;
         
@@ -148,8 +152,6 @@ export class CPU {
         this.opcode  = 0x00;
         /** @private */
         this.operand = 0x00;
-        
-        this.isPowered = false;
     }
     
     //== Power ==========================================================================//
@@ -174,18 +176,13 @@ export class CPU {
         //Program counter
         this.PC = this.resetVector();
         
-        this.bus.apu.powerOn();
-        
-        this.isPowered = true;
+        return super.powerOn();
     }
     powerOff() {
-        this.bus.apu.powerOff();
-        
-        this.isPowered = false;
+        return super.powerOff();
     }
     
     reset() {
-        this.bus.apu.reset();
         this.doReset();
     }
     

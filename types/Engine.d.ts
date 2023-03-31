@@ -1,4 +1,4 @@
-export class Engine {
+export class Engine extends Powered {
     /**
      * @param {NES} bus
      */
@@ -18,10 +18,7 @@ export class Engine {
     /** @private */
     private lastTime;
     stats: Stats;
-    isPowered: boolean;
     isPaused: boolean;
-    powerOn(): void;
-    powerOff(): void;
     pause(): boolean;
     /** @private */
     private coldBoot;
@@ -75,6 +72,7 @@ export default Engine;
 export type NES = import('./NES.js').NES;
 export type CPU = import('./CPU.js').CPU;
 export type PPU = import('./PPU.js').PPU;
+import { Powered } from "./Power.js";
 declare class Stats {
     fps: number;
     performance: number;

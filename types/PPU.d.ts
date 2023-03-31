@@ -1,7 +1,4 @@
-/**
- * @typedef {import('./NES.js').NES} NES
- */
-export class PPU {
+export class PPU extends Powered {
     /**
      * @param {NES} bus
      */
@@ -82,8 +79,6 @@ export class PPU {
     /** @private */ private sprLayer;
     /** @private */ private sprite0Layer;
     /** @private */ private sprite0;
-    isPowered: boolean;
-    powerOn(): void;
     /**
      * 0x2000 Control
      * @param {number} value 8-bit value
@@ -102,8 +97,6 @@ export class PPU {
      * @private
      */
     private set OAMAddress(arg);
-    powerOff(): void;
-    reset(): void;
     doVBlank(): void;
     endVBlank(): void;
     /**
@@ -264,4 +257,5 @@ export class PPU {
 }
 export default PPU;
 export type NES = import('./NES.js').NES;
+import { Powered } from "./Power.js";
 //# sourceMappingURL=PPU.d.ts.map

@@ -144,7 +144,7 @@ describe("Ppu", function() {
             $action;
             expect($nes.video.start).to.be.calledOnce;
         });
-        it("sets #isPowered", function() {
+        it("sets #isPowered to -true-", function() {
             expect(() => $action).to.change($subject, 'isPowered');
             expect($subject.isPowered).to.be.true;
         });
@@ -162,7 +162,7 @@ describe("Ppu", function() {
             $action;
             expect($nes.video.stop).to.be.calledOnce;
         });
-        it("clears #isPowered", function() {
+        it("sets #isPowered to -false-", function() {
             expect(() => $action).to.change($subject, 'isPowered');
             expect($subject.isPowered).to.be.false;
         });
@@ -222,6 +222,10 @@ describe("Ppu", function() {
         it("does not clear palette data", function() {
             expect(() => $action).not.to.change($subject.palette[0], '0');
             expect($subject.palette[0][0]).to.be.greaterThan(0x00);
+        });
+        
+        it("does not change #isPowered", function() {
+            expect(() => $action).not.to.change($subject, 'isPowered');
         });
     });
     

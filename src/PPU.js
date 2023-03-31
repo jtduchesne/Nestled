@@ -1,12 +1,14 @@
-/**
- * @typedef {import('./NES.js').NES} NES
- */
+/** @typedef {import('./NES.js').NES} NES */
 
-export class PPU {
+import { Powered } from './Power.js';
+
+export class PPU extends Powered {
     /**
      * @param {NES} bus
      */
     constructor(bus) {
+        super();
+        
         /** @private */
         this.bus = bus;
         
@@ -105,8 +107,6 @@ export class PPU {
         //Used for Sprite0 hit detection
         /** @private */ this.sprite0Layer = new Uint32Array(264);
         /** @private */ this.sprite0      = false;
-        
-        this.isPowered = false;
     }
     
     //== Power ==========================================================================//
@@ -127,12 +127,12 @@ export class PPU {
         
         this.bus.video.start();
         
-        this.isPowered = true;
+        return super.powerOn();
     }
     powerOff() {
         this.bus.video.stop();
         
-        this.isPowered = false;
+        return super.powerOff();
     }
     
     reset() {

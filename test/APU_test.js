@@ -21,14 +21,11 @@ describe("APU", function() {
     describe(".powerOn()", function() {
         beforeEach(function() {
             sinon.stub($nes.audio, 'start');
+            $subject.isPowered = false;
         });
-
+        
         def('action', () => $subject.powerOn());
         
-        it("starts the audio", function() {
-            $action;
-            expect($nes.audio.start).to.be.calledOnce;
-        });
         it("sets #cyclesPerSample", function() {
             expect(() => $action).to.change($subject, 'cyclesPerSample');
             expect($subject.cyclesPerSample).to.be.greaterThan(0);
@@ -37,10 +34,20 @@ describe("APU", function() {
             expect(() => $action).to.change($subject, 'cyclesUntilSample');
             expect($subject.cyclesUntilSample).to.equal($subject.cyclesPerSample);
         });
+        
+        it("starts the audio", function() {
+            $action;
+            expect($nes.audio.start).to.be.calledOnce;
+        });
+        it("sets #isPowered to -true-", function() {
+            expect(() => $action).to.change($subject, 'isPowered');
+            expect($subject.isPowered).to.be.true;
+        });
     });
     describe(".powerOff()", function() {
         beforeEach(function() {
             sinon.stub($nes.audio, 'stop');
+            $subject.isPowered = true;
         });
         
         def('action', () => $subject.powerOff());
@@ -48,6 +55,10 @@ describe("APU", function() {
         it("stops the audio", function() {
             $action;
             expect($nes.audio.stop).to.be.calledOnce;
+        });
+        it("sets #isPowered to -false-", function() {
+            expect(() => $action).to.change($subject, 'isPowered');
+            expect($subject.isPowered).to.be.false;
         });
     });
     
@@ -85,6 +96,10 @@ describe("APU", function() {
         it("resets #irq", function() {
             expect(() => $action).to.change($subject, 'irq');
             expect($subject.irq).to.be.false;
+        });
+        
+        it("does not change #isPowered", function() {
+            expect(() => $action).not.to.change($subject, 'isPowered');
         });
     });
     

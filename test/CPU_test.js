@@ -51,7 +51,7 @@ describe("Cpu", function() {
         beforeEach(function() {
             setEveryProperties($subject);
             sinon.stub($nes.game.cartridge, 'cpuRead').returns(0xA5);
-            sinon.stub($nes.apu, 'powerOn');
+            $subject.isPowered = false;
         });
         def('action', () => $subject.powerOn());
         
@@ -85,21 +85,21 @@ describe("Cpu", function() {
             expect($subject.cycle).to.equal(0);
         });
         
-        it("calls NES.apu.powerOn()", function() {
-            $action;
-            expect($nes.apu.powerOn).to.be.calledOnce;
+        it("sets #isPowered to -true-", function() {
+            expect(() => $action).to.change($subject, 'isPowered');
+            expect($subject.isPowered).to.be.true;
         });
     });
     
     describe(".powerOff()", function() {
         beforeEach(function() {
-            sinon.stub($nes.apu, 'powerOff');
+            $subject.isPowered = true;
         });
         def('action', () => $subject.powerOff());
         
-        it("calls NES.apu.powerOff()", function() {
-            $action;
-            expect($nes.apu.powerOff).to.be.calledOnce;
+        it("sets #isPowered to -false-", function() {
+            expect(() => $action).to.change($subject, 'isPowered');
+            expect($subject.isPowered).to.be.false;
         });
     });
     
@@ -107,7 +107,6 @@ describe("Cpu", function() {
         beforeEach(function() {
             setEveryProperties($subject);
             sinon.stub($subject, 'resetVector').returns($resetVector);
-            sinon.stub($nes.apu, 'reset');
         });
         def('action', () => $subject.reset());
         
@@ -132,9 +131,8 @@ describe("Cpu", function() {
             expect($subject.PC).to.equal($resetVector);
         });
         
-        it("calls NES.apu.reset()", function() {
-            $action;
-            expect($nes.apu.reset).to.be.calledOnce;
+        it("does not change #isPowered", function() {
+            expect(() => $action).not.to.change($subject, 'isPowered');
         });
     });
     

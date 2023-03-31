@@ -1,5 +1,6 @@
 /** @typedef {import('./NES.js').NES} NES */
 
+import { Powered } from './Power.js';
 import {
     PulseChannel,
     TriangleChannel,
@@ -12,11 +13,13 @@ const cyclesFrequency = 1786830 / 2;
 const FOURSTEP = 0x00;
 const FIVESTEP = 0x80;
 
-export class APU {
+export class APU extends Powered {
     /**
      * @param {NES} bus
      */
     constructor(bus) {
+        super();
+        
         /** @private */
         this.bus = bus;
         
@@ -61,9 +64,13 @@ export class APU {
         
         this.cyclesPerSample   = cyclesFrequency / this.bus.audio.sampleRate;
         this.cyclesUntilSample = this.cyclesPerSample * this.bus.audio.speedAdjustment;
+        
+        return super.powerOn();
     }
     powerOff() {
         this.bus.audio.stop();
+        
+        return super.powerOff();
     }
     
     reset() {
