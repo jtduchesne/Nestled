@@ -1,8 +1,9 @@
-export { NES } from "./NES.js";
-export * from "./Cartridges.js";
-export * from "./Controllers.js";
-export { APU } from "./APU.js";
-export { CPU } from "./CPU.js";
-export { PPU } from "./PPU.js";
-export { Engine } from "./Engine.js";
+declare namespace _default {
+    export { NES };
+    export { Devices };
+}
+export default _default;
+import NES from "./NES.js";
+import * as Devices from "./Controllers/Devices/index.js";
+export { NES, Devices };
 //# sourceMappingURL=index.d.ts.map

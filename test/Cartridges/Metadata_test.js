@@ -1,6 +1,8 @@
+import { expect } from "chai";
+
 import Metadata from "../../src/Cartridges/Metadata";
 
-import { Header } from "../../src/Cartridges/FileFormats";
+import { Header } from "../../src/Cartridges";
 
 describe("Metadata", function() {
     subject(() => new Metadata);

@@ -1,3 +1,6 @@
+/** @typedef {import('./NES.js').NES} NES */
+
+import { Powered } from './Power.js';
 import {
     PulseChannel,
     TriangleChannel,
@@ -7,38 +10,67 @@ import {
 
 const cyclesFrequency = 1786830 / 2;
 
-export class APU {
-    constructor(cpu) {
-        this.bus = cpu.bus;
-        this.cpu = cpu;
+const FOURSTEP = 0x00;
+const FIVESTEP = 0x80;
+
+export class APU extends Powered {
+    /**
+     * @param {NES} bus
+     */
+    constructor(bus) {
+        super();
         
+        /** @private */
+        this.bus = bus;
+        
+        /** Pulse Channel 1 */
         this.pulse1   = new PulseChannel(1);
+        /** Pulse Channel 2 */
         this.pulse2   = new PulseChannel(2);
+        /** Triangle Channel */
         this.triangle = new TriangleChannel;
+        /** Noise Channel */
         this.noise    = new NoiseChannel;
-        this.dmc      = new DMC(cpu);
+        /** Delta Modulation Channel */
+        this.dmc      = new DMC(bus);
         
-        this.cyclesPerSample   = 0;
-        this.cyclesUntilSample = Infinity;
+        this.status = 0;
         
+        /** If IRQ is disabled at the moment */
         this.irqDisabled = false;
+        /** If an IRQ has happened. This is cleared after reading 0x4015 */
         this.irq         = false;
         
-        this.status  = null;
-        this.counter = null;
+        /** @private */
+        this.counterMode = FOURSTEP;
         
-        this.toggle = false;
+        /** @private */
+        this.toggle = true;
         this.cycle  = 0;
+        
+        /** @private */
+        this.resetDelay = 0;
+        
+        /** @private */
+        this.cyclesPerSample = 0;
+        /** @private */
+        this.cyclesUntilSample = Infinity;
     }
     
+    //===================================================================================//
+    
     powerOn() {
-        this.bus.audioOutput.start();
+        this.bus.audio.start();
         
-        this.cyclesPerSample   = cyclesFrequency / this.bus.audioOutput.sampleRate;
-        this.cyclesUntilSample = this.cyclesPerSample * this.bus.audioOutput.speedAdjustment;
+        this.cyclesPerSample   = cyclesFrequency / this.bus.audio.sampleRate;
+        this.cyclesUntilSample = this.cyclesPerSample * this.bus.audio.speedAdjustment;
+        
+        return super.powerOn();
     }
     powerOff() {
-        this.bus.audioOutput.stop();
+        this.bus.audio.stop();
+        
+        return super.powerOff();
     }
     
     reset() {
@@ -49,32 +81,38 @@ export class APU {
         this.dmc.reset();
         
         this.counter = 0;
-        this.irq     = false;
+        
+        this.irq = false;
     }
     
-    //== Interrupt ==================================================//
+    //== Interrupt ======================================================================//
+    /** @private */
     doIRQ() {
         this.irq = true;
-        this.cpu.doIRQ();
+        this.bus.cpu.doIRQ();
     }
     
-    //== Registers ==================================================//
-    //= 0x4015 Status =//
+    //== Registers ======================================================================//
+    /**
+     * 0x4015 Status register
+     * @type {number}
+     * @private
+     */
     get status() {
-        let value = (this.pulse1.length   && 0x01) +
-                    (this.pulse2.length   && 0x02) +
-                    (this.triangle.length && 0x04) +
-                    (this.noise.length    && 0x08) +
-                    (this.dmc.sampleLeft  && 0x10) +
-                    (this.dmc.irq         && 0x80) +
-                    (this.irq             && 0x40);
-        this.dmc.irq = false;
+        let value = (this.pulse1.enabled   ? 0x01 : 0) +
+                    (this.pulse2.enabled   ? 0x02 : 0) +
+                    (this.triangle.enabled ? 0x04 : 0) +
+                    (this.noise.enabled    ? 0x08 : 0) +
+                    (this.dmc.enabled      ? 0x10 : 0) +
+                    (this.dmc.irq          ? 0x80 : 0) +
+                    (this.irq              ? 0x40 : 0);
         this.irq     = false;
         
         return value;
     }
+    /** @private */
     set status(value) {
-        if (value !== null) {
+        if (value) {
             this.pulse1.enabled   = !!(value & 0x01);
             this.pulse2.enabled   = !!(value & 0x02);
             this.triangle.enabled = !!(value & 0x04);
@@ -89,58 +127,81 @@ export class APU {
         }
     }
     
-    //= 0x4017 Frame counter =//
+    /**
+     * 0x4017 Frame counter
+     * @type {number}
+     * @private
+     */
+    get counter() {
+        return this.counterMode;
+    }
+    /** @private */
     set counter(value) {
-        if (value !== null) {
+        if (value) {
             if (value >= 0x80) {
-                this.counterMode = 1;
+                this.counterMode = FIVESTEP;
                 this.irqDisabled = (value >= 0xC0);
+                this.doQuarter();
+                this.doHalf();
             } else {
-                this.counterMode = 0;
+                this.counterMode = FOURSTEP;
                 this.irqDisabled = (value >= 0x40);
             }
             
             if (this.irqDisabled)
                 this.irq = false;
-            
-            this.resetDelay = this.toggle ? 3 : 4;
-            
-            if (this.counterMode === 1) {
-                this.doQuarter();
-                this.doHalf();
-            }
         } else {
-            this.counterMode = 0;
+            this.counterMode = FOURSTEP;
             this.irqDisabled = false;
-            this.resetDelay = 0;
         }
+        this.resetDelay = 2;
     }
     
-    //== Registers access ===========================================//
-    readRegister(address) {
+    /** @readonly @type {boolean} */
+    get fourStepCounterMode() {
+        return this.counterMode === FOURSTEP;
+    }
+    /** @readonly @type {boolean} */
+    get fiveStepCounterMode() {
+        return this.counterMode === FIVESTEP;
+    }
+    
+    //== Registers access ===============================================================//
+    /**
+     * @param {number} address 16-bit address
+     * @returns {number}
+     */
+    read(address) {
         if (address === 0x4015)
             return this.status;
         else
             return 0;
     }
-    writeRegister(address, data) {
+    /**
+     * @param {number} address 16-bit address between 0x4000-0x4017
+     * @param {number} data 8-bit data
+     */
+    write(address, data) {
         if (address <= 0x4003)
-            this.pulse1.writeRegister(address, data);
+            this.pulse1.write(address, data);
         else if (address <= 0x4007)
-            this.pulse2.writeRegister(address, data);
+            this.pulse2.write(address, data);
         else if (address <= 0x400B)
-            this.triangle.writeRegister(address, data);
+            this.triangle.write(address, data);
         else if (address <= 0x400F)
-            this.noise.writeRegister(address, data);
+            this.noise.write(address, data);
         else if (address <= 0x4013)
-            this.dmc.writeRegister(address, data);
+            this.dmc.write(address, data);
         else if (address === 0x4015)
             this.status = data;
         else if (address === 0x4017)
             this.counter = data;
     }
     
-    //== Execution ==================================================//
+    //== Execution ======================================================================//
+    /**
+     * @param {number} count The number of (CPU) cycles to execute
+     */
     doCycles(count) {
         while (count--) {
             if ((this.toggle = !this.toggle)) {
@@ -154,7 +215,7 @@ export class APU {
     }
     
     doCycle() {
-        let cycle = this.cycle++;
+        const cycle = this.cycle++;
         if (cycle <= 7457) {
             if (cycle === 7457) {
                 this.doQuarter();
@@ -169,7 +230,7 @@ export class APU {
                 this.doQuarter();
             }
         } else if (cycle >= 29828) {
-            if (cycle === 29828 && this.counterMode === 0) {
+            if (cycle === 29828 && this.fourStepCounterMode) {
                 this.doQuarter();
                 this.doHalf();
                 
@@ -192,7 +253,7 @@ export class APU {
         
         if (--this.cyclesUntilSample <= 0) {
             this.doSample();
-            this.cyclesUntilSample += this.cyclesPerSample * this.bus.audioOutput.speedAdjustment;
+            this.cyclesUntilSample += this.cyclesPerSample * this.bus.audio.speedAdjustment;
         }
     }
     
@@ -210,12 +271,13 @@ export class APU {
         this.noise.doHalf();
     }
     
-    //== Output =====================================================//
+    //== Output =========================================================================//
+    /** @private */
     doSample() {
-        let pulses = this.pulse1.output + this.pulse2.output;
-        let others = 3*this.triangle.output + 2*this.noise.output + this.dmc.output;
+        const pulses = this.pulse1.output + this.pulse2.output;
+        const others = 3*this.triangle.output + 2*this.noise.output + this.dmc.output;
         
-        this.bus.audioOutput.writeSample(pulsesSamples[pulses] + othersSamples[others]);
+        this.bus.audio.writeSample(pulsesSamples[pulses] + othersSamples[others]);
     }
 }
 

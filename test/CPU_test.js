@@ -1,11 +1,11 @@
-import NES from "../src";
+import { expect } from "chai";
+import sinon from "sinon";
 
-import { APU } from "../src/APU";
-import { Cartridge } from "../src/Cartridges";
+import { NES } from "../src";
 
 describe("Cpu", function() {
     def('nes', () => new NES); /*global $nes*/
-
+    
     subject(() => $nes.cpu);
     
     /*global $RAMData */
@@ -15,126 +15,131 @@ describe("Cpu", function() {
             $subject.ram.fill($RAMData);
     });
     
-    /*global $PRGRAMData, $PRGROMData,
-             $NMIvector, $RESETvector, $IRQvector */
-    def(['PRGRAMData','PRGROMData']);
-    def(['NMIvector','RESETvector','IRQvector']);
-    
-    /*global $cartridge */
-    def('cartridge', () => {
-        let cartridge = new Cartridge;
-        
-        if (isSet($PRGRAMData))
-            cartridge.PRGRAM.fill($PRGRAMData);
-        
-        cartridge.PRGBank = cartridge.PRGROM = [new Uint8Array(0x4000),
-                                                new Uint8Array(0x4000)];
-        if (isSet($PRGROMData)) {
-            cartridge.PRGROM.forEach((bank) => bank.fill($PRGROMData));
-        }
-        
-        if (isSet($NMIvector))
-            cartridge.PRGBank[1].set(Array.of($NMIvector&0xFF, $NMIvector>>8), 0x3FFA);
-        if (isSet($RESETvector))
-            cartridge.PRGBank[1].set(Array.of($RESETvector&0xFF, $RESETvector>>8), 0x3FFC);
-        if (isSet($IRQvector))
-            cartridge.PRGBank[1].set(Array.of($IRQvector&0xFF, $IRQvector>>8), 0x3FFE);
-        
-        return cartridge;
-    });
-    beforeEach("load Cartridge", function() {
-        if ([$PRGRAMData, $PRGROMData, $NMIvector, $RESETvector, $IRQvector].some(isSet)) {
-            $nes.cartConnector.cartridge = $cartridge;
-        }
-    });
+    /*global $nmiVector, $resetVector, $irqVector*/
+    def('nmiVector',   () => 0x1234);
+    def('resetVector', () => 0x5678);
+    def('irqVector',   () => 0x9ABC);
     
     //-------------------------------------------------------------------------------//
     
-    its('apu', () => is.expected.to.be.an.instanceOf(APU));
+    its('bus', () => is.expected.to.equal($nes));
     
     its('ram',   () => is.expected.to.have.a.lengthOf(0x800));
     its('stack', () => is.expected.to.have.a.lengthOf(0x100));
     
+    its('A',  () => is.expected.to.equal(0x00));
+    its('X',  () => is.expected.to.equal(0x00));
+    its('Y',  () => is.expected.to.equal(0x00));
+    its('P',  () => is.expected.to.equal(0x30));
+    its('SP', () => is.expected.to.equal(0x00));
+    its('PC', () => is.expected.to.equal(0x0000));
+    
+    its('addressLookup',     () => is.expected.to.be.an('array').with.a.lengthOf(256));
+    its('instructionLookup', () => is.expected.to.be.an('array').with.a.lengthOf(256));
+    
+    its('cycle', () => is.expected.to.equal(0));
+    
+    its('isPowered', () => is.expected.to.be.false);
+    
     //-------------------------------------------------------------------------------//
     
     describe(".powerOn()", function() {
+        beforeEach(function() {
+            setEveryProperties($subject);
+            sinon.stub($nes.game.cartridge, 'cpuRead').returns(0xA5);
+            $subject.isPowered = false;
+        });
         def('action', () => $subject.powerOn());
         
-        def('RESETvector', () => 0xABCD);
-        
-        it("sets A to 0", function() {
+        it("sets #A to 0", function() {
             expect(() => $action).to.change($subject, 'A');
-            expect($subject.A).to.equal(0);
+            expect($subject.A).to.equal(0x00);
         });
-        it("sets X to 0", function() {
+        it("sets #X to 0", function() {
             expect(() => $action).to.change($subject, 'X');
-            expect($subject.X).to.equal(0);
+            expect($subject.X).to.equal(0x00);
         });
-        it("sets Y to 0", function() {
+        it("sets #Y to 0", function() {
             expect(() => $action).to.change($subject, 'Y');
-            expect($subject.Y).to.equal(0);
+            expect($subject.Y).to.equal(0x00);
         });
-        it("sets P to 0x34", function()  {
+        it("sets #P to 0x34", function()  {
             expect(() => $action).to.change($subject, 'P');
             expect($subject.P).to.equal(0x34);
         });
-        it("sets SP to 0xFD", function() {
+        it("sets #SP to 0xFD", function() {
             expect(() => $action).to.change($subject, 'SP');
             expect($subject.SP).to.equal(0xFD);
         });
-        it("sets PC to the Reset Vector", function() {
+        it("sets #PC to the Reset Vector", function() {
             expect(() => $action).to.change($subject, 'PC');
-            expect($subject.PC).to.equal($RESETvector);
+            expect($subject.PC).to.equal(0xA5A5);
         });
         
         it("resets #cycle", function() {
             expect(() => $action).to.change($subject, 'cycle');
             expect($subject.cycle).to.equal(0);
         });
-        it("resets #cycleOffset", function() {
-            expect(() => $action).to.change($subject, 'cycleOffset');
-            expect($subject.cycleOffset).to.equal(0);
-        });
         
-        it("calls apu.powerOn()", function(done) {
-            $subject.apu.powerOn = () => done();
-            $action;
+        it("sets #isPowered to -true-", function() {
+            expect(() => $action).to.change($subject, 'isPowered');
+            expect($subject.isPowered).to.be.true;
         });
     });
     
     describe(".powerOff()", function() {
+        beforeEach(function() {
+            $subject.isPowered = true;
+        });
         def('action', () => $subject.powerOff());
         
-        it("calls apu.powerOff()", function(done) {
-            $subject.apu.powerOff = () => done();
-            $action;
+        it("sets #isPowered to -false-", function() {
+            expect(() => $action).to.change($subject, 'isPowered');
+            expect($subject.isPowered).to.be.false;
         });
     });
     
     describe(".reset()", function() {
+        beforeEach(function() {
+            setEveryProperties($subject);
+            sinon.stub($subject, 'resetVector').returns($resetVector);
+        });
         def('action', () => $subject.reset());
         
-        it("calls apu.reset()", function(done) {
-            $subject.apu.reset = () => done();
-            $action;
+        it("does not change #A", function() {
+            expect(() => $action).not.to.change($subject, 'A');
         });
-        it("calls .doReset()", function(done) {
-            $subject.doReset = () => done();
-            $action;
+        it("does not change #X", function() {
+            expect(() => $action).not.to.change($subject, 'X');
+        });
+        it("does not change #Y", function() {
+            expect(() => $action).not.to.change($subject, 'Y');
+        });
+        it("sets #Interrupt", function() {
+            expect(() => $action).to.change($subject, 'Interrupt');
+            expect($subject.Interrupt).to.be.true;
+        });
+        it("adds 3 to #SP", function() {
+            expect(() => $action).to.increase($subject, 'SP').by(3);
+        });
+        it("sets #PC to the Reset Vector", function() {
+            expect(() => $action).to.change($subject, 'PC');
+            expect($subject.PC).to.equal($resetVector);
+        });
+        
+        it("does not change #isPowered", function() {
+            expect(() => $action).not.to.change($subject, 'isPowered');
         });
     });
     
     //-------------------------------------------------------------------------------//
     
     context("Interrupts", function() {
-        beforeEach("PowerOn", function() {
-            $subject.powerOn();
-            $subject.PC = 0x0000;
+        beforeEach(function() {
+            sinon.stub($subject, 'nmiVector').returns($nmiVector);
+            sinon.stub($subject, 'resetVector').returns($resetVector);
+            sinon.stub($subject, 'irqVector').returns($irqVector);
         });
-        
-        def('NMIvector',   () => 0x1234);
-        def('RESETvector', () => 0x5678);
-        def('IRQvector',   () => 0x9ABC);
         
         describe(".doNMI()", function() {
             def('action', () => $subject.doNMI());
@@ -145,7 +150,7 @@ describe("Cpu", function() {
             });
             it("sets PC to NMI vector (at 0xFFFA)", function() {
                 expect(() => $action).to.change($subject, 'PC');
-                expect($subject.PC).to.equal($NMIvector);
+                expect($subject.PC).to.equal($nmiVector);
             });
         });
         describe(".doReset()", function() {
@@ -153,12 +158,11 @@ describe("Cpu", function() {
             
             it("sets PC to RESET vector (at 0xFFFC)", function() {
                 expect(() => $action).to.change($subject, 'PC');
-                expect($subject.PC).to.equal($RESETvector);
+                expect($subject.PC).to.equal($resetVector);
             });
         });
         describe(".doIRQ()", function() {
             def('action', () => $subject.doIRQ());
-            beforeEach(function() { $subject.Interrupt = false; });
             
             it("pushes P with BRK flag cleared", function() {
                 $action;
@@ -166,7 +170,7 @@ describe("Cpu", function() {
             });
             it("sets PC to IRQ vector (at 0xFFFE)", function() {
                 expect(() => $action).to.change($subject, 'PC');
-                expect($subject.PC).to.equal($IRQvector);
+                expect($subject.PC).to.equal($irqVector);
             });
         });
     });
@@ -176,86 +180,93 @@ describe("Cpu", function() {
     context("Memory access", function() {
         beforeEach("PowerOn", function() { $subject.powerOn(); });
         
-        def('RAMData',    () => 0xA5); // b10100101
-        def('PRGRAMData', () => 0xC3); // b11000011
-        def('PRGROMData', () => 0x99); // b10011001
+        def('RAMData', () => 0xA5); // b10100101
         
         describe(".read(address)", function() {
             it("reads from RAM when address is between [0x0000-1FFF]", function() {
                 expect($subject.read(0x0000)).to.equal($RAMData);
                 expect($subject.read(0x1FFF)).to.equal($RAMData);
             });
-            it("reads from PPU's registers when address is between [0x2000-3FFF]", function(done) {
-                let count = 0;
-                $nes.ppu.readRegister = () => { if (++count === 2) done(); };
+            it("reads from PPU when address is between [0x2000-3FFF]", function() {
+                const stub = sinon.stub($nes.ppu, 'read');
                 $subject.read(0x2000);
                 $subject.read(0x3FFF);
+                expect(stub).to.be.calledTwice;
             });
-            it("reads from APU's registers when address is [0x4015]", function(done) {
-                $nes.apu.readRegister = () => done();
+            it("reads from APU when address is [0x4015]", function() {
+                const stub = sinon.stub($nes.apu, 'read');
                 $subject.read(0x4015);
+                expect(stub).to.be.calledOnce;
             });
-            it("reads from Controller 1 when address is [0x4016]", function(done) {
-                $nes.ctrlConnector.controllers[0].read = () => done();
+            it("reads from Controller 1 when address is [0x4016]", function() {
+                const stub = sinon.stub($nes.controllers[1], 'read');
                 $subject.read(0x4016);
+                expect(stub).to.be.calledOnce;
             });
             it("also reads most significant bits of addressBus (0x40)", function() {
                 expect($subject.read(0x4016)).to.equal(0x40);
             });
-            it("reads from Controller 2 when address is [0x4017]", function(done) {
-                $nes.ctrlConnector.controllers[1].read = () => done();
+            it("reads from Controller 2 when address is [0x4017]", function() {
+                const stub = sinon.stub($nes.controllers[2], 'read');
                 $subject.read(0x4017);
+                expect(stub).to.be.calledOnce;
             });
             it("also reads most significant bits of addressBus (0x40)", function() {
                 expect($subject.read(0x4017)).to.equal(0x40);
             });
-            it("reads from PRG-RAM when address is between [0x6000-7FFF]", function() {
-                expect($subject.read(0x6000)).to.equal($PRGRAMData);
-                expect($subject.read(0x7FFF)).to.equal($PRGRAMData);
-            });
-            it("reads from PRG-ROM when address is between [0x8000-FFFF]", function() {
-                expect($subject.read(0x8000)).to.equal($PRGROMData);
-                expect($subject.read(0xFFF0)).to.equal($PRGROMData);
+            it("reads from Cartridge when address is between [0x6000-FFFF]", function() {
+                const stub = sinon.stub($nes.game.cartridge, 'cpuRead');
+                $subject.read(0x6000);
+                $subject.read(0x8000);
+                $subject.read(0xFFFF);
+                expect(stub).to.be.calledThrice;
             });
         });
         describe(".write(address,data)", function() {
             it("writes to RAM when address is between [0x0000, 0x07FF]", function() {
-                $subject.write(0x0000, 0xFF);
+                expect(() => $subject.write(0x0000, 0xFF)).to.change($subject.ram, '0');
                 expect($subject.ram[0]).to.equal(0xFF);
             });
-            it("writes to PPU's registers when address is between [0x2000-3FFF]", function(done) {
-                let count = 0;
-                $nes.ppu.writeRegister = () => { if (++count === 2) done(); };
-                $subject.write(0x2000);
-                $subject.write(0x3FFF);
+            it("writes to PPU when address is between [0x2000-3FFF]", function() {
+                const stub = sinon.stub($nes.ppu, 'write');
+                $subject.write(0x2000, 0xFF);
+                $subject.write(0x3FFF, 0xFF);
+                expect(stub).to.be.calledTwice;
             });
-            it("writes to APU's registers when address is between [0x4000-4015]", function(done) {
-                let count = 0;
-                $nes.apu.writeRegister = () => { if (++count === 2) done(); };
-                $subject.write(0x4000);
-                $subject.write(0x4015);
+            it("writes to APU when address is between [0x4000-4013]", function() {
+                const stub = sinon.stub($nes.apu, 'write');
+                $subject.write(0x4000, 0xFF);
+                $subject.write(0x4013, 0xFF);
+                expect(stub).to.be.calledTwice;
             });
-            it("writes (strobe) to both Controllers when address is [0x4016]", function(done) {
-                let count = 0;
-                const write = (data) => {
-                    expect(data).to.equal(0xFF);
-                    if (++count === 2) done();
-                };
-                $nes.ctrlConnector.controllers[0].write = write;
-                $nes.ctrlConnector.controllers[1].write = write;
+            it("calls PPU.doDMA() when address is [0x4014]", function() {
+                const stub = sinon.stub($nes.ppu, 'doDMA');
+                $subject.write(0x4014, 0xFF);
+                expect(stub).to.be.calledOnceWith(0xFF00);
+            });
+            it("writes to APU when address is [0x4015]", function() {
+                const stub = sinon.stub($nes.apu, 'write');
+                $subject.write(0x4015, 0xFF);
+                expect(stub).to.be.calledOnce;
+            });
+            it("writes (strobe) to both Controllers when address is [0x4016]", function() {
+                const stub1 = sinon.stub($nes.controllers[1], 'write');
+                const stub2 = sinon.stub($nes.controllers[2], 'write');
                 $subject.write(0x4016, 0xFF);
+                expect(stub1).to.be.calledOnceWith(0x1);
+                expect(stub2).to.be.calledOnceWith(0x1);
             });
-            it("writes to APU's registers when address is [0x4017]", function(done) {
-                $nes.apu.writeRegister = () => done();
-                $subject.write(0x4017);
+            it("writes to APU when address is [0x4017]", function() {
+                const stub = sinon.stub($nes.apu, 'write');
+                $subject.write(0x4017, 0xFF);
+                expect(stub).to.be.calledOnce;
             });
-            it("writes to PRG-RAM when address is between [0x6000, 0x7FFF]", function() {
+            it("writes to Cartridge when address is between [0x6000, 0xFFFF]", function() {
+                const stub = sinon.stub($nes.game.cartridge, 'cpuWrite');
                 $subject.write(0x6000, 0xFF);
-                expect($nes.cartConnector.cartridge.PRGRAM[0]).to.equal(0xFF);
-            });
-            it("cannot writes to PRG-ROM when address is between [0x8000, 0xFFFF]", function() {
                 $subject.write(0x8000, 0xFF);
-                expect($nes.cartConnector.cartridge.PRGROM[0]).not.to.equal(0xFF);
+                $subject.write(0xFFFF, 0xFF);
+                expect(stub).to.be.calledThrice;
             });
         });
     });
@@ -263,13 +274,11 @@ describe("Cpu", function() {
     //-------------------------------------------------------------------------------//
     
     context("Stack", function() {
-        /*global $pushOnce, $pushTwice, $pullOnce, $pullTwice */
-        
-        beforeEach("PowerOn", function() {
-            $subject.powerOn();
-            $subject.SP = 0xFF; // The stack pointer always needs to be initialized
+        beforeEach(function() {
+            $subject.SP = 0xFF;
         });
         
+        /*global $pushOnce, $pushTwice */
         describe(".pushByte(value)", function() {
             def('pushOnce',  () => $subject.pushByte(0xEF));
             def('pushTwice', () => $subject.pushByte(0xEF) || $subject.pushByte(0xCD));
@@ -307,6 +316,8 @@ describe("Cpu", function() {
                 expect($subject.ram[0x1FC]).to.equal(0x34);
             });
         });
+        
+        /*global $pullOnce, $pullTwice */
         describe(".pullByte()", function() {
             beforeEach(function() {
                 $subject.pushByte(0xEF);
@@ -352,55 +363,53 @@ describe("Cpu", function() {
     //-------------------------------------------------------------------------------//
     
     context("Status register", function() {
-        beforeEach("PowerOn", function() { $subject.powerOn(); });
-        
         describe("#Carry", function() {
-            it("is truthy if Carry flag is set", function() {
+            it("is -true- if Carry flag is set", function() {
                 $subject.P = 0x01;
-                expect($subject.Carry).to.be.ok; });
-            it("is not truthy if Carry flag is clear", function() {
+                expect($subject.Carry).to.be.true; });
+            it("is -false- if Carry flag is clear", function() {
                 $subject.P = ~0x01;
-                expect($subject.Carry).not.to.be.ok; });
+                expect($subject.Carry).to.be.false; });
         });
         describe("#Zero", function() {
-            it("is truthy if Zero flag is set", function() {
+            it("is -true- if Zero flag is set", function() {
                 $subject.P = 0x02;
-                expect($subject.Zero).to.be.ok; });
-            it("is not truthy if Zero flag is clear", function() {
+                expect($subject.Zero).to.be.true; });
+            it("is -false- if Zero flag is clear", function() {
                 $subject.P = ~0x02;
-                expect($subject.Zero).not.to.be.ok; });
+                expect($subject.Zero).to.be.false; });
         });
         describe("#Interrupt", function() {
-            it("is truthy if Interrupt Disable flag is set", function() {
+            it("is -true- if Interrupt Disable flag is set", function() {
                 $subject.P = 0x04;
-                expect($subject.Interrupt).to.be.ok; });
-            it("is not truthy if Interrupt Disable flag is clear", function() {
+                expect($subject.Interrupt).to.be.true; });
+            it("is -false- if Interrupt Disable flag is clear", function() {
                 $subject.P = ~0x04;
-                expect($subject.Interrupt).not.to.be.ok; });
+                expect($subject.Interrupt).to.be.false; });
         });
         describe("#Decimal", function() {
-            it("is truthy if Decimal flag is set", function() {
+            it("is -true- if Decimal flag is set", function() {
                 $subject.P = 0x08;
-                expect($subject.Decimal).to.be.ok; });
-            it("is not truthy if Decimal flag is clear", function() {
+                expect($subject.Decimal).to.be.true; });
+            it("is -false- if Decimal flag is clear", function() {
                 $subject.P = ~0x08;
-                expect($subject.Decimal).not.to.be.ok; });
+                expect($subject.Decimal).to.be.false; });
         });
         describe("#Overflow", function() {
-            it("is truthy if Overflow flag is set", function() {
+            it("is -true- if Overflow flag is set", function() {
                 $subject.P = 0x40;
-                expect($subject.Overflow).to.be.ok; });
-            it("is not truthy if Overflow flag is clear", function() {
+                expect($subject.Overflow).to.be.true; });
+            it("is -false- if Overflow flag is clear", function() {
                 $subject.P = ~0x40;
-                expect($subject.Overflow).not.to.be.ok; });
+                expect($subject.Overflow).to.be.false; });
         });
         describe("#Negative", function() {
-            it("is truthy if Negative flag is set", function() {
+            it("is -true- if Negative flag is set", function() {
                 $subject.P = 0x80;
-                expect($subject.Negative).to.be.ok; });
-            it("is not truthy if Negative flag is clear", function() {
+                expect($subject.Negative).to.be.true; });
+            it("is -false- if Negative flag is clear", function() {
                 $subject.P = ~0x80;
-                expect($subject.Negative).not.to.be.ok; });
+                expect($subject.Negative).to.be.false; });
         });
         
         describe("#Carry = value", function() {
@@ -446,99 +455,61 @@ describe("Cpu", function() {
         describe("#Negative = value", function() {
             it("sets Negative flag to the given value", function() {
                 $subject.Negative = true;
-                expect($subject.Negative).to.be.ok;
+                expect($subject.P & 0x80).to.be.ok;
                 $subject.Negative = false;
-                expect($subject.Negative).not.to.be.ok;
+                expect($subject.P & 0x80).not.to.be.ok;
             });
         });
     });
     
     //-------------------------------------------------------------------------------//
     
-    context("Registers", function() {
+    context("Arithmetic Logic Unit", function() {
         /*global $value */
         
-        beforeEach("PowerOn", function() { $subject.powerOn(); });
-        
-        describe("Accumulator", function() {
-            def('action', () => { $subject.A = $value; });
-            beforeEach(function() { $action; });
+        describe(".ALU(value)", function() {
+            def('action', () => $subject.ALU($value));
             
             context("when value > 0xFF", function() {
                 def('value', () => 0x199);
                 
-                its('Carry', () => is.expected.to.be.ok);
-                its('A', () => is.expected.to.equal(0x99));
+                it("sets #Carry", function() {
+                    expect(() => $action).to.change($subject, 'Carry');
+                    expect($subject.Carry).to.be.true;
+                });
+                it("returns a wrapped byte value", function() {
+                    expect($action).to.equal(0x99);
+                });
             });
             context("when value > 0x80", function() {
                 def('value', () => 0xF6);
                 
-                its('Negative', () => is.expected.to.be.ok);
+                it("sets #Negative", function() {
+                    expect(() => $action).to.change($subject, 'Negative');
+                    expect($subject.Negative).to.be.true;
+                });
+                it("returns the same value", function() {
+                    expect($action).to.equal(0xF6);
+                });
             });
             context("when value < 0", function() {
                 def('value', () => -10);
                 
-                its('Negative', () => is.expected.to.be.ok);
-                its('A', () => is.expected.to.equal(0xF6));
+                it("sets #Negative", function() {
+                    expect(() => $action).to.change($subject, 'Negative');
+                    expect($subject.Negative).to.be.true;
+                });
+                it("returns a wrapped unsigned byte value", function() {
+                    expect($action).to.equal(0xF6);
+                });
             });
             context("when value = 0", function() {
                 def('value', () => 0);
                 
-                its('Zero', () => is.expected.to.be.ok);
-            });
-        });
-        describe("Index X", function() {
-            def('action', () => { $subject.X = $value; });
-            beforeEach(function() { $action; });
-            
-            context("when value > 0xFF", function() {
-                def('value', () => 0x199);
-                
-                its('Carry', () => is.expected.to.be.ok);
-                its('X', () => is.expected.to.equal(0x99));
-            });
-            context("when value > 0x80", function() {
-                def('value', () => 0xF6);
-                
-                its('Negative', () => is.expected.to.be.ok);
-            });
-            context("when value < 0", function() {
-                def('value', () => -10);
-                
-                its('Negative', () => is.expected.to.be.ok);
-                its('X', () => is.expected.to.equal(0xF6));
-            });
-            context("when value = 0", function() {
-                def('value', () => 0);
-                
-                its('Zero', () => is.expected.to.be.ok);
-            });
-        });
-        describe("Index Y", function() {
-            def('action', () => { $subject.Y = $value; });
-            beforeEach(function() { $action; });
-            
-            context("when value > 0xFF", function() {
-                def('value', () => 0x199);
-                
-                its('Carry', () => is.expected.to.be.ok);
-                its('Y', () => is.expected.to.equal(0x99));
-            });
-            context("when value > 0x80", function() {
-                def('value', () => 0xF6);
-                
-                its('Negative', () => is.expected.to.be.ok);
-            });
-            context("when value < 0", function() {
-                def('value', () => -10);
-                
-                its('Negative', () => is.expected.to.be.ok);
-                its('Y', () => is.expected.to.equal(0xF6));
-            });
-            context("when value = 0", function() {
-                def('value', () => 0);
-                
-                its('Zero', () => is.expected.to.be.ok);
+                it("sets #Zero", function() {
+                    expect(() => $action).to.change($subject, 'Zero');
+                    expect($subject.Zero).to.be.true;
+                });
             });
         });
     });
@@ -546,16 +517,12 @@ describe("Cpu", function() {
     //-------------------------------------------------------------------------------//
     
     context("Addressing modes", function() {
-        //(They must return the address of the next read)
+        //(They return the address of the next read)
         
         def('PC', () => 0x0010); /*global $PC */
-        def('operand');          /*global $operand */
         
         beforeEach(function() {
-            $subject.powerOn();
             $subject.PC = $PC;
-            if ($operand != null)
-                $subject.operand = $operand;
         });
         
         describe(".imp(implied)", function() {
@@ -588,7 +555,10 @@ describe("Cpu", function() {
         });
         
         context("Zero Page", function() {
-            def('operand', () => 0x80);
+            beforeEach(function() {
+                $subject.ram[$PC] = 0x80;
+                $subject.operand = $subject.read($subject.PC++);
+            });
             
             describe(".zero()", function() {
                 it("returns the operand", function() {
@@ -668,8 +638,6 @@ describe("Cpu", function() {
     //-------------------------------------------------------------------------------//
     
     context("Instructions", function() {
-        beforeEach("PowerOn", function() { $subject.powerOn(); });
-        
         def('RAMData', () => 0x00);
         def('action', () => $subject.doInstruction());
         
@@ -683,33 +651,28 @@ describe("Cpu", function() {
             }
         });
         
-        describe("#BRK()", function() {
-            def('IRQvector', () => 0xABCD);
+        describe(".BRK()", function() {
             beforeEach(function() {
+                sinon.stub($subject, 'irqVector').returns($irqVector);
                 $subject.ram.set([0x00, 0x00]);
+                $action;
             });
             it("pushes P to the stack with B flag set", function() {
-                $action;
-                let pushedP = $subject.pullByte();
-                expect(pushedP).to.equal($subject.P);
-                expect(pushedP&0x10).to.be.ok;
+                expect($subject.pullByte() & 0x10).to.be.ok;
             });
             it("pushes PC of the next opcode to the stack", function() {
-                $action;
                 $subject.pullByte(); //Pull P first...
-                expect($subject.pullWord()).to.equal(0x0002); });
+                expect($subject.pullWord()).to.equal(0x0002);
+            });
             it("sets I flag", function() {
-                $action;
-                expect($subject.Interrupt).to.be.ok;
+                expect($subject.Interrupt).to.be.true;
             });
             it("sets PC to the address at 0xFFFE", function() {
-                $action;
-                expect($subject.PC).to.equal($IRQvector); });
+                expect($subject.PC).to.equal($irqVector); });
             it("takes 7 cycles", function() {
-                $action;
                 expect($subject.cycle).to.equal(7); });
         });
-        describe("#RTI()", function() {
+        describe(".RTI()", function() {
             beforeEach(function() {
                 $subject.ram.set([0x40, 0x00]);
                 $subject.pushWord(0x1234);
@@ -723,21 +686,19 @@ describe("Cpu", function() {
             it("takes 6 cycles", function() {
                 expect($subject.cycle).to.equal(6); });
         });
-        describe("#JSR(absolute)", function() {
+        describe(".JSR(absolute)", function() {
             beforeEach(function() {
                 $subject.ram.set([0x20, 0x34, 0x12]);
+                $action;
             });
             it("pushes PC (before the second byte of operand) to the stack", function() {
-                $action;
                 expect($subject.pullWord()).to.equal(0x0002); });
             it("sets PC to the operand", function() {
-                $action;
                 expect($subject.PC).to.equal(0x1234); });
             it("takes 6 cycles", function() {
-                $action;
                 expect($subject.cycle).to.equal(6); });
         });
-        describe("#RTS()", function() {
+        describe(".RTS()", function() {
             beforeEach(function() {
                 $subject.ram.set([0x60, 0x00]);
                 $subject.pushWord(0x1234);
@@ -748,30 +709,28 @@ describe("Cpu", function() {
             it("takes 6 cycles", function() {
                 expect($subject.cycle).to.equal(6); });
         });
-        describe("#JMP(absolute)", function() {
+        describe(".JMP(absolute)", function() {
             beforeEach(function() {
                 $subject.ram.set([0x4C, 0x34, 0x12]);
+                $action;
             });
             it("sets PC to the operand", function() {
-                $action;
                 expect($subject.PC).to.equal(0x1234); });
             it("takes 3 cycles", function() {
-                $action;
                 expect($subject.cycle).to.equal(3); });
         });
-        describe("#JMP(indirect)", function() {
+        describe(".JMP(indirect)", function() {
             beforeEach(function() {
                 $subject.ram.set([0x6C, 0x03, 0x00, 0x78, 0x56]);
+                $action;
             });
             it("sets PC to the address given by the operand", function() {
-                $action;
                 expect($subject.PC).to.equal(0x5678); });
             it("takes 5 cycles", function() {
-                $action;
                 expect($subject.cycle).to.equal(5); });
         });
         
-        describe("#BPL(relative)", function() {
+        describe(".BPL(relative)", function() {
             beforeEach(function() {
                 $subject.ram.set([0x10, 0x10]);
             });
@@ -792,10 +751,11 @@ describe("Cpu", function() {
                 });
                 it("continues to next opcode", function() {
                     expect($subject.PC).to.equal(0x0002); });
-                it("takes 2 cycles", function() { expect($subject.cycle).to.equal(2); });
+                it("takes 2 cycles", function() {
+                    expect($subject.cycle).to.equal(2); });
             });
         });
-        describe("#BMI(relative)", function() {
+        describe(".BMI(relative)", function() {
             beforeEach(function() {
                 $subject.ram.set([0x30, 0x10]);
             });
@@ -820,7 +780,7 @@ describe("Cpu", function() {
                     expect($subject.cycle).to.equal(2); });
             });
         });
-        describe("#BVC(relative)", function() {
+        describe(".BVC(relative)", function() {
             beforeEach(function() {
                 $subject.ram.set([0x50, 0x10]);
             });
@@ -845,7 +805,7 @@ describe("Cpu", function() {
                     expect($subject.cycle).to.equal(2); });
             });
         });
-        describe("#BVS(relative)", function() {
+        describe(".BVS(relative)", function() {
             beforeEach(function() {
                 $subject.ram.set([0x70, 0x10]);
             });
@@ -870,7 +830,7 @@ describe("Cpu", function() {
                     expect($subject.cycle).to.equal(2); });
             });
         });
-        describe("#BCC(relative)", function() {
+        describe(".BCC(relative)", function() {
             beforeEach(function() {
                 $subject.ram.set([0x90, 0x10]);
             });
@@ -895,7 +855,7 @@ describe("Cpu", function() {
                     expect($subject.cycle).to.equal(2); });
             });
         });
-        describe("#BCS(relative)", function() {
+        describe(".BCS(relative)", function() {
             beforeEach(function() {
                 $subject.ram.set([0xB0, 0x10]);
             });
@@ -920,7 +880,7 @@ describe("Cpu", function() {
                     expect($subject.cycle).to.equal(2); });
             });
         });
-        describe("#BNE(relative)", function() {
+        describe(".BNE(relative)", function() {
             beforeEach(function() {
                 $subject.ram.set([0xD0, 0x10]);
             });
@@ -945,7 +905,7 @@ describe("Cpu", function() {
                     expect($subject.cycle).to.equal(2); });
             });
         });
-        describe("#BEQ(relative)", function() {
+        describe(".BEQ(relative)", function() {
             beforeEach(function() {
                 $subject.ram.set([0xF0, 0x10]);
             });
@@ -971,7 +931,7 @@ describe("Cpu", function() {
             });
         });
         
-        describe("#PHA()", function() {
+        describe(".PHA()", function() {
             beforeEach(function() {
                 $subject.ram.set([0x48, 0x00]);
                 $subject.A = 0x05;
@@ -981,9 +941,10 @@ describe("Cpu", function() {
                 expect($subject.pullByte()).to.equal(0x05); });
             it("sets PC to the next opcode", function() {
                 expect($subject.PC).to.equal(0x0001); });
-            it("takes 3 cycles", function() { expect($subject.cycle).to.equal(3); });
+            it("takes 3 cycles", function() {
+                expect($subject.cycle).to.equal(3); });
         });
-        describe("#PHP()", function() {
+        describe(".PHP()", function() {
             beforeEach(function() {
                 $subject.ram.set([0x08, 0x00]);
                 $subject.P = 0x35;
@@ -993,9 +954,10 @@ describe("Cpu", function() {
                 expect($subject.pullByte()).to.equal(0x35); });
             it("sets PC to the next opcode", function() {
                 expect($subject.PC).to.equal(0x0001); });
-            it("takes 3 cycles", function() { expect($subject.cycle).to.equal(3); });
+            it("takes 3 cycles", function() {
+                expect($subject.cycle).to.equal(3); });
         });
-        describe("#PLA()", function() {
+        describe(".PLA()", function() {
             beforeEach(function() {
                 $subject.ram.set([0x68, 0x00]);
             });
@@ -1006,11 +968,11 @@ describe("Cpu", function() {
             it("sets Z flag if zero", function() {
                 $subject.pushByte(0x00);
                 $action;
-                expect($subject.Zero).to.be.ok; });
+                expect($subject.Zero).to.be.true; });
             it("sets N flag if negative", function() {
-                $subject.pushByte(-1);
+                $subject.pushByte(0xFF);
                 $action;
-                expect($subject.Negative).to.be.ok; });
+                expect($subject.Negative).to.be.true; });
             it("sets PC to the next opcode", function() {
                 $action;
                 expect($subject.PC).to.equal(0x0001); });
@@ -1018,7 +980,7 @@ describe("Cpu", function() {
                 $action;
                 expect($subject.cycle).to.equal(4); });
         });
-        describe("#PLP()", function() {
+        describe(".PLP()", function() {
             beforeEach(function() {
                 $subject.ram.set([0x28, 0x00]);
                 $subject.pushByte(0x3A);
@@ -1028,22 +990,24 @@ describe("Cpu", function() {
                 expect($subject.P).to.equal(0x3A); });
             it("sets PC to the next opcode", function() {
                 expect($subject.PC).to.equal(0x0001); });
-            it("takes 4 cycles", function() { expect($subject.cycle).to.equal(4); });
+            it("takes 4 cycles", function() {
+                expect($subject.cycle).to.equal(4); });
         });
         
-        describe("#CLC()", function() {
+        describe(".CLC()", function() {
             beforeEach(function() {
                 $subject.P = 0xFF;
                 $subject.ram.set([0x18, 0x00]);
                 $action;
             });
             it("clears Carry flag", function() {
-                expect($subject.Carry).not.to.be.ok; });
+                expect($subject.Carry).not.to.be.true; });
             it("sets PC to the next opcode", function() {
                 expect($subject.PC).to.equal(0x0001); });
-            it("takes 2 cycles", function() { expect($subject.cycle).to.equal(2); });
+            it("takes 2 cycles", function() {
+                expect($subject.cycle).to.equal(2); });
         });
-        describe("#CLD()", function() {
+        describe(".CLD()", function() {
             beforeEach(function() {
                 $subject.P = 0xFF;
                 $subject.ram.set([0xD8, 0x00]);
@@ -1053,9 +1017,10 @@ describe("Cpu", function() {
                 expect($subject.P & 0x08).not.to.be.ok; });
             it("sets PC to the next opcode", function() {
                 expect($subject.PC).to.equal(0x0001); });
-            it("takes 2 cycles", function() { expect($subject.cycle).to.equal(2); });
+            it("takes 2 cycles", function() {
+                expect($subject.cycle).to.equal(2); });
         });
-        describe("#CLI()", function() {
+        describe(".CLI()", function() {
             beforeEach(function() {
                 $subject.P = 0xFF;
                 $subject.ram.set([0x58, 0x00]);
@@ -1065,9 +1030,10 @@ describe("Cpu", function() {
                 expect($subject.P & 0x04).not.to.be.ok; });
             it("sets PC to the next opcode", function() {
                 expect($subject.PC).to.equal(0x0001); });
-            it("takes 2 cycles", function() { expect($subject.cycle).to.equal(2); });
+            it("takes 2 cycles", function() {
+                expect($subject.cycle).to.equal(2); });
         });
-        describe("#CLV()", function() {
+        describe(".CLV()", function() {
             beforeEach(function() {
                 $subject.P = 0xFF;
                 $subject.ram.set([0xB8, 0x00]);
@@ -1077,20 +1043,22 @@ describe("Cpu", function() {
                 expect($subject.P & 0x40).not.to.be.ok; });
             it("sets PC to the next opcode", function() {
                 expect($subject.PC).to.equal(0x0001); });
-            it("takes 2 cycles", function() { expect($subject.cycle).to.equal(2); });
+            it("takes 2 cycles", function() {
+                expect($subject.cycle).to.equal(2); });
         });
-        describe("#SEC()", function() {
+        describe(".SEC()", function() {
             beforeEach(function() {
                 $subject.ram.set([0x38, 0x00]);
                 $action;
             });
             it("sets Carry flag", function() {
-                expect($subject.Carry).to.be.ok; });
+                expect($subject.Carry).to.be.true; });
             it("sets PC to the next opcode", function() {
                 expect($subject.PC).to.equal(0x0001); });
-            it("takes 2 cycles", function() { expect($subject.cycle).to.equal(2); });
+            it("takes 2 cycles", function() {
+                expect($subject.cycle).to.equal(2); });
         });
-        describe("#SED()", function() {
+        describe(".SED()", function() {
             beforeEach(function() {
                 $subject.ram.set([0xF8, 0x00]);
                 $action;
@@ -1099,9 +1067,10 @@ describe("Cpu", function() {
                 expect($subject.P & 0x08).to.be.ok; });
             it("sets PC to the next opcode", function() {
                 expect($subject.PC).to.equal(0x0001); });
-            it("takes 2 cycles", function() { expect($subject.cycle).to.equal(2); });
+            it("takes 2 cycles", function() {
+                expect($subject.cycle).to.equal(2); });
         });
-        describe("#SEI()", function() {
+        describe(".SEI()", function() {
             beforeEach(function() {
                 $subject.ram.set([0x78, 0x00]);
                 $action;
@@ -1110,10 +1079,11 @@ describe("Cpu", function() {
                 expect($subject.P & 0x04).to.be.ok; });
             it("sets PC to the next opcode", function() {
                 expect($subject.PC).to.equal(0x0001); });
-            it("takes 2 cycles", function() { expect($subject.cycle).to.equal(2); });
+            it("takes 2 cycles", function() {
+                expect($subject.cycle).to.equal(2); });
         });
         
-        describe("#TAX()", function() {
+        describe(".TAX()", function() {
             beforeEach(function() {
                 $subject.ram.set([0xAA, 0x00]);
             });
@@ -1124,11 +1094,11 @@ describe("Cpu", function() {
             it("sets Z flag if zero", function() {
                 $subject.A = 0x00;
                 $action;
-                expect($subject.Zero).to.be.ok; });
+                expect($subject.Zero).to.be.true; });
             it("sets N flag if negative", function() {
                 $subject.A = 0xFF;
                 $action;
-                expect($subject.Negative).to.be.ok; });
+                expect($subject.Negative).to.be.true; });
             it("sets PC to the next opcode", function() {
                 $action;
                 expect($subject.PC).to.equal(0x0001); });
@@ -1136,7 +1106,7 @@ describe("Cpu", function() {
                 $action;
                 expect($subject.cycle).to.equal(2); });
         });
-        describe("#TXA()", function() {
+        describe(".TXA()", function() {
             beforeEach(function() {
                 $subject.ram.set([0x8A, 0x00]);
             });
@@ -1147,11 +1117,11 @@ describe("Cpu", function() {
             it("sets Z flag if zero", function() {
                 $subject.X = 0x00;
                 $action;
-                expect($subject.Zero).to.be.ok; });
+                expect($subject.Zero).to.be.true; });
             it("sets N flag if negative", function() {
                 $subject.X = 0xFF;
                 $action;
-                expect($subject.Negative).to.be.ok; });
+                expect($subject.Negative).to.be.true; });
             it("sets PC to the next opcode", function() {
                 $action;
                 expect($subject.PC).to.equal(0x0001); });
@@ -1159,7 +1129,7 @@ describe("Cpu", function() {
                 $action;
                 expect($subject.cycle).to.equal(2); });
         });
-        describe("#TAY()", function() {
+        describe(".TAY()", function() {
             beforeEach(function() {
                 $subject.ram.set([0xA8, 0x00]);
             });
@@ -1170,11 +1140,11 @@ describe("Cpu", function() {
             it("sets Z flag if zero", function() {
                 $subject.A = 0x00;
                 $action;
-                expect($subject.Zero).to.be.ok; });
+                expect($subject.Zero).to.be.true; });
             it("sets N flag if negative", function() {
                 $subject.A = 0xFF;
                 $action;
-                expect($subject.Negative).to.be.ok; });
+                expect($subject.Negative).to.be.true; });
             it("sets PC to the next opcode", function() {
                 $action;
                 expect($subject.PC).to.equal(0x0001); });
@@ -1182,7 +1152,7 @@ describe("Cpu", function() {
                 $action;
                 expect($subject.cycle).to.equal(2); });
         });
-        describe("#TYA()", function() {
+        describe(".TYA()", function() {
             beforeEach(function() {
                 $subject.ram.set([0x98, 0x00]);
             });
@@ -1193,11 +1163,11 @@ describe("Cpu", function() {
             it("sets Z flag if zero", function() {
                 $subject.Y = 0x00;
                 $action;
-                expect($subject.Zero).to.be.ok; });
+                expect($subject.Zero).to.be.true; });
             it("sets N flag if negative", function() {
                 $subject.Y = 0xFF;
                 $action;
-                expect($subject.Negative).to.be.ok; });
+                expect($subject.Negative).to.be.true; });
             it("sets PC to the next opcode", function() {
                 $action;
                 expect($subject.PC).to.equal(0x0001); });
@@ -1205,7 +1175,7 @@ describe("Cpu", function() {
                 $action;
                 expect($subject.cycle).to.equal(2); });
         });
-        describe("#TSX()", function() {
+        describe(".TSX()", function() {
             beforeEach(function() {
                 $subject.ram.set([0xBA, 0x00]);
             });
@@ -1216,11 +1186,11 @@ describe("Cpu", function() {
             it("sets Z flag if zero", function() {
                 $subject.SP = 0x00;
                 $action;
-                expect($subject.Zero).to.be.ok; });
+                expect($subject.Zero).to.be.true; });
             it("sets N flag if bit 7 is set", function() {
                 $subject.SP = 0xFF;
                 $action;
-                expect($subject.Negative).to.be.ok; });
+                expect($subject.Negative).to.be.true; });
             it("sets PC to the next opcode", function() {
                 $action;
                 expect($subject.PC).to.equal(0x0001); });
@@ -1228,7 +1198,7 @@ describe("Cpu", function() {
                 $action;
                 expect($subject.cycle).to.equal(2); });
         });
-        describe("#TXS()", function() {
+        describe(".TXS()", function() {
             beforeEach(function() {
                 $subject.ram.set([0x9A, 0x00]);
             });
@@ -1239,11 +1209,11 @@ describe("Cpu", function() {
             it("does not set Z flag", function() {
                 $subject._X = 0x00;
                 $action;
-                expect($subject.Zero).not.to.be.ok; });
+                expect($subject.Zero).not.to.be.true; });
             it("does not set N flag", function() {
                 $subject._X = 0xFF;
                 $action;
-                expect($subject.Negative).not.to.be.ok; });
+                expect($subject.Negative).not.to.be.true; });
             it("sets PC to the next opcode", function() {
                 $action;
                 expect($subject.PC).to.equal(0x0001); });
@@ -1252,8 +1222,8 @@ describe("Cpu", function() {
                 expect($subject.cycle).to.equal(2); });
         });
         
-        //All the addressing modes are tested here with #LDA, #LDX and #LDY
-        describe("#LDA(immediate)", function() {
+        //All the addressing modes are tested here with .LDA, .LDX and .LDY
+        describe(".LDA(immediate)", function() {
             beforeEach(function() {
                 $subject.ram.set([0xA9, 0x0A]);
             });
@@ -1263,11 +1233,11 @@ describe("Cpu", function() {
             it("sets Z flag if zero", function() {
                 $subject.ram[1] = 0x00;
                 $action;
-                expect($subject.Zero).to.be.ok; });
+                expect($subject.Zero).to.be.true; });
             it("sets N flag if bit 7 is set", function() {
                 $subject.ram[1] = 0x80;
                 $action;
-                expect($subject.Negative).to.be.ok; });
+                expect($subject.Negative).to.be.true; });
             it("sets PC to the next opcode", function() {
                 $action;
                 expect($subject.PC).to.equal(0x0002); });
@@ -1275,7 +1245,7 @@ describe("Cpu", function() {
                 $action;
                 expect($subject.cycle).to.equal(2); });
         });
-        describe("#LDA(zero)", function() {
+        describe(".LDA(zero)", function() {
             beforeEach(function() {
                 $subject.ram.set([0xA5, 0x02, 0x0A]);
             });
@@ -1289,7 +1259,7 @@ describe("Cpu", function() {
                 $action;
                 expect($subject.cycle).to.equal(3); });
         });
-        describe("#LDA(absolute)", function() {
+        describe(".LDA(absolute)", function() {
             beforeEach(function() {
                 $subject.ram.set([0xAD, 0x03, 0x00, 0x0A]);
             });
@@ -1303,7 +1273,7 @@ describe("Cpu", function() {
                 $action;
                 expect($subject.cycle).to.equal(4); });
         });
-        describe("#LDA(indirectX)", function() {
+        describe(".LDA(indirectX)", function() {
             beforeEach(function() {
                 $subject.X = 0x01;
                 $subject.ram.set([0xA1, 0x02, 0x00, 0x05, 0x00, 0x0A]);
@@ -1318,7 +1288,7 @@ describe("Cpu", function() {
                 $action;
                 expect($subject.cycle).to.equal(6); });
         });
-        describe("#LDA(indirectY)", function() {
+        describe(".LDA(indirectY)", function() {
             beforeEach(function() {
                 $subject.Y = 0x01;
                 $subject.ram.set([0xB1, 0x03, 0x00, 0x04, 0x00, 0x0A]);
@@ -1337,7 +1307,7 @@ describe("Cpu", function() {
                 $action;
                 expect($subject.cycle).to.equal(6); });
         });
-        describe("#LDX(immediate)", function() {
+        describe(".LDX(immediate)", function() {
             beforeEach(function() {
                 $subject.ram.set([0xA2, 0x0B]);
             });
@@ -1347,11 +1317,11 @@ describe("Cpu", function() {
             it("sets Z flag if zero", function() {
                 $subject.ram[1] = 0x00;
                 $action;
-                expect($subject.Zero).to.be.ok; });
+                expect($subject.Zero).to.be.true; });
             it("sets N flag if bit 7 is set", function() {
                 $subject.ram[1] = 0x80;
                 $action;
-                expect($subject.Negative).to.be.ok; });
+                expect($subject.Negative).to.be.true; });
             it("sets PC to the next opcode", function() {
                 $action;
                 expect($subject.PC).to.equal(0x0002); });
@@ -1359,7 +1329,7 @@ describe("Cpu", function() {
                 $action;
                 expect($subject.cycle).to.equal(2); });
         });
-        describe("#LDX(zeroY)", function() {
+        describe(".LDX(zeroY)", function() {
             beforeEach(function() {
                 $subject.Y = 0x01;
                 $subject.ram.set([0xB6, 0x02, 0x00, 0x0B]);
@@ -1374,7 +1344,7 @@ describe("Cpu", function() {
                 $action;
                 expect($subject.cycle).to.equal(4); });
         });
-        describe("#LDX(absoluteY)", function() {
+        describe(".LDX(absoluteY)", function() {
             beforeEach(function() {
                 $subject.Y = 0x01;
                 $subject.ram.set([0xBE, 0x03, 0x00, 0x00, 0x0B]);
@@ -1393,7 +1363,7 @@ describe("Cpu", function() {
                 $action;
                 expect($subject.cycle).to.equal(5); });
         });
-        describe("#LDY(immediate)", function() {
+        describe(".LDY(immediate)", function() {
             beforeEach(function() {
                 $subject.ram.set([0xA0, 0x0C]);
             });
@@ -1403,11 +1373,11 @@ describe("Cpu", function() {
             it("sets Z flag if zero", function() {
                 $subject.ram[1] = 0x00;
                 $action;
-                expect($subject.Zero).to.be.ok; });
+                expect($subject.Zero).to.be.true; });
             it("sets N flag if bit 7 is set", function() {
                 $subject.ram[1] = 0x80;
                 $action;
-                expect($subject.Negative).to.be.ok; });
+                expect($subject.Negative).to.be.true; });
             it("sets PC to the next opcode", function() {
                 $action;
                 expect($subject.PC).to.equal(0x0002); });
@@ -1415,7 +1385,7 @@ describe("Cpu", function() {
                 $action;
                 expect($subject.cycle).to.equal(2); });
         });
-        describe("#LDY(zeroX)", function() {
+        describe(".LDY(zeroX)", function() {
             beforeEach(function() {
                 $subject.X = 0x01;
                 $subject.ram.set([0xB4, 0x02, 0x00, 0x0C]);
@@ -1430,7 +1400,7 @@ describe("Cpu", function() {
                 $action;
                 expect($subject.cycle).to.equal(4); });
         });
-        describe("#LDY(absoluteX)", function() {
+        describe(".LDY(absoluteX)", function() {
             beforeEach(function() {
                 $subject.X = 0x01;
                 $subject.ram.set([0xBC, 0x03, 0x00, 0x00, 0x0C]);
@@ -1450,7 +1420,7 @@ describe("Cpu", function() {
                 expect($subject.cycle).to.equal(5); });
         });
         
-        describe("#ADC(immediate)", function() {
+        describe(".ADC(immediate)", function() {
             beforeEach(function() {
                 $subject.A = 0x10;
                 $subject.ram.set([0x69, 0x08]);
@@ -1465,7 +1435,7 @@ describe("Cpu", function() {
             it("sets Zero flag if result is zero", function() {
                 $subject.A = 0xF8;
                 $action;
-                expect($subject.Zero).to.be.ok; });
+                expect($subject.Zero).to.be.true; });
             it("sets PC to the next opcode", function() {
                 $action;
                 expect($subject.PC).to.equal(0x0002); });
@@ -1482,9 +1452,9 @@ describe("Cpu", function() {
                     $action;
                 });
                 it("sets A to 0x60",       function() { expect($subject.A).to.equal(0x60); });
-                it("clears Carry flag",    function() { expect($subject.Carry).not.to.be.ok; });
-                it("clears Negative flag", function() { expect($subject.Negative).not.to.be.ok; });
-                it("clears oVerflow flag", function() { expect($subject.Overflow).not.to.be.ok; });
+                it("clears Carry flag",    function() { expect($subject.Carry).to.be.false; });
+                it("clears Negative flag", function() { expect($subject.Negative).to.be.false; });
+                it("clears oVerflow flag", function() { expect($subject.Overflow).to.be.false; });
             });
             context("80 + 80 = 160", function() {
                 beforeEach(function() {
@@ -1494,9 +1464,9 @@ describe("Cpu", function() {
                     $action;
                 });
                 it("sets A to 0xA0",     function() { expect($subject.A).to.equal(0xA0); });
-                it("clears Carry flag",  function() { expect($subject.Carry).not.to.be.ok; });
-                it("sets Negative flag", function() { expect($subject.Negative).to.be.ok; });
-                it("sets oVerflow flag", function() { expect($subject.Overflow).to.be.ok; });
+                it("clears Carry flag",  function() { expect($subject.Carry).to.be.false; });
+                it("sets Negative flag", function() { expect($subject.Negative).to.be.true; });
+                it("sets oVerflow flag", function() { expect($subject.Overflow).to.be.true; });
             });
             context("80 + -112 = -32", function() {
                 beforeEach(function() {
@@ -1506,9 +1476,9 @@ describe("Cpu", function() {
                     $action;
                 });
                 it("sets A to 0xE0",       function() { expect($subject.A).to.equal(0xE0); });
-                it("clears Carry flag",    function() { expect($subject.Carry).not.to.be.ok; });
-                it("sets Negative flag",   function() { expect($subject.Negative).to.be.ok; });
-                it("clears oVerflow flag", function() { expect($subject.Overflow).not.to.be.ok; });
+                it("clears Carry flag",    function() { expect($subject.Carry).to.be.false; });
+                it("sets Negative flag",   function() { expect($subject.Negative).to.be.true; });
+                it("clears oVerflow flag", function() { expect($subject.Overflow).to.be.false; });
             });
             context("80 + -48 = 32", function() {
                 beforeEach(function() {
@@ -1518,9 +1488,9 @@ describe("Cpu", function() {
                     $action;
                 });
                 it("sets A to 0x20",       function() { expect($subject.A).to.equal(0x20); });
-                it("sets Carry flag",      function() { expect($subject.Carry).to.be.ok; });
-                it("clears Negative flag", function() { expect($subject.Negative).not.to.be.ok; });
-                it("clears oVerflow flag", function() { expect($subject.Overflow).not.to.be.ok; });
+                it("sets Carry flag",      function() { expect($subject.Carry).to.be.true; });
+                it("clears Negative flag", function() { expect($subject.Negative).to.be.false; });
+                it("clears oVerflow flag", function() { expect($subject.Overflow).to.be.false; });
             });
             context("-48 + 16 = -32", function() {
                 beforeEach(function() {
@@ -1530,9 +1500,9 @@ describe("Cpu", function() {
                     $action;
                 });
                 it("sets A to 0xE0",       function() { expect($subject.A).to.equal(0xE0); });
-                it("clears Carry flag",    function() { expect($subject.Carry).not.to.be.ok; });
-                it("sets Negative flag",   function() { expect($subject.Negative).to.be.ok; });
-                it("clears oVerflow flag", function() { expect($subject.Overflow).not.to.be.ok; });
+                it("clears Carry flag",    function() { expect($subject.Carry).to.be.false; });
+                it("sets Negative flag",   function() { expect($subject.Negative).to.be.true; });
+                it("clears oVerflow flag", function() { expect($subject.Overflow).to.be.false; });
             });
             context("-48 + 80 = 32", function() {
                 beforeEach(function() {
@@ -1542,9 +1512,9 @@ describe("Cpu", function() {
                     $action;
                 });
                 it("sets A to 0x20",       function() { expect($subject.A).to.equal(0x20); });
-                it("sets Carry flag",      function() { expect($subject.Carry).to.be.ok; });
-                it("clears Negative flag", function() { expect($subject.Negative).not.to.be.ok; });
-                it("clears oVerflow flag", function() { expect($subject.Overflow).not.to.be.ok; });
+                it("sets Carry flag",      function() { expect($subject.Carry).to.be.true; });
+                it("clears Negative flag", function() { expect($subject.Negative).to.be.false; });
+                it("clears oVerflow flag", function() { expect($subject.Overflow).to.be.false; });
             });
             context("-48 + -112 = [** +96 **]", function() {
                 beforeEach(function() {
@@ -1554,9 +1524,9 @@ describe("Cpu", function() {
                     $action;
                 });
                 it("sets A to 0x60",       function() { expect($subject.A).to.equal(0x60); });
-                it("sets Carry flag",      function() { expect($subject.Carry).to.be.ok; });
-                it("clears Negative flag", function() { expect($subject.Negative).not.to.be.ok; });
-                it("sets oVerflow flag",   function() { expect($subject.Overflow).to.be.ok; });
+                it("sets Carry flag",      function() { expect($subject.Carry).to.be.true; });
+                it("clears Negative flag", function() { expect($subject.Negative).to.be.false; });
+                it("sets oVerflow flag",   function() { expect($subject.Overflow).to.be.true; });
             });
             context("-48 + -48 = -96", function() {
                 beforeEach(function() {
@@ -1566,12 +1536,12 @@ describe("Cpu", function() {
                     $action;
                 });
                 it("sets A to 0xA0",       function() { expect($subject.A).to.equal(0xA0); });
-                it("sets Carry flag",      function() { expect($subject.Carry).to.be.ok; });
-                it("sets Negative flag",   function() { expect($subject.Negative).to.be.ok; });
-                it("clears oVerflow flag", function() { expect($subject.Overflow).not.to.be.ok; });
+                it("sets Carry flag",      function() { expect($subject.Carry).to.be.true; });
+                it("sets Negative flag",   function() { expect($subject.Negative).to.be.true; });
+                it("clears oVerflow flag", function() { expect($subject.Overflow).to.be.false; });
             });
         });
-        describe("#SBC(immediate)", function() {
+        describe(".SBC(immediate)", function() {
             beforeEach(function() {
                 $subject.A = 0x50;
                 $subject.Carry = true;
@@ -1587,7 +1557,7 @@ describe("Cpu", function() {
             it("sets Zero flag if result is zero", function() {
                 $subject.A = 0x38;
                 $action;
-                expect($subject.Zero).to.be.ok; });
+                expect($subject.Zero).to.be.true; });
             it("sets PC to the next opcode", function() {
                 $action;
                 expect($subject.PC).to.equal(0x0002); });
@@ -1604,9 +1574,9 @@ describe("Cpu", function() {
                     $action;
                 });
                 it("sets A to 0x60",       function() { expect($subject.A).to.equal(0x60); });
-                it("clears Carry flag",    function() { expect($subject.Carry).not.to.be.ok; });
-                it("clears Negative flag", function() { expect($subject.Negative).not.to.be.ok; });
-                it("clears oVerflow flag", function() { expect($subject.Overflow).not.to.be.ok; });
+                it("clears Carry flag",    function() { expect($subject.Carry).to.be.false; });
+                it("clears Negative flag", function() { expect($subject.Negative).to.be.false; });
+                it("clears oVerflow flag", function() { expect($subject.Overflow).to.be.false; });
             });
             context("80 - -80 = [** -96 **]", function() {
                 beforeEach(function() {
@@ -1616,9 +1586,9 @@ describe("Cpu", function() {
                     $action;
                 });
                 it("sets A to 0xA0",     function() { expect($subject.A).to.equal(0xA0); });
-                it("clears Carry flag",  function() { expect($subject.Carry).not.to.be.ok; });
-                it("sets Negative flag", function() { expect($subject.Negative).to.be.ok; });
-                it("sets oVerflow flag", function() { expect($subject.Overflow).to.be.ok; });
+                it("clears Carry flag",  function() { expect($subject.Carry).to.be.false; });
+                it("sets Negative flag", function() { expect($subject.Negative).to.be.true; });
+                it("sets oVerflow flag", function() { expect($subject.Overflow).to.be.true; });
             });
             context("80 - 112 = -32", function() {
                 beforeEach(function() {
@@ -1628,9 +1598,9 @@ describe("Cpu", function() {
                     $action;
                 });
                 it("sets A to 0xE0",       function() { expect($subject.A).to.equal(0xE0); });
-                it("clears Carry flag",    function() { expect($subject.Carry).not.to.be.ok; });
-                it("sets Negative flag",   function() { expect($subject.Negative).to.be.ok; });
-                it("clears oVerflow flag", function() { expect($subject.Overflow).not.to.be.ok; });
+                it("clears Carry flag",    function() { expect($subject.Carry).to.be.false; });
+                it("sets Negative flag",   function() { expect($subject.Negative).to.be.true; });
+                it("clears oVerflow flag", function() { expect($subject.Overflow).to.be.false; });
             });
             context("80 - 48 = 32", function() {
                 beforeEach(function() {
@@ -1640,9 +1610,9 @@ describe("Cpu", function() {
                     $action;
                 });
                 it("sets A to 0x20",       function() { expect($subject.A).to.equal(0x20); });
-                it("sets Carry flag",      function() { expect($subject.Carry).to.be.ok; });
-                it("clears Negative flag", function() { expect($subject.Negative).not.to.be.ok; });
-                it("clears oVerflow flag", function() { expect($subject.Overflow).not.to.be.ok; });
+                it("sets Carry flag",      function() { expect($subject.Carry).to.be.true; });
+                it("clears Negative flag", function() { expect($subject.Negative).to.be.false; });
+                it("clears oVerflow flag", function() { expect($subject.Overflow).to.be.false; });
             });
             context("-48 - -16 = -32", function() {
                 beforeEach(function() {
@@ -1652,9 +1622,9 @@ describe("Cpu", function() {
                     $action;
                 });
                 it("sets A to 0xE0",       function() { expect($subject.A).to.equal(0xE0); });
-                it("clears Carry flag",    function() { expect($subject.Carry).not.to.be.ok; });
-                it("sets Negative flag",   function() { expect($subject.Negative).to.be.ok; });
-                it("clears oVerflow flag", function() { expect($subject.Overflow).not.to.be.ok; });
+                it("clears Carry flag",    function() { expect($subject.Carry).to.be.false; });
+                it("sets Negative flag",   function() { expect($subject.Negative).to.be.true; });
+                it("clears oVerflow flag", function() { expect($subject.Overflow).to.be.false; });
             });
             context("-48 - -80 = 32", function() {
                 beforeEach(function() {
@@ -1664,9 +1634,9 @@ describe("Cpu", function() {
                     $action;
                 });
                 it("sets A to 0x20",       function() { expect($subject.A).to.equal(0x20); });
-                it("sets Carry flag",      function() { expect($subject.Carry).to.be.ok; });
-                it("clears Negative flag", function() { expect($subject.Negative).not.to.be.ok; });
-                it("clears oVerflow flag", function() { expect($subject.Overflow).not.to.be.ok; });
+                it("sets Carry flag",      function() { expect($subject.Carry).to.be.true; });
+                it("clears Negative flag", function() { expect($subject.Negative).to.be.false; });
+                it("clears oVerflow flag", function() { expect($subject.Overflow).to.be.false; });
             });
             context("208 - 112 = 96", function() {
                 beforeEach(function() {
@@ -1676,9 +1646,9 @@ describe("Cpu", function() {
                     $action;
                 });
                 it("sets A to 0x60",       function() { expect($subject.A).to.equal(0x60); });
-                it("sets Carry flag",      function() { expect($subject.Carry).to.be.ok; });
-                it("clears Negative flag", function() { expect($subject.Negative).not.to.be.ok; });
-                it("sets oVerflow flag",   function() { expect($subject.Overflow).to.be.ok; });
+                it("sets Carry flag",      function() { expect($subject.Carry).to.be.true; });
+                it("clears Negative flag", function() { expect($subject.Negative).to.be.false; });
+                it("sets oVerflow flag",   function() { expect($subject.Overflow).to.be.true; });
             });
             context("-48 - 48 = -96", function() {
                 beforeEach(function() {
@@ -1688,13 +1658,13 @@ describe("Cpu", function() {
                     $action;
                 });
                 it("sets A to 0xA0",       function() { expect($subject.A).to.equal(0xA0); });
-                it("sets Carry flag",      function() { expect($subject.Carry).to.be.ok; });
-                it("sets Negative flag",   function() { expect($subject.Negative).to.be.ok; });
-                it("clears oVerflow flag", function() { expect($subject.Overflow).not.to.be.ok; });
+                it("sets Carry flag",      function() { expect($subject.Carry).to.be.true; });
+                it("sets Negative flag",   function() { expect($subject.Negative).to.be.true; });
+                it("clears oVerflow flag", function() { expect($subject.Overflow).to.be.false; });
             });
         });
         
-        describe("#ASL()", function() {
+        describe(".ASL()", function() {
             beforeEach(function() {
                 $subject.A = 0x55;
                 $subject.ram.set([0x0A, 0x00]);
@@ -1705,15 +1675,15 @@ describe("Cpu", function() {
             it("sets C flag when exceeded", function() {
                 $subject.A = 0x80;
                 $action;
-                expect($subject.Carry).to.be.ok; });
+                expect($subject.Carry).to.be.true; });
             it("sets Z flag if zero", function() {
                 $subject.A = 0x00;
                 $action;
-                expect($subject.Zero).to.be.ok; });
+                expect($subject.Zero).to.be.true; });
             it("sets N flag if bit 7 is set", function() {
                 $subject.A = 0x40;
                 $action;
-                expect($subject.Negative).to.be.ok; });
+                expect($subject.Negative).to.be.true; });
             it("sets PC to the next opcode", function() {
                 $action;
                 expect($subject.PC).to.equal(0x0001); });
@@ -1721,7 +1691,7 @@ describe("Cpu", function() {
                 $action;
                 expect($subject.cycle).to.equal(2); });
         });
-        describe("#ASL(zero)", function() {
+        describe(".ASL(zero)", function() {
             beforeEach(function() {
                 $subject.ram.set([0x06, 0x02, 0x55]);
             });
@@ -1731,15 +1701,15 @@ describe("Cpu", function() {
             it("sets C flag when exceeded", function() {
                 $subject.ram[2] = 0x80;
                 $action;
-                expect($subject.Carry).to.be.ok; });
+                expect($subject.Carry).to.be.true; });
             it("sets Z flag if zero", function() {
                 $subject.ram[2] = 0x00;
                 $action;
-                expect($subject.Zero).to.be.ok; });
+                expect($subject.Zero).to.be.true; });
             it("sets N flag if bit 7 is set", function() {
                 $subject.ram[2] = 0x40;
                 $action;
-                expect($subject.Negative).to.be.ok; });
+                expect($subject.Negative).to.be.true; });
             it("sets PC to the next opcode", function() {
                 $action;
                 expect($subject.PC).to.equal(0x0002); });
@@ -1747,7 +1717,7 @@ describe("Cpu", function() {
                 $action;
                 expect($subject.cycle).to.equal(5); });
         });
-        describe("#LSR()", function() {
+        describe(".LSR()", function() {
             beforeEach(function() {
                 $subject.A = 0xAA;
                 $subject.ram.set([0x4A, 0x00]);
@@ -1758,11 +1728,11 @@ describe("Cpu", function() {
             it("sets C flag when exceeded", function() {
                 $subject.A = 0x01;
                 $action;
-                expect($subject.Carry).to.be.ok; });
+                expect($subject.Carry).to.be.true; });
             it("sets Z flag if zero", function() {
                 $subject.A = 0x00;
                 $action;
-                expect($subject.Zero).to.be.ok; });
+                expect($subject.Zero).to.be.true; });
             it("sets PC to the next opcode", function() {
                 $action;
                 expect($subject.PC).to.equal(0x0001); });
@@ -1770,7 +1740,7 @@ describe("Cpu", function() {
                 $action;
                 expect($subject.cycle).to.equal(2); });
         });
-        describe("#LSR(zero)", function() {
+        describe(".LSR(zero)", function() {
             beforeEach(function() {
                 $subject.ram.set([0x46, 0x02, 0xAA]);
             });
@@ -1780,11 +1750,11 @@ describe("Cpu", function() {
             it("sets C flag when exceeded", function() {
                 $subject.ram[2] = 0x01;
                 $action;
-                expect($subject.Carry).to.be.ok; });
+                expect($subject.Carry).to.be.true; });
             it("sets Z flag if zero", function() {
                 $subject.ram[2] = 0x00;
                 $action;
-                expect($subject.Zero).to.be.ok; });
+                expect($subject.Zero).to.be.true; });
             it("sets PC to the next opcode", function() {
                 $action;
                 expect($subject.PC).to.equal(0x0002); });
@@ -1792,7 +1762,7 @@ describe("Cpu", function() {
                 $action;
                 expect($subject.cycle).to.equal(5); });
         });
-        describe("#ROL()", function() {
+        describe(".ROL()", function() {
             beforeEach(function() {
                 $subject.A = 0x55;
                 $subject.ram.set([0x2A, 0x00]);
@@ -1807,15 +1777,15 @@ describe("Cpu", function() {
             it("sets C flag when exceeded", function() {
                 $subject.A = 0x80;
                 $action;
-                expect($subject.Carry).to.be.ok; });
+                expect($subject.Carry).to.be.true; });
             it("sets Z flag if zero", function() {
                 $subject.A = 0x00;
                 $action;
-                expect($subject.Zero).to.be.ok; });
+                expect($subject.Zero).to.be.true; });
             it("sets N flag if bit 7 is set", function() {
                 $subject.A = 0x40;
                 $action;
-                expect($subject.Negative).to.be.ok; });
+                expect($subject.Negative).to.be.true; });
             it("sets PC to the next opcode", function() {
                 $action;
                 expect($subject.PC).to.equal(0x0001); });
@@ -1823,7 +1793,7 @@ describe("Cpu", function() {
                 $action;
                 expect($subject.cycle).to.equal(2); });
         });
-        describe("#ROL(zero)", function() {
+        describe(".ROL(zero)", function() {
             beforeEach(function() {
                 $subject.ram.set([0x26, 0x02, 0x55]);
             });
@@ -1837,15 +1807,15 @@ describe("Cpu", function() {
             it("sets C flag when exceeded", function() {
                 $subject.ram[2] = 0x80;
                 $action;
-                expect($subject.Carry).to.be.ok; });
+                expect($subject.Carry).to.be.true; });
             it("sets Z flag if zero", function() {
                 $subject.ram[2] = 0x00;
                 $action;
-                expect($subject.Zero).to.be.ok; });
+                expect($subject.Zero).to.be.true; });
             it("sets N flag if bit 7 is set", function() {
                 $subject.ram[2] = 0x40;
                 $action;
-                expect($subject.Negative).to.be.ok; });
+                expect($subject.Negative).to.be.true; });
             it("sets PC to the next opcode", function() {
                 $action;
                 expect($subject.PC).to.equal(0x0002); });
@@ -1853,7 +1823,7 @@ describe("Cpu", function() {
                 $action;
                 expect($subject.cycle).to.equal(5); });
         });
-        describe("#ROR()", function() {
+        describe(".ROR()", function() {
             beforeEach(function() {
                 $subject.A = 0xAA;
                 $subject.ram.set([0x6A, 0x00]);
@@ -1868,11 +1838,11 @@ describe("Cpu", function() {
             it("sets C flag when exceeded", function() {
                 $subject.A = 0x01;
                 $action;
-                expect($subject.Carry).to.be.ok; });
+                expect($subject.Carry).to.be.true; });
             it("sets Z flag if zero", function() {
                 $subject.A = 0x00;
                 $action;
-                expect($subject.Zero).to.be.ok; });
+                expect($subject.Zero).to.be.true; });
             it("sets PC to the next opcode", function() {
                 $action;
                 expect($subject.PC).to.equal(0x0001); });
@@ -1880,7 +1850,7 @@ describe("Cpu", function() {
                 $action;
                 expect($subject.cycle).to.equal(2); });
         });
-        describe("#ROR(zero)", function() {
+        describe(".ROR(zero)", function() {
             beforeEach(function() {
                 $subject.ram.set([0x66, 0x02, 0xAA]);
             });
@@ -1894,11 +1864,11 @@ describe("Cpu", function() {
             it("sets C flag when exceeded", function() {
                 $subject.ram[2] = 0x01;
                 $action;
-                expect($subject.Carry).to.be.ok; });
+                expect($subject.Carry).to.be.true; });
             it("sets Z flag if zero", function() {
                 $subject.ram[2] = 0x00;
                 $action;
-                expect($subject.Zero).to.be.ok; });
+                expect($subject.Zero).to.be.true; });
             it("sets PC to the next opcode", function() {
                 $action;
                 expect($subject.PC).to.equal(0x0002); });
@@ -1907,7 +1877,7 @@ describe("Cpu", function() {
                 expect($subject.cycle).to.equal(5); });
         });
         
-        describe("#INC(zero)", function() {
+        describe(".INC(zero)", function() {
             beforeEach(function() {
                 $subject.ram.set([0xE6, 0x02, 0x0F]);
             });
@@ -1921,11 +1891,11 @@ describe("Cpu", function() {
             it("sets Z flag if zero", function() {
                 $subject.ram[2] = 0xFF;
                 $action;
-                expect($subject.Zero).to.be.ok; });
+                expect($subject.Zero).to.be.true; });
             it("sets N flag if bit 7 is set", function() {
                 $subject.ram[2] = 0x7F;
                 $action;
-                expect($subject.Negative).to.be.ok; });
+                expect($subject.Negative).to.be.true; });
             it("sets PC to the next opcode", function() {
                 $action;
                 expect($subject.PC).to.equal(0x0002); });
@@ -1933,7 +1903,7 @@ describe("Cpu", function() {
                 $action;
                 expect($subject.cycle).to.equal(5); });
         });
-        describe("#DEC(zero)", function() {
+        describe(".DEC(zero)", function() {
             beforeEach(function() {
                 $subject.ram.set([0xC6, 0x02, 0x11]);
             });
@@ -1947,11 +1917,11 @@ describe("Cpu", function() {
             it("sets Z flag if zero", function() {
                 $subject.ram[2] = 0x01;
                 $action;
-                expect($subject.Zero).to.be.ok; });
+                expect($subject.Zero).to.be.true; });
             it("sets N flag if bit 7 is set", function() {
                 $subject.ram[2] = 0x81;
                 $action;
-                expect($subject.Negative).to.be.ok; });
+                expect($subject.Negative).to.be.true; });
             it("sets PC to the next opcode", function() {
                 $action;
                 expect($subject.PC).to.equal(0x0002); });
@@ -1959,7 +1929,7 @@ describe("Cpu", function() {
                 $action;
                 expect($subject.cycle).to.equal(5); });
         });
-        describe("#INX()", function() {
+        describe(".INX()", function() {
             beforeEach(function() {
                 $subject.ram.set([0xE8, 0x00]);
             });
@@ -1974,11 +1944,11 @@ describe("Cpu", function() {
             it("sets Z flag if zero", function() {
                 $subject.X = -1;
                 $action;
-                expect($subject.Zero).to.be.ok; });
+                expect($subject.Zero).to.be.true; });
             it("sets N flag if bit 7 is set", function() {
                 $subject.X = 0x7F;
                 $action;
-                expect($subject.Negative).to.be.ok; });
+                expect($subject.Negative).to.be.true; });
             it("sets PC to the next opcode", function() {
                 $action;
                 expect($subject.PC).to.equal(0x0001); });
@@ -1986,7 +1956,7 @@ describe("Cpu", function() {
                 $action;
                 expect($subject.cycle).to.equal(2); });
         });
-        describe("#DEX()", function() {
+        describe(".DEX()", function() {
             beforeEach(function() {
                 $subject.ram.set([0xCA, 0x00]);
             });
@@ -2001,11 +1971,11 @@ describe("Cpu", function() {
             it("sets Z flag if zero", function() {
                 $subject.X = 1;
                 $action;
-                expect($subject.Zero).to.be.ok; });
+                expect($subject.Zero).to.be.true; });
             it("sets N flag if bit 7 is set", function() {
                 $subject.X = 0x81;
                 $action;
-                expect($subject.Negative).to.be.ok; });
+                expect($subject.Negative).to.be.true; });
             it("sets PC to the next opcode", function() {
                 $action;
                 expect($subject.PC).to.equal(0x0001); });
@@ -2013,7 +1983,7 @@ describe("Cpu", function() {
                 $action;
                 expect($subject.cycle).to.equal(2); });
         });
-        describe("#INY()", function() {
+        describe(".INY()", function() {
             beforeEach(function() {
                 $subject.ram.set([0xC8, 0x00]);
             });
@@ -2028,11 +1998,11 @@ describe("Cpu", function() {
             it("sets Z flag if zero", function() {
                 $subject.Y = -1;
                 $action;
-                expect($subject.Zero).to.be.ok; });
+                expect($subject.Zero).to.be.true; });
             it("sets N flag if bit 7 is set", function() {
                 $subject.Y = 0x7F;
                 $action;
-                expect($subject.Negative).to.be.ok; });
+                expect($subject.Negative).to.be.true; });
             it("sets PC to the next opcode", function() {
                 $action;
                 expect($subject.PC).to.equal(0x0001); });
@@ -2040,7 +2010,7 @@ describe("Cpu", function() {
                 $action;
                 expect($subject.cycle).to.equal(2); });
         });
-        describe("#DEY()", function() {
+        describe(".DEY()", function() {
             beforeEach(function() {
                 $subject.ram.set([0x88, 0x00]);
             });
@@ -2055,11 +2025,11 @@ describe("Cpu", function() {
             it("sets Z flag if zero", function() {
                 $subject.Y = 1;
                 $action;
-                expect($subject.Zero).to.be.ok; });
+                expect($subject.Zero).to.be.true; });
             it("sets N flag if bit 7 is set", function() {
                 $subject.Y = 0x81;
                 $action;
-                expect($subject.Negative).to.be.ok; });
+                expect($subject.Negative).to.be.true; });
             it("sets PC to the next opcode", function() {
                 $action;
                 expect($subject.PC).to.equal(0x0001); });
@@ -2068,26 +2038,26 @@ describe("Cpu", function() {
                 expect($subject.cycle).to.equal(2); });
         });
         
-        describe("#BIT(zero)",      function() {
+        describe(".BIT(zero)",      function() {
             beforeEach(function() {
                 $subject.ram.set([0x24, 0x02, 0x55]);
             });
             it("sets Z flag if result of the AND is zero", function() {
                 $subject.A = 0xAA;
                 $action;
-                expect($subject.Zero).to.be.ok; });
+                expect($subject.Zero).to.be.true; });
             it("clears Z flag if result of the AND is non-zero", function() {
                 $subject.A = 0x44;
                 $action;
-                expect($subject.Zero).not.to.be.ok; });
+                expect($subject.Zero).to.be.false; });
             it("sets V flag if bit 6 of memory location is set", function() {
                 $subject.ram[2] = 0x40;
                 $action;
-                expect($subject.P & 0x40).to.be.ok; });
+                expect($subject.Overflow).to.be.true; });
             it("sets N flag if bit 7 of memory location is set", function() {
                 $subject.ram[2] = 0x80;
                 $action;
-                expect($subject.Negative).to.be.ok; });
+                expect($subject.Negative).to.be.true; });
             it("sets PC to the next opcode", function() {
                 $action;
                 expect($subject.PC).to.equal(0x0002); });
@@ -2095,7 +2065,7 @@ describe("Cpu", function() {
                 $action;
                 expect($subject.cycle).to.equal(3); });
         });
-        describe("#CMP(immediate)", function() {
+        describe(".CMP(immediate)", function() {
             beforeEach(function() {
                 $subject.ram.set([0xC9, 0x10]);
             });
@@ -2104,24 +2074,24 @@ describe("Cpu", function() {
                     $subject.A = 0x18;
                     $action;
                 });
-                it("sets C flag",   function() { expect($subject.Carry).to.be.ok; });
-                it("clears Z flag", function() { expect($subject.Zero).not.to.be.ok; });
+                it("sets C flag",   function() { expect($subject.Carry).to.be.true; });
+                it("clears Z flag", function() { expect($subject.Zero).to.be.false; });
             });
             context("when A = Memory", function() {
                 beforeEach(function() {
                     $subject.A = 0x10;
                     $action;
                 });
-                it("sets C flag",   function() { expect($subject.Carry).to.be.ok; });
-                it("sets Z flag",   function() { expect($subject.Zero).to.be.ok; });
+                it("sets C flag",   function() { expect($subject.Carry).to.be.true; });
+                it("sets Z flag",   function() { expect($subject.Zero).to.be.true; });
             });
             context("when A < Memory", function() {
                 beforeEach(function() {
                     $subject.A = 0x08;
                     $action;
                 });
-                it("clears C flag", function() { expect($subject.Carry).not.to.be.ok; });
-                it("clears Z flag", function() { expect($subject.Zero).not.to.be.ok; });
+                it("clears C flag", function() { expect($subject.Carry).to.be.false; });
+                it("clears Z flag", function() { expect($subject.Zero).to.be.false; });
             });
             it("sets PC to the next opcode", function() {
                 $action;
@@ -2130,7 +2100,7 @@ describe("Cpu", function() {
                 $action;
                 expect($subject.cycle).to.equal(2); });
         });
-        describe("#CPX(immediate)", function() {
+        describe(".CPX(immediate)", function() {
             beforeEach(function() {
                 $subject.ram.set([0xE0, 0x10]);
             });
@@ -2139,24 +2109,24 @@ describe("Cpu", function() {
                     $subject.X = 0x18;
                     $action;
                 });
-                it("sets C flag",   function() { expect($subject.Carry).to.be.ok; });
-                it("clears Z flag", function() { expect($subject.Zero).not.to.be.ok; });
+                it("sets C flag",   function() { expect($subject.Carry).to.be.true; });
+                it("clears Z flag", function() { expect($subject.Zero).to.be.false; });
             });
             context("when X = Memory", function() {
                 beforeEach(function() {
                     $subject.X = 0x10;
                     $action;
                 });
-                it("sets C flag",   function() { expect($subject.Carry).to.be.ok; });
-                it("sets Z flag",   function() { expect($subject.Zero).to.be.ok; });
+                it("sets C flag",   function() { expect($subject.Carry).to.be.true; });
+                it("sets Z flag",   function() { expect($subject.Zero).to.be.true; });
             });
             context("when X < Memory", function() {
                 beforeEach(function() {
                     $subject.X = 0x08;
                     $action;
                 });
-                it("clears C flag", function() { expect($subject.Carry).not.to.be.ok; });
-                it("clears Z flag", function() { expect($subject.Zero).not.to.be.ok; });
+                it("clears C flag", function() { expect($subject.Carry).to.be.false; });
+                it("clears Z flag", function() { expect($subject.Zero).to.be.false; });
             });
             it("sets PC to the next opcode", function() {
                 $action;
@@ -2165,7 +2135,7 @@ describe("Cpu", function() {
                 $action;
                 expect($subject.cycle).to.equal(2); });
         });
-        describe("#CPY(immediate)", function() {
+        describe(".CPY(immediate)", function() {
             beforeEach(function() {
                 $subject.ram.set([0xC0, 0x10]);
             });
@@ -2174,24 +2144,24 @@ describe("Cpu", function() {
                     $subject.Y = 0x18;
                     $action;
                 });
-                it("sets C flag",   function() { expect($subject.Carry).to.be.ok; });
-                it("clears Z flag", function() { expect($subject.Zero).not.to.be.ok; });
+                it("sets C flag",   function() { expect($subject.Carry).to.be.true; });
+                it("clears Z flag", function() { expect($subject.Zero).to.be.false; });
             });
             context("when Y = Memory", function() {
                 beforeEach(function() {
                     $subject.Y = 0x10;
                     $action;
                 });
-                it("sets C flag",   function() { expect($subject.Carry).to.be.ok; });
-                it("sets Z flag",   function() { expect($subject.Zero).to.be.ok; });
+                it("sets C flag",   function() { expect($subject.Carry).to.be.true; });
+                it("sets Z flag",   function() { expect($subject.Zero).to.be.true; });
             });
             context("when Y < Memory", function() {
                 beforeEach(function() {
                     $subject.Y = 0x08;
                     $action;
                 });
-                it("clears C flag", function() { expect($subject.Carry).not.to.be.ok; });
-                it("clears Z flag", function() { expect($subject.Zero).not.to.be.ok; });
+                it("clears C flag", function() { expect($subject.Carry).to.be.false; });
+                it("clears Z flag", function() { expect($subject.Zero).to.be.false; });
             });
             it("sets PC to the next opcode", function() {
                 $action;
@@ -2201,7 +2171,7 @@ describe("Cpu", function() {
                 expect($subject.cycle).to.equal(2); });
         });
         
-        describe("#ORA(immediate)", function() {
+        describe(".ORA(immediate)", function() {
             beforeEach(function() {
                 $subject.A = 0xAA;
                 $subject.ram.set([0x09, 0x00]);
@@ -2214,11 +2184,11 @@ describe("Cpu", function() {
                 $subject.A = 0x00;
                 $subject.ram[1] = 0x00;
                 $action;
-                expect($subject.Zero).to.be.ok; });
+                expect($subject.Zero).to.be.true; });
             it("sets N flag if bit 7 is set", function() {
                 $subject.ram[1] = 0x80;
                 $action;
-                expect($subject.Negative).to.be.ok; });
+                expect($subject.Negative).to.be.true; });
             it("sets PC to the next opcode", function() {
                 $action;
                 expect($subject.PC).to.equal(0x0002); });
@@ -2226,7 +2196,7 @@ describe("Cpu", function() {
                 $action;
                 expect($subject.cycle).to.equal(2); });
         });
-        describe("#AND(immediate)", function() {
+        describe(".AND(immediate)", function() {
             beforeEach(function() {
                 $subject.A = 0xAA;
                 $subject.ram.set([0x29, 0x00]);
@@ -2238,11 +2208,11 @@ describe("Cpu", function() {
             it("sets Z flag if zero", function() {
                 $subject.ram[1] = 0x00;
                 $action;
-                expect($subject.Zero).to.be.ok; });
+                expect($subject.Zero).to.be.true; });
             it("sets N flag if bit 7 is set", function() {
                 $subject.ram[1] = 0x80;
                 $action;
-                expect($subject.Negative).to.be.ok; });
+                expect($subject.Negative).to.be.true; });
             it("sets PC to the next opcode", function() {
                 $action;
                 expect($subject.PC).to.equal(0x0002); });
@@ -2250,7 +2220,7 @@ describe("Cpu", function() {
                 $action;
                 expect($subject.cycle).to.equal(2); });
         });
-        describe("#EOR(immediate)", function() {
+        describe(".EOR(immediate)", function() {
             beforeEach(function() {
                 $subject.A = 0xAA;
                 $subject.ram.set([0x49, 0x00]);
@@ -2262,11 +2232,11 @@ describe("Cpu", function() {
             it("sets Z flag if zero", function() {
                 $subject.ram[1] = 0xAA;
                 $action;
-                expect($subject.Zero).to.be.ok; });
+                expect($subject.Zero).to.be.true; });
             it("sets N flag if bit 7 is set", function() {
                 $subject.ram[1] = 0x7F;
                 $action;
-                expect($subject.Negative).to.be.ok; });
+                expect($subject.Negative).to.be.true; });
             it("sets PC to the next opcode", function() {
                 $action;
                 expect($subject.PC).to.equal(0x0002); });
@@ -2275,7 +2245,7 @@ describe("Cpu", function() {
                 expect($subject.cycle).to.equal(2); });
         });
         
-        describe("#NOP()", function() {
+        describe(".NOP()", function() {
             beforeEach(function() {
                 $subject.ram.set([0xEA, 0x00]);
                 $action;
@@ -2287,3 +2257,14 @@ describe("Cpu", function() {
         });
     });
 });
+
+function setEveryProperties(instance) {
+    instance.A  = 0xFF;
+    instance.X  = 0xFF;
+    instance.Y  = 0xFF;
+    instance.P  = 0xF0;
+    instance.SP = 0x7F;
+    instance.PC = 0xFFFF;
+    
+    instance.cycle = 1234;
+}

@@ -10,18 +10,21 @@ Demo: [jtduchesne.github.io/Nestled](https://jtduchesne.github.io/Nestled) *
 
 This is a work-in-progress but fully functional javascript NES emulator carefully written in the *ECMAScript 6* standard.
 
-I've put a lot of efforts into writing beautiful, well organized and easy to understand code, and the same applies to the Git commits themselves. The repository, with its complete history, can be used for learning the step-by-step creation of a solo side-project using *Git*, *Node.js*, *Webpack*, *Babel*, *Mocha*, *Chai*, *ESLint*, and of course *Javascript* (currently writing a blog about all this).
+I've put a lot of efforts into writing beautiful, well organized, well documented and easy to understand code, and the same applies to the Git commits themselves. The repository, with its complete history, can be used for learning the step-by-step creation of a solo side-project using *Git*, *Node.js*, *Rollup*, *Mocha*, *Chai*, *ESLint*, *JSDoc*, and of course *Javascript* (currently writing a blog about all this).
 
 #### Working :  
   ✓ CPU  
   ✓ PPU `(image)`  
   ✓ APU `(sound + music)`  
   ✓ Controllers `(only Keyboard for now)`  
-  ✓ Games without mapper `(Ex.: Super Mario Bros.)`  
-  Memory mappers: ✓ MMC1 `(Ex.: Tetris)`  
+  ✓ Game loading from hard drive `(.nes files)`  
+  Memory mappers:  
+  ✓ None `(Ex.: Super Mario Bros.)`  
+  ✓ MMC1 `(Ex.: Tetris)`  
 #### To do :  
-  Memory mappers: *UNROM*, *CNROM*, *MMC3*, *MMC5*  
   *Debugger*  
+  Memory mappers:  
+  *UNROM*, *CNROM*, *MMC3*, *MMC5*  
 
 Fully tested using [Mocha.js](http://mochajs.org/) + [Chai.js](http://chaijs.com/)
 

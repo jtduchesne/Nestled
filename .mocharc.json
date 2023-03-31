@@ -1,5 +1,5 @@
 {
-  "file": ["test/init.js"],
+  "require": ["test/init.cjs"],
   "node-option": ["experimental-specifier-resolution=node"],
   "ui": "bdd-lazy-var/global"
 }

@@ -1,22 +1,133 @@
-type ButtonIdentifier = "a" | "b" | "select" | "start" | "up" | "down" | "left" | "right";
-type ButtonAssignation = Record<ButtonIdentifier, number>
-
-type KeyboardMapping = Readonly<{
-    8: "Backspace"; 9: "Tab"; 13: "Enter"; 16: "Shift"; 17: "Ctrl"; 18: "Alt"; 19: "Pause"; 27: "Escape"; 32: "Space"; 33: "Page-up"; 34: "Page-down"; 35: "End"; 36: "Home"; 37: "Left"; 38: "Up"; 39: "Right"; 40: "Down"; 45: "Insert"; 46: "Delete";
-    48: "0"; 49: "1"; 50: "2"; 51: "3"; 52: "4"; 53: "5"; 54: "6"; 55: "7"; 56: "8"; 57: "9"; 65: "A"; 66: "B"; 67: "C"; 68: "D"; 69: "E"; 70: "F"; 71: "G"; 72: "H"; 73: "I"; 74: "J"; 75: "K"; 76: "L"; 77: "M"; 78: "N"; 79: "O"; 80: "P"; 81: "Q"; 82: "R"; 83: "S"; 84: "T"; 85: "U"; 86: "V"; 87: "W"; 88: "X"; 89: "Y"; 90: "Z";
-    96: "Numpad-0"; 97: "Numpad-1"; 98: "Numpad-2"; 99: "Numpad-3"; 100: "Numpad-4"; 101: "Numpad-5"; 102: "Numpad-6"; 103: "Numpad-7"; 104: "Numpad-8"; 105: "Numpad-9"; 106: "Multiply"; 107: "Add"; 109: "Subtract"; 110: "Decimal-point"; 111: "Divide";
-    112: "F1"; 113: "F2"; 114: "F3"; 115: "F4"; 116: "F5"; 117: "F6"; 118: "F7"; 119: "F8"; 120: "F9"; 121: "F10"; 122: "F11"; 123: "F12";
-    186: ";"; 187: "="; 188: ","; 189: "-"; 190: "."; 191: "/"; 192: "`"; 219: "["; 220: "\\"; 221: "]"; 222: "'";
-}>;
-
 export class Keyboard extends Joypad {
-    constructor(opts: ButtonAssignation);
-    keyMap: {};
-    get map(): KeyboardMapping;
-    assignKey(buttonName: ButtonIdentifier, keyCode: number): void;
-    assignKeys(opts: ButtonAssignation): void;
-    pressKey(event: Event, keyDown: boolean): void;
+    /**
+     * @param {Record<ButtonName,KeyName>=} opts
+     */
+    constructor(opts?: Record<ButtonName, KeyName> | undefined);
+    /** @type {Record<string,ButtonHandler>} @private */
+    private keyHandlers;
+    /** @type {Record<string,string>} @private */
+    private assignedKeys;
+    /**
+     * Assign one or more keyboard keys to Joypad buttons.
+     * @param {Record<ButtonName,KeyName>} keys
+     */
+    assignKeys(keys: Record<ButtonName, KeyName>): void;
+    /**
+     * Assign a keyboard key to one of the Joypad button.
+     * @param {ButtonName} buttonName
+     * @param {KeyName} keyName
+     * @private
+     */
+    private assignKey;
+    /**
+     * @param {KeyboardEvent} event
+     * @param {boolean} keyDown
+     * @private
+     */
+    private pressKey;
+    /**
+     * Get the name of the assigned key for the given button name.
+     * @param {ButtonName} buttonName
+     */
+    getAssignedKey(buttonName: ButtonName): string;
 }
 export default Keyboard;
+export type ButtonName = import('../Joypad.js').ButtonName;
+export type ButtonHandler = import('../Joypad.js').ButtonHandler;
+export type KeyName = keyof {
+    readonly Backspace: 8;
+    readonly Tab: 9;
+    readonly Enter: 13;
+    readonly Shift: 16;
+    readonly Ctrl: 17;
+    readonly Alt: 18;
+    readonly Pause: 19;
+    readonly Escape: 27;
+    readonly Space: 32;
+    readonly 'Page-up': 33;
+    readonly 'Page-down': 34;
+    readonly End: 35;
+    readonly Home: 36;
+    readonly Left: 37;
+    readonly Up: 38;
+    readonly Right: 39;
+    readonly Down: 40;
+    readonly Insert: 45;
+    readonly Delete: 46;
+    readonly 0: 48;
+    readonly 1: 49;
+    readonly 2: 50;
+    readonly 3: 51;
+    readonly 4: 52;
+    readonly 5: 53;
+    readonly 6: 54;
+    readonly 7: 55;
+    readonly 8: 56;
+    readonly 9: 57;
+    readonly A: 65;
+    readonly B: 66;
+    readonly C: 67;
+    readonly D: 68;
+    readonly E: 69;
+    readonly F: 70;
+    readonly G: 71;
+    readonly H: 72;
+    readonly I: 73;
+    readonly J: 74;
+    readonly K: 75;
+    readonly L: 76;
+    readonly M: 77;
+    readonly N: 78;
+    readonly O: 79;
+    readonly P: 80;
+    readonly Q: 81;
+    readonly R: 82;
+    readonly S: 83;
+    readonly T: 84;
+    readonly U: 85;
+    readonly V: 86;
+    readonly W: 87;
+    readonly X: 88;
+    readonly Y: 89;
+    readonly Z: 90;
+    readonly 'Numpad-0': 96;
+    readonly 'Numpad-1': 97;
+    readonly 'Numpad-2': 98;
+    readonly 'Numpad-3': 99;
+    readonly 'Numpad-4': 100;
+    readonly 'Numpad-5': 101;
+    readonly 'Numpad-6': 102;
+    readonly 'Numpad-7': 103;
+    readonly 'Numpad-8': 104;
+    readonly 'Numpad-9': 105;
+    readonly Multiply: 106;
+    readonly Add: 107;
+    readonly Subtract: 109;
+    readonly 'Decimal-point': 110;
+    readonly Divide: 111;
+    readonly F1: 112;
+    readonly F2: 113;
+    readonly F3: 114;
+    readonly F4: 115;
+    readonly F5: 116;
+    readonly F6: 117;
+    readonly F7: 118;
+    readonly F8: 119;
+    readonly F9: 120;
+    readonly F10: 121;
+    readonly F11: 122;
+    readonly F12: 123;
+    readonly ';': 186;
+    readonly '=': 187;
+    readonly ',': 188;
+    readonly '-': 189;
+    readonly '.': 190;
+    readonly '/': 191;
+    readonly '`': 192;
+    readonly '[': 219;
+    readonly '\\': 220;
+    readonly ']': 221;
+    readonly '\'': 222;
+};
 import Joypad from "../Joypad.js";
 //# sourceMappingURL=Keyboard.d.ts.map

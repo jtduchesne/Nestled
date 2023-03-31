@@ -1,26 +1,36 @@
+import { expect } from "chai";
+import sinon from "sinon";
+
 import Keyboard from "../../../src/Controllers/Devices/Keyboard";
 
 describe("Keyboard", function() {
     subject(() => new Keyboard);
     
-    describe(".assignKey(buttonName, keyCode)", function() {
-        /*global $buttonName, $keyCode */
-        def('action', () => $subject.assignKey($buttonName, $keyCode));
+    its('type',   () => is.expected.to.equal("Joypad"));
+    its('device', () => is.expected.to.equal("Keyboard"));
+    
+    its('empty',   () => is.expected.to.be.false);
+    its('present', () => is.expected.to.be.true);
+    
+    describe(".assignKey(buttonName, keyName)", function() {
+        /*global $buttonName, $keyCode, $keyName */
+        def('action', () => $subject.assignKey($buttonName, $keyName));
         def('keyCode', () => 13);
+        def('keyName', () => "Enter");
         
         context("if buttonName is valid", function() {
             def('buttonName', () => "start");
             
-            it("puts the corresponding handler in #keyMap", function() {
-                expect($subject.keyMap).to.be.empty;
+            it("puts the corresponding handler in #keyHandlers", function() {
+                expect($subject.keyHandlers).to.be.empty;
                 $action;
-                expect($subject.keyMap).to.have.property($keyCode);
-                expect($subject.keyMap[$keyCode]).to.equal($subject.getButtonHandler($buttonName));
+                expect($subject.keyHandlers).to.have.property($keyCode);
+                expect($subject.keyHandlers[$keyCode]).to.equal($subject.getButtonHandler($buttonName));
             });
             it("replaces existing handler", function() {
-                $subject.keyMap[$keyCode] = () => null;
-                expect(() => $action).to.change($subject.keyMap, $keyCode);
-                expect($subject.keyMap[$keyCode]).to.equal($subject.getButtonHandler($buttonName));
+                $subject.keyHandlers[$keyCode] = () => null;
+                expect(() => $action).to.change($subject.keyHandlers, $keyCode);
+                expect($subject.keyHandlers[$keyCode]).to.equal($subject.getButtonHandler($buttonName));
             });
         });
         context("if buttonName is not valid", function() {
@@ -37,20 +47,31 @@ describe("Keyboard", function() {
         def('action', () => $subject.assignKeys($opts));
         
         context("if all the names are valid", function() {
-            def('opts', () => ({start: 1, select: 2}));
+            def('opts', () => ({start: "1", select: "2"}));
             
-            it("adds them to #keyMap", function() {
-                expect($subject.keyMap).to.be.empty;
+            it("adds them to #keyHandlers", function() {
+                expect($subject.keyHandlers).to.be.empty;
                 $action;
-                expect($subject.keyMap[1]).to.equal($subject.getButtonHandler('start'));
-                expect($subject.keyMap[2]).to.equal($subject.getButtonHandler('select'));
+                expect($subject.keyHandlers[0x31]).to.equal($subject.getButtonHandler('start'));
+                expect($subject.keyHandlers[0x32]).to.equal($subject.getButtonHandler('select'));
             });
         });
-        context("if a name is not valid", function() {
-            def('opts', () => ({start: 1, select: 2, stop: 3}));
+        context("if a button name is not valid", function() {
+            def('opts', () => ({start: "1", select: "2", stop: "3"}));
             
             it("throws an error containing the invalid name", function() {
                 expect(() => $action).to.throw("stop");
+            });
+        });
+        context("if a key name is not valid", function() {
+            def('opts', () => ({start: "1", select: "2", a: ""}));
+            
+            it("adds only the valid ones to #keyHandlers", function() {
+                expect($subject.keyHandlers).to.be.empty;
+                $action;
+                expect($subject.keyHandlers[0x31]).to.equal($subject.getButtonHandler('start'));
+                expect($subject.keyHandlers[0x32]).to.equal($subject.getButtonHandler('select'));
+                expect(Object.values($subject.keyHandlers)).to.have.lengthOf(2);
             });
         });
     });
@@ -59,28 +80,74 @@ describe("Keyboard", function() {
         /*global $event, $keyDown */
         def('action', () => $subject.pressKey($event, $keyDown));
         beforeEach(function() {
-            $subject.assignKey('start', 13);
+            $subject.buttonHandlers[3] = sinon.stub();
+            $subject.assignKey('start', "Enter");
         });
         
+        def('event', () => ({keyCode: $keyCode, preventDefault: sinon.stub()}));
+        
         context("if event.keyCode is assigned to a button", function() {
-            def('event', () => ({keyCode: 13, preventDefault: () => undefined}));
+            def('keyCode', () => 13);
             
             context("and keyDown=true", function() {
                 def('keyDown', () => true);
                 
                 it("presses that button", function() {
-                    expect(() => $action).to.change($subject.states, '3');
-                    expect($subject.states[3]).to.equal(1);
+                    $action;
+                    expect($subject.buttonHandlers[3]).to.be.calledOnceWith(true);
+                });
+                it("calls event.preventDefault()", function() {
+                    $action;
+                    expect($event.preventDefault).to.be.calledOnce;
                 });
             });
             context("and keyDown=false", function() {
                 def('keyDown', () => false);
-                beforeEach(function() { $subject.states = [1,1,1,1,1,1,1,1]; });
                 
                 it("releases that button", function() {
-                    expect(() => $action).to.change($subject.states, '3');
-                    expect($subject.states[3]).to.equal(0);
+                    $action;
+                    expect($subject.buttonHandlers[3]).to.be.calledOnceWith(false);
                 });
+                it("calls event.preventDefault()", function() {
+                    $action;
+                    expect($event.preventDefault).to.be.calledOnce;
+                });
+            });
+        });
+        context("if event.keyCode is not assigned to a button", function() {
+            def('keyCode', () => 32);
+            
+            it("does not press any button", function() {
+                const stub = sinon.stub();
+                $subject.buttonHandlers.fill(stub);
+                $action;
+                expect(stub).not.to.be.called;
+            });
+            it("does not call event.preventDefault()", function() {
+                $action;
+                expect($event.preventDefault).not.to.be.called;
+            });
+        });
+    });
+    
+    //-------------------------------------------------------------------------------//
+    
+    describe(".getAssignedKey(buttonName)", function() {
+        def('action', () => $subject.getAssignedKey($buttonName));
+        beforeEach(() => $subject.assignKey("start", "Enter"));
+        
+        context("if buttonName is assigned to a key", function() {
+            def('buttonName', () => "start");
+            
+            it("returns the name of the key", function() {
+                expect($action).to.equal("Enter");
+            });
+        });
+        context("if buttonName is not assigned to any key", function() {
+            def('buttonName', () => "select");
+            
+            it("returns an empty string", function() {
+                expect($action).to.equal("");
             });
         });
     });

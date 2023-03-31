@@ -1,77 +1,125 @@
+import { Colors, VideoBuffer } from "./Video/index.js";
+const { cssColors, pxlColors } = Colors;
+
+const width  = 256;
+const height = 240;
+
 export class VideoOutput {
     constructor() {
+        /** @private @type {HTMLCanvasElement?} */
         this.canvas  = null;
+        /** @private @type {CanvasRenderingContext2D?} */
         this.context = null;
         
-        this.layers = [];
+        this.layers = [
+            /** Sprites layer behind background. */
+            this.sprBehindLayer = new VideoBuffer(width +8, height +16),
+            /** Background layer. */
+            this.bkgLayer       = new VideoBuffer(width,    height),
+            /** Sprites layer before background. */
+            this.sprBeforeLayer = new VideoBuffer(width +8, height +16),
+        ];
+        
+        /** @private @type {HTMLCanvasElement?} */
+        this.offCanvas  = null;
+        /** @private @type {CanvasRenderingContext2D?} */
+        this.offContext = null;
+        
+        /** @private */
+        this.scheduled = 0;
     }
     
-    get connected()    { return !!this.canvas; }
-    get disconnected() { return  !this.canvas; }
-    
+    //===================================================================================//
+    /**
+     * @param {HTMLCanvasElement} output
+     * @returns {HTMLCanvasElement} The now connected CANVAS element
+     */
     connect(output) {
-        if (output && output.nodeName === 'CANVAS') {
-            this.canvas = output;
-            
-            this.width  = output.width;
-            this.height = output.height;
-            
-            return output;
+        if (output.nodeName === 'CANVAS') {
+            return this.canvas = output;
         } else {
-            return this.disconnect();
+            throw new TypeError("VideoOutput.connect() expects a <CANVAS> element but " +
+                                "received <" + output.nodeName + "> instead.");
         }
     }
+    /**
+     * @returns {HTMLCanvasElement?} The now disconnected CANVAS element
+     */
     disconnect() {
-        return this.canvas = null;
+        const disconnected = this.canvas;
+        this.canvas = null;
+        return disconnected;
     }
     
-    //===============================================================//
+    /**
+     * *True* if properly connected to a CANVAS element.
+     * @readonly */
+    get connected()    { return !!this.canvas; }
+    /**
+     * *True* if not connected to any CANVAS element.
+     * @readonly */
+    get disconnected() { return  !this.canvas; }
     
-    addLayer(videoBuffer) {
-        this.layers.push(videoBuffer);
-    }
+    //===================================================================================//
     
     start() {
-        if (this.connected) {
-            this.context = this.canvas.getContext('2d', {alpha: false});
-            this.context.imageSmoothingEnabled = false;
+        if (this.canvas) {
+            if ((this.context = this.canvas.getContext('2d', {alpha: false})))
+                this.context.imageSmoothingEnabled = false;
             
             this.offCanvas = document.createElement('canvas');
-            this.offCanvas.width  = 256;
-            this.offCanvas.height = 240;
-            this.offContext = this.offCanvas.getContext('2d', {alpha: true});
-            this.offContext.imageSmoothingEnabled = false;
+            this.offCanvas.width  = width;
+            this.offCanvas.height = height;
+            
+            if ((this.offContext = this.offCanvas.getContext('2d', {alpha: true})))
+                this.offContext.imageSmoothingEnabled = false;
         }
     }
     
     stop() {
-        if (this.connected) {
+        if (this.canvas) {
             window.cancelAnimationFrame(this.scheduled);
-            
-            this.layers = [];
             
             this.context = null;
             
-            this.offCanvas.remove();
-            this.offContext = null;
+            if (this.offCanvas) {
+                this.offCanvas.remove();
+                this.offCanvas  = null;
+                this.offContext = null;
+            }
         }
     }
     
-    //===============================================================//
+    //===================================================================================//
+    /** @readonly */
+    get colors() { return pxlColors; }
     
-    schedule(cssBackdrop) {
-        if (this.connected) {
-            const layers = this.layers.map((layer) => layer.getFrame());
+    /**
+     * @param {number} backdrop 6-bit color index
+     */
+    drawImage(backdrop) {
+        if (this.canvas) {
+            const outputWidth  = this.canvas.width;
+            const outputHeight = this.canvas.height;
             
-            this.scheduled = window.requestAnimationFrame(() => {
-                this.context.fillStyle = cssBackdrop;
-                this.context.fillRect(0, 0, this.width, this.height);
+            const context    = this.context;
+            const offCanvas  = this.offCanvas;
+            const offContext = this.offContext;
+            
+            if (context && offCanvas && offContext) {
+                context.fillStyle = cssColors[backdrop];
+                context.fillRect(0, 0, outputWidth, outputHeight);
                 
-                layers.forEach((layer) => {
-                    this.offContext.putImageData(layer, 0, 0);
-                    this.context.drawImage(this.offCanvas, 0, 0, 256, 240, 0, 0, this.width, this.height);
+                this.layers.forEach((layer) => {
+                    layer.setFrame();
+                    offContext.putImageData(layer.frame, 0, 0);
+                    context.drawImage(
+                        offCanvas,
+                        0, 0, width, height,
+                        0, 0, outputWidth, outputHeight
+                    );
                 });
-            });
+            }
         }
     }
 }

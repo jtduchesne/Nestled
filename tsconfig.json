@@ -4,10 +4,16 @@
     ],
     "compilerOptions": {
         "allowJs": true,
+        "checkJs": true,
         "declaration": true,
-        "emitDeclarationOnly": true,
         "declarationMap": true,
+        "emitDeclarationOnly": true,
+        "forceConsistentCasingInFileNames": true,
         "outDir": "types",
+        "skipLibCheck": true,
+        "strict": true,
+        "strictPropertyInitialization": true,
+        "target": "ES6",
     },
 }
   
