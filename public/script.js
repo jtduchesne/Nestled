@@ -15,7 +15,7 @@ try {
 
     const updateFrontLED = () => {
         frontLED.classList.remove("on", "off", "paused");
-        frontLED.classList.add(nes.frontLEDState);
+        frontLED.classList.add(nes.frontLED);
     };
 
     //-------------------------------------------------------------------------------------------//
@@ -28,7 +28,7 @@ try {
 
     let intervalId = null;
     powerButton.addEventListener('click', () => {
-        if (nes.pressPower()) {
+        if (nes.buttons.pressPower()) {
             resetButton.disabled = false;
             pauseButton.disabled = false;
             updateStatus(nes.game.name + " started");
@@ -42,7 +42,9 @@ try {
         updateFrontLED();
     }, false);
 
-    resetButton.addEventListener('click', () => nes.pressReset(), false);
+    resetButton.addEventListener('click', () => {
+        nes.buttons.pressReset();
+    }, false);
 
     pauseButton.addEventListener('click', () => {
         if (nes.engine.pause()) {

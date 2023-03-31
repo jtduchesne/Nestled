@@ -19,35 +19,49 @@ export class NES {
         this.ppu = new PPU(this);
         this.engine = new Engine(this);
         
+        this.buttons = {
+            pressPower: () => {
+                if (!this.isPowered)
+                    return this.powerOn();
+                else
+                    return this.powerOff();
+            },
+            pressReset: () => {
+                this.reset();
+            },
+        };
+        
         this.isPowered = false;
     }
     
-    //== Buttons ============================================================================//
-    pressPower() {
-        if (!this.isPowered) {
-            this.cpu.powerOn();
-            this.ppu.powerOn();
-            
-            this.engine.powerOn();
-            
-            this.isPowered = true;
-        } else {
-            this.cpu.powerOff();
-            this.ppu.powerOff();
-            
-            this.engine.powerOff();
-            
-            this.isPowered = false;
-        }
-        return this.isPowered;
+    /**
+     * The state of the front red LED.
+     * @readonly
+     */
+    get frontLED() {
+        return this.isPowered ? this.engine.isPaused ? "paused" : "on" : "off";
     }
-    pressReset() {
+    
+    //== Power ==============================================================================//
+    powerOn() {
+        if (!this.cpu.isPowered) this.cpu.powerOn();
+        if (!this.ppu.isPowered) this.ppu.powerOn();
+        if (!this.engine.isPowered) this.engine.powerOn();
+        
+        return this.isPowered = true;
+    }
+    powerOff() {
+        if (this.cpu.isPowered) this.cpu.powerOff();
+        if (this.ppu.isPowered) this.ppu.powerOff();
+        if (this.engine.isPowered) this.engine.powerOff();
+        
+        return this.isPowered = false;
+    }
+    
+    reset() {
         this.cpu.reset();
         this.ppu.reset();
     }
-    
-    //== Front red LED ======================================================================//
-    // (Yes, it is a fully-fledged part of the NES !)
-    get frontLEDState() { return this.isPowered ? this.engine.isPaused ? "paused" : "on" : "off"; }
 }
+
 export default NES;
