@@ -1,58 +1,81 @@
 (function() {
     const nes = new Nestled.NES();
 
+  //-------------------------------------------------------------------------------------------//
+
+    const statusOutput = document.getElementById('status');
+
+    const updateStatus = (text) => {
+        statusOutput.innerText = text;
+        // console.log("Nestled: " + text);
+    };
+
+  //-------------------------------------------------------------------------------------------//
+
     const frontLED = document.getElementById('front_led');
 
-    function updateFrontLED() {
+    const updateFrontLED = () => {
         frontLED.classList.remove("on", "off", "paused");
-        frontLED.classList.add(nes.frontLEDState);
-    }
+        frontLED.classList.add(nes.frontLED);
+    };
+
+  //-------------------------------------------------------------------------------------------//
 
     const powerButton = document.getElementById('power_button');
     const resetButton = document.getElementById('reset_button');
     const pauseButton = document.getElementById('pause_button');
 
-    let interval;
+    const updateStats = ({ fps, performance }) =>
+        updateStatus(`${fps} FPS (${performance.toFixed(2)}x)`);
+
+    let intervalId = null;
     powerButton.addEventListener('click', () => {
-        if (nes.pressPower()) {
+        if (nes.buttons.pressPower()) {
             resetButton.disabled = false;
             pauseButton.disabled = false;
-            updateStatus(nes.cartConnector.name + " started");
-            interval = setInterval(showStats, 1000);
+            updateStatus(`${nes.game.name} started`);
+            intervalId = setInterval(() => updateStats(nes.engine), 1000);
         } else {
             resetButton.setAttribute("disabled", "disabled");
             pauseButton.setAttribute("disabled", "disabled");
-            updateStatus(nes.cartConnector.name + " stopped");
-            clearInterval(interval);
+            clearInterval(intervalId);
         }
         updateFrontLED();
     }, false);
 
-    resetButton.addEventListener('click', () => nes.pressReset(), false);
+    resetButton.addEventListener('click', () => {
+        nes.buttons.pressReset();
+    }, false);
 
     pauseButton.addEventListener('click', () => {
-        if (nes.pause()) {
+        if (nes.engine.pause()) {
             pauseButton.innerText = "Resume";
-            updateStatus(nes.cartConnector.name + " paused");
+            updateStatus(`${nes.game.name} paused`);
         } else {
             pauseButton.innerText = "Pause";
-            updateStatus(nes.cartConnector.name + " resumed");
+            updateStatus(`${nes.game.name} resumed`);
         }
         updateFrontLED();
     }, false);
 
   //-------------------------------------------------------------------------------------------//
 
-    const joypad = new Nestled.Devices.Keyboard(
-        //    -A-     -W-       -S-        -D-       -Shift-    -Enter-  -K-    -L-
-        {left: 65, up: 87, down: 83, right: 68, select: 16, start: 13, b: 75, a: 76}
-    );
-    nes.insertController(joypad);
+    const joypad1 = new Nestled.Devices.Keyboard({
+        left: "A", up: "W", down: "S", right: "D",
+        select: "Shift", start: "Enter", b: "K", a: "L"
+    });
+    nes.controllers.insert(joypad1, 1);
+
+    const joypad2 = new Nestled.Devices.Keyboard({
+        left: "A", up: "W", down: "S", right: "D",
+        select: "Shift", start: "Enter", b: "K", a: "L"
+    });
+    nes.controllers.insert(joypad2, 2);
 
   //-------------------------------------------------------------------------------------------//
 
     const screenOutput = document.getElementById('screen');
-    nes.connectVideo(screenOutput);
+    nes.video.connect(screenOutput);
 
   //-------------------------------------------------------------------------------------------//
 
@@ -60,39 +83,22 @@
     volumeInput.addEventListener('change', (e) => {
         const value = e.target.value / e.target.max;
         nes.audio.volume = value;
-        e.target.title = "Volume: " + Math.round(value * 100) + "%";
+        e.target.title = `Volume: ${Math.round(value * 100)}%`;
     });
     nes.audio.volume = volumeInput.value / volumeInput.max;
 
   //-------------------------------------------------------------------------------------------//
 
-    const statusOutput = document.getElementById('status');
-
-    function updateStatus(text) {
-        statusOutput.innerText = text;
-        // console.log("Nestled: " + text);
-    }
-
-    function showStats() {
-        statusOutput.innerText = nes.engine.fps + " FPS (" + nes.engine.performance.toFixed(2) +"x)";
-    }
-
-  //-------------------------------------------------------------------------------------------//
-
     const fileInput = document.getElementById('file_select_button');
-
-    function resetFileInput() { fileInput.value = ""; }
-    resetFileInput();
+    fileInput.value = "";
 
     fileInput.addEventListener('change', (e) => {
-        nes.insertCartridge(e.target.files[0]);
+        nes.game.load(e.target.files[0]);
     }, false);
     fileInput.addEventListener('click', () => {
-        if (nes.isPowered)
-            nes.powerOff();
-        nes.removeCartridge();
+        nes.game.unload();
     }, false);
-    
+
   //-------------------------------------------------------------------------------------------//
 
     powerButton.disabled = false;
