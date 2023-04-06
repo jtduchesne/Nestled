@@ -1,7 +1,7 @@
 export class CartConnector {
-    /** Raw informations parsed from the file. */
+    /** Raw information parsed from the file. */
     file: Header;
-    /** Interpreted informations about the file, in human-readable format. */
+    /** Interpreted information about the file, in human-readable format. */
     metadata: Metadata;
     /**
      * The cartridge itself, as seen by the NES hardware, including I/O functions,
@@ -17,13 +17,13 @@ export class CartConnector {
     /** @readonly */
     readonly get valid(): boolean;
     /**
-     * Loads a file, parses its filename and header for `metadata`, and fills `cartridge`
+     * Load a file, parse its filename and header for `metadata`, and fill `cartridge`
      * with its content.
      * @param {File} file
      */
     load(file: File): Promise<CartConnector>;
     /**
-     * Unloads current file, also resetting `metadata` and `cartridge`.
+     * Unload current file, also resetting `metadata` and `cartridge`.
      */
     unload(): Promise<CartConnector>;
 }

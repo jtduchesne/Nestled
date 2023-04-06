@@ -554,29 +554,29 @@ export class CPU extends Powered {
      * @private */
     SEI(fnFetchOperand) { fnFetchOperand(this.Interrupt = true); }
     
-    //-- Register transfert ------------------------------------------------//
+    //-- Register transfer ------------------------------------------------//
     
-    /** Transfert A to X
+    /** Transfer A to X
      * @param {FetchOperandFunc} fnFetchOperand
      * @private */
     TAX(fnFetchOperand) { fnFetchOperand(this.X = this.ALU(this.A)); }
-    /** Transfert X to A
+    /** Transfer X to A
      * @param {FetchOperandFunc} fnFetchOperand
      * @private */
     TXA(fnFetchOperand) { fnFetchOperand(this.A = this.ALU(this.X)); }
-    /** Transfert A to Y
+    /** Transfer A to Y
      * @param {FetchOperandFunc} fnFetchOperand
      * @private */
     TAY(fnFetchOperand) { fnFetchOperand(this.Y = this.ALU(this.A)); }
-    /** Transfert Y to A
+    /** Transfer Y to A
      * @param {FetchOperandFunc} fnFetchOperand
      * @private */
     TYA(fnFetchOperand) { fnFetchOperand(this.A = this.ALU(this.Y)); }
-    /** Transfert SP to X
+    /** Transfer SP to X
      * @param {FetchOperandFunc} fnFetchOperand
      * @private */
     TSX(fnFetchOperand) { fnFetchOperand(this.X = this.ALU(this.SP)); }
-    /** Transfert X to SP
+    /** Transfer X to SP
      * @param {FetchOperandFunc} fnFetchOperand
      * @private */
     TXS(fnFetchOperand) { fnFetchOperand(this.SP = this.X); }

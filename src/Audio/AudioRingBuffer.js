@@ -64,7 +64,7 @@ export class AudioRingBuffer {
     //===================================================================================//
 
     /**
-     * Empties all buffers completely and bring `usage` back to 0%.
+     * Empty all buffers completely and bring `usage` back to 0%.
      */
     reset() {
         this.readyBuffer = this.writeBuffer = this.buffers[0];
@@ -155,7 +155,7 @@ export class AudioRingBuffer {
     }
 
     /**
-     * Appends a sample to the current `writeBuffer`, automatically rotating it when full.
+     * Append a sample to the current `writeBuffer`, automatically rotating it when full.
      * 
      * If the queue becomes full (buffer overrun), `onbufferoverrun` will be called first
      * (if set), which gives the opportunity to free some space by shifting one or more

@@ -30,8 +30,8 @@ export class Cartridge {
     
     //===================================================================================//
     /**
-     * Loads cartridge data from a file, and sets circuitry (mirroring) from header data.
-     * @param {Header} header Already parsed header informations
+     * Load cartridge data from a file, and set circuitry (mirroring) from header data.
+     * @param {Header} header Already parsed header information
      * @param {ArrayBuffer} data The whole file, including the header data
      */
     load(header, data) {

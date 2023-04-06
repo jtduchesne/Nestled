@@ -53,25 +53,25 @@ export class AudioOutput {
      */
     readonly get sampleRate(): number;
     /**
-     * Initializes the audio context (if not already done) and the input buffer
+     * Initialize the audio context (if not already done) and the input buffer
      * to begin receiving audio samples via `writeSample()`.
      *
      * Playback will start when the input buffer contains enough audio.
      */
     start(): void;
     /**
-     * Suspends the audio context, but keeps it initialized for future use.
+     * Suspend the audio context, but keep it initialized for future use.
      *
      * Playback will stop when the output buffer is empty.
      */
     stop(): void;
     /**
-     * Appends a new sample to the input buffer.
+     * Append a new sample to the input buffer.
      * @param {number} value IEEE754 32-bit linear PCM between -1 and +1
      */
     writeSample(value: number): void;
     /**
-     * Transfers a segment of audio from the input buffer to the output context.
+     * Transfer a segment of audio from the input buffer to the output context.
      * @private
      * @param {AudioRingBuffer} buffer
      * @param {AudioContext} context

@@ -6,9 +6,9 @@ import {
 
 export class CartConnector {
     constructor() {
-        /** Raw informations parsed from the file. */
+        /** Raw information parsed from the file. */
         this.file = new Header;
-        /** Interpreted informations about the file, in human-readable format. */
+        /** Interpreted information about the file, in human-readable format. */
         this.metadata = new Metadata;
         /**
          * The cartridge itself, as seen by the NES hardware, including I/O functions,
@@ -37,7 +37,7 @@ export class CartConnector {
     //=======================================================================================//
     
     /**
-     * Loads a file, parses its filename and header for `metadata`, and fills `cartridge`
+     * Load a file, parse its filename and header for `metadata`, and fill `cartridge`
      * with its content.
      * @param {File} file
      */
@@ -109,7 +109,7 @@ export class CartConnector {
         );
     }
     /**
-     * Unloads current file, also resetting `metadata` and `cartridge`.
+     * Unload current file, also resetting `metadata` and `cartridge`.
      */
     unload() {
         this.reset();

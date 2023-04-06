@@ -271,27 +271,27 @@ export class CPU extends Powered {
      * @param {FetchOperandFunc} fnFetchOperand
      * @private */
     private SEI;
-    /** Transfert A to X
+    /** Transfer A to X
      * @param {FetchOperandFunc} fnFetchOperand
      * @private */
     private TAX;
-    /** Transfert X to A
+    /** Transfer X to A
      * @param {FetchOperandFunc} fnFetchOperand
      * @private */
     private TXA;
-    /** Transfert A to Y
+    /** Transfer A to Y
      * @param {FetchOperandFunc} fnFetchOperand
      * @private */
     private TAY;
-    /** Transfert Y to A
+    /** Transfer Y to A
      * @param {FetchOperandFunc} fnFetchOperand
      * @private */
     private TYA;
-    /** Transfert SP to X
+    /** Transfer SP to X
      * @param {FetchOperandFunc} fnFetchOperand
      * @private */
     private TSX;
-    /** Transfert X to SP
+    /** Transfer X to SP
      * @param {FetchOperandFunc} fnFetchOperand
      * @private */
     private TXS;

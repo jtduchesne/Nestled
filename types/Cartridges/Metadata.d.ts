@@ -41,12 +41,12 @@ export class Metadata {
      */
     parseFilename(filename: string): void;
     /**
-     * Extracts all the informations from a parsed file header.
+     * Extract all the information from a parsed file header.
      * @param {Header} header
      */
     load(header: Header): void;
     /**
-     * Creates a simple object containing only the relevant file informations.
+     * Create a simple object containing only the relevant file information.
      */
     serialize(): {
         name: string;
