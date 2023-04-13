@@ -155,8 +155,6 @@ export class CPU extends Powered {
     /** Zero Page indexed Y - `$00+Y`
      * @private */
     private zeroY;
-    /** @private */
-    private readWord;
     /** Absolute - `$0000`
      * @private */
     private abs;

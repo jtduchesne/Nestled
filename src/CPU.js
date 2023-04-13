@@ -1,8 +1,7 @@
 /**
  * @typedef {import('./NES.js').NES} NES
- * @typedef {(implied?:any) => any} FetchOperandFunc
- * @typedef {FetchOperandFunc} AddressingModeFunc
- * @typedef {(fnFetchOperand:FetchOperandFunc) => void} InstructionFunc
+ * @typedef {() => number} AddressingFunc
+ * @typedef {() => void} InstructionFunc
  */
 
 import { Powered } from './Power.js';
@@ -100,10 +99,10 @@ export class CPU extends Powered {
         
         /**
          * Addressing modes by opcode lookup table.
-         * @type {AddressingModeFunc[]}
+         * @type {AddressingFunc[]}
          * @private
          */
-        this.addressLookup = [
+        this.addressingLookup = [
             this.imp, this.indX, this.imp, this.indX, this.zero,  this.zero,  this.zero,  this.zero,  this.imp, this.imm,  this.imp, this.imm,  this.abs,  this.abs,  this.abs,  this.abs,
             this.rel, this.indY, this.imp, this.indY, this.zeroX, this.zeroX, this.zeroX, this.zeroX, this.imp, this.absY, this.imp, this.absY, this.absX, this.absX, this.absX, this.absX,
             this.abs, this.indX, this.imp, this.indX, this.zero,  this.zero,  this.zero,  this.zero,  this.imp, this.imm,  this.imp, this.imm,  this.abs,  this.abs,  this.abs,  this.abs,
@@ -148,10 +147,10 @@ export class CPU extends Powered {
         
         this.cycle = 0;
         
-        /** @private */
         this.opcode  = 0x00;
-        /** @private */
         this.operand = 0x00;
+        
+        this.addressBus = 0x0000;
     }
     
     //== Power ==========================================================================//
@@ -211,33 +210,13 @@ export class CPU extends Powered {
     doInstruction() {
         const opcode =
         this.opcode  = this.read(this.PC++);
-        this.operand = this.read(this.PC++);
+        this.operand = this.read(this.PC);
         
-        this.instructionLookup[opcode](this.addressLookup[opcode]);
+        this.addressBus = this.addressingLookup[opcode]();
+        
+        this.instructionLookup[opcode]();
         
         this.cycle += cyclesLookup[opcode];
-    }
-    
-    //== Interrupts =====================================================================//
-    doNMI() {
-        this.pushWord(this.PC);
-        this.pushByte(this.P & ~0x10);
-        this.PC = this.nmiVector();
-        this.cycle += 7;
-    }
-    doReset() {
-        this.SP = wrapByte(this.SP+3);
-        this.P |= 0x04;
-        this.PC = this.resetVector();
-        this.cycle += 7;
-    }
-    doIRQ() {
-        if (this.P & 0x04) return;
-        
-        this.pushWord(this.PC);
-        this.pushByte(this.P & ~0x10);
-        this.PC = this.irqVector();
-        this.cycle += 7;
     }
     
     //== Memory access ==================================================================//
@@ -327,7 +306,7 @@ export class CPU extends Powered {
     set Negative(value)  { value ? (this.P |= 0x80) : (this.P &= ~0x80); }
     
     //== Arithmetic Logic Unit ==========================================================//
-    /** @private @param {number} value */
+    /** @param {number} value @private */
     ALU(value) {
         if (value > 0xFF) {
             this.Carry = true;
@@ -345,284 +324,260 @@ export class CPU extends Powered {
         return value;
     }
     
+    //== Interrupts =====================================================================//
+    doNMI() {
+        this.pushWord(this.PC);
+        this.pushByte(this.P & ~0x10);
+        this.PC = this.nmiVector();
+        this.cycle += 7;
+    }
+    doReset() {
+        this.SP = wrapByte(this.SP+3);
+        this.PC = this.resetVector();
+        this.Interrupt = true;
+        this.cycle += 7;
+    }
+    doIRQ() {
+        if (this.P & 0x04) return;
+        
+        this.pushWord(this.PC);
+        this.pushByte(this.P & ~0x10);
+        this.PC = this.irqVector();
+        this.Interrupt = true;
+        this.cycle += 7;
+    }
+    
     //== Addressing Modes ===============================================================//
     
     /** Implied
-     * @template {number|boolean} T
-     * @param {T} implied
      * @private */
-    imp(implied) { this.PC--; return implied; }
+    imp() { return this.PC; }
     /** Immediate - `#00`
      * @private */
-    imm() { return this.PC-1; }
+    imm() { return this.PC++; }
     
     /** Relative - `±#00`
      * @private */
-    rel() { return this.operand = signByte(this.operand); }
+    rel() { return ++this.PC + (this.operand = signByte(this.operand)); }
     
     /** Zero Page - `$00`
      * @private */
-    zero()  { return this.operand; }
+    zero()  { this.PC++; return this.operand; }
     /** Zero Page indexed X - `$00+X`
      * @private */
-    zeroX() { return wrapByte(this.operand + this.X); }
+    zeroX() { return wrapByte(this.zero() + this.X); }
     /** Zero Page indexed Y - `$00+Y`
      * @private */
-    zeroY() { return wrapByte(this.operand + this.Y); }
-    
-    /** @private */
-    readWord() { return this.operand += this.read(this.PC++)*256; }
+    zeroY() { return wrapByte(this.zero() + this.Y); }
     
     /** Absolute - `$0000`
      * @private */
-    abs() { return this.readWord(); }
+    abs() { this.PC++; return this.operand += this.read(this.PC++)*256; }
     /** Absolute indexed X - `$0000+X`
      * @private */
     absX() {
         if ((this.operand + this.X) > 0xFF) this.cycle++;
-        return this.readWord() + this.X; }
+        return this.abs() + this.X; }
     /** Absolute indexed Y - `$0000+Y`
      * @private */
     absY() {
         if ((this.operand + this.Y) > 0xFF) this.cycle++;
-        return this.readWord() + this.Y; }
+        return this.abs() + this.Y; }
     
     /** Indirect - `($0000)`
      * @private */
     ind() {
-        const indirect = this.readWord();
+        const indirect = this.abs();
         return this.read(indirect) + this.read(indirect+1)*256; }
     /** Indirect indexed X - `($00+X)`
      * @private */
     indX() {
-        const indirect = wrapByte(this.operand + this.X);
+        const indirect = this.zeroX();
         return this.read(indirect) + this.read(indirect+1)*256; }
     /** Indirect indexed Y - `($00)+Y`
      * @private */
     indY() {
-        const lowByte  = this.read(this.operand);
-        const highByte = this.read(this.operand+1);
+        const indirect = this.zero();
+        const lowByte  = this.read(indirect);
+        const highByte = this.read(indirect+1);
         if ((lowByte + this.Y) > 0xFF) this.cycle++;
         return lowByte + highByte*256 + this.Y; }
     
-    //== OpCodes ========================================================================//
+    //== Instructions ===================================================================//
     
     //-- Jump, subroutine and interrupt ------------------------------------//
     
     /** Interrupt
-     * @param {FetchOperandFunc} fnFetchOperand
      * @private */
-    BRK(fnFetchOperand) {
-        this.pushWord(this.PC);
+    BRK() {
+        this.pushWord(this.PC+1);
         this.pushByte(this.P);
         this.Interrupt = true;
-        this.PC = fnFetchOperand(this.irqVector());
+        this.PC = this.irqVector();
     }
     /** Return from Interrupt
-     * @param {FetchOperandFunc} fnFetchOperand
      * @private */
-    RTI(fnFetchOperand) {
+    RTI() {
         this.P = this.pullByte();
-        this.PC = fnFetchOperand(this.pullWord());
+        this.PC = this.pullWord();
     }
     /** Jump to Subroutine
-     * @param {FetchOperandFunc} fnFetchOperand
      * @private */
-    JSR(fnFetchOperand) {
-        this.pushWord(this.PC);
-        this.PC = fnFetchOperand();
+    JSR() {
+        this.pushWord(this.PC-1);
+        this.PC = this.addressBus;
     }
     /** Return from Subroutine
-     * @param {FetchOperandFunc} fnFetchOperand
      * @private */
-    RTS(fnFetchOperand) {
-        this.PC = fnFetchOperand(this.pullWord() + 1);
+    RTS() {
+        this.PC = this.pullWord() + 1;
     }
     /** Jump to
-     * @param {FetchOperandFunc} fnFetchOperand
      * @private */
-    JMP(fnFetchOperand) {
-        this.PC = fnFetchOperand();
+    JMP() {
+        this.PC = this.addressBus;
     }
     
     //-- Branching ---------------------------------------------------------//
     
     /** Branch if Positive
-     * @param {FetchOperandFunc} fnFetchOperand
      * @private */
-    BPL(fnFetchOperand) {
-        this.branch(!this.Negative, fnFetchOperand());
+    BPL() {
+        if (!this.Negative) this.branch();
     }
     /** Branch if Negative
-     * @param {FetchOperandFunc} fnFetchOperand
      * @private */
-    BMI(fnFetchOperand) {
-        this.branch(this.Negative, fnFetchOperand());
+    BMI() {
+        if (this.Negative) this.branch();
     }
     /** Branch if oVerflow Clear
-     * @param {FetchOperandFunc} fnFetchOperand
      * @private */
-    BVC(fnFetchOperand) {
-        this.branch(!this.Overflow, fnFetchOperand());
+    BVC() {
+        if (!this.Overflow) this.branch();
     }
     /** Branch if oVerflow Set
-     * @param {FetchOperandFunc} fnFetchOperand
      * @private */
-    BVS(fnFetchOperand) {
-        this.branch(this.Overflow, fnFetchOperand());
+    BVS() {
+        if (this.Overflow) this.branch();
     }
     /** Branch if Carry Clear
-     * @param {FetchOperandFunc} fnFetchOperand
      * @private */
-    BCC(fnFetchOperand) {
-        this.branch(!this.Carry, fnFetchOperand());
+    BCC() {
+        if (!this.Carry) this.branch();
     }
     /** Branch if Carry Set
-     * @param {FetchOperandFunc} fnFetchOperand
      * @private */
-    BCS(fnFetchOperand) {
-        this.branch(this.Carry, fnFetchOperand());
+    BCS() {
+        if (this.Carry) this.branch();
     }
     /** Branch if Not Equal
-     * @param {FetchOperandFunc} fnFetchOperand
      * @private */
-    BNE(fnFetchOperand) {
-        this.branch(!this.Zero, fnFetchOperand());
+    BNE() {
+        if (!this.Zero) this.branch();
     }
     /** Branch if Equal
-     * @param {FetchOperandFunc} fnFetchOperand
      * @private */
-    BEQ(fnFetchOperand) {
-        this.branch(this.Zero, fnFetchOperand());
+    BEQ() {
+        if (this.Zero) this.branch();
     }
     
-    /**
-     * @param {boolean} condition
-     * @param {number} operand
-     * @private */
-    branch(condition, operand) {
-        if (condition) {
-            this.PC += operand;
-            this.cycle++;
-        }
+    /** @private */
+    branch() {
+        this.PC = this.addressBus;
+        this.cycle++;
     }
     
     //-- Stack -------------------------------------------------------------//
     
     /** Push Accumulator
-     * @param {FetchOperandFunc} fnFetchOperand
      * @private */
-    PHA(fnFetchOperand) { this.pushByte(fnFetchOperand(this.A)); }
+    PHA() { this.pushByte(this.A); }
     /** Push Processor Status
-     * @param {FetchOperandFunc} fnFetchOperand
      * @private */
-    PHP(fnFetchOperand) { this.pushByte(fnFetchOperand(this.P)); }
+    PHP() { this.pushByte(this.P); }
     /** Pull Accumulator
-     * @param {FetchOperandFunc} fnFetchOperand
      * @private */
-    PLA(fnFetchOperand) { this.A = this.ALU(fnFetchOperand(this.pullByte())); }
+    PLA() { this.A = this.ALU(this.pullByte()); }
     /** Pull Processor Status
-     * @param {FetchOperandFunc} fnFetchOperand
      * @private */
-    PLP(fnFetchOperand) { this.P = fnFetchOperand(this.pullByte()); }
+    PLP() { this.P = this.pullByte(); }
     
     //-- Status flags ------------------------------------------------------//
     
     /** Clear Carry
-     * @param {FetchOperandFunc} fnFetchOperand
      * @private */
-    CLC(fnFetchOperand) { fnFetchOperand(this.Carry = false); }
+    CLC() { this.Carry = false; }
     /** Clear Decimal
-     * @param {FetchOperandFunc} fnFetchOperand
      * @private */
-    CLD(fnFetchOperand) { fnFetchOperand(this.Decimal = false); }
+    CLD() { this.Decimal = false; }
     /** Clear Interrupt
-     * @param {FetchOperandFunc} fnFetchOperand
      * @private */
-    CLI(fnFetchOperand) { fnFetchOperand(this.Interrupt = false); }
+    CLI() { this.Interrupt = false; }
     /** Clear Overflow
-     * @param {FetchOperandFunc} fnFetchOperand
      * @private */
-    CLV(fnFetchOperand) { fnFetchOperand(this.Overflow = false); }
+    CLV() { this.Overflow = false; }
     
     /** Set Carry
-     * @param {FetchOperandFunc} fnFetchOperand
      * @private */
-    SEC(fnFetchOperand) { fnFetchOperand(this.Carry = true); }
+    SEC() { this.Carry = true; }
     /** Set Decimal
-     * @param {FetchOperandFunc} fnFetchOperand
      * @private */
-    SED(fnFetchOperand) { fnFetchOperand(this.Decimal = true); }
+    SED() { this.Decimal = true; }
     /** Set Interrupt
-     * @param {FetchOperandFunc} fnFetchOperand
      * @private */
-    SEI(fnFetchOperand) { fnFetchOperand(this.Interrupt = true); }
+    SEI() { this.Interrupt = true; }
     
     //-- Register transfer ------------------------------------------------//
     
     /** Transfer A to X
-     * @param {FetchOperandFunc} fnFetchOperand
      * @private */
-    TAX(fnFetchOperand) { fnFetchOperand(this.X = this.ALU(this.A)); }
+    TAX() { this.X = this.ALU(this.A); }
     /** Transfer X to A
-     * @param {FetchOperandFunc} fnFetchOperand
      * @private */
-    TXA(fnFetchOperand) { fnFetchOperand(this.A = this.ALU(this.X)); }
+    TXA() { this.A = this.ALU(this.X); }
     /** Transfer A to Y
-     * @param {FetchOperandFunc} fnFetchOperand
      * @private */
-    TAY(fnFetchOperand) { fnFetchOperand(this.Y = this.ALU(this.A)); }
+    TAY() { this.Y = this.ALU(this.A); }
     /** Transfer Y to A
-     * @param {FetchOperandFunc} fnFetchOperand
      * @private */
-    TYA(fnFetchOperand) { fnFetchOperand(this.A = this.ALU(this.Y)); }
+    TYA() { this.A = this.ALU(this.Y); }
     /** Transfer SP to X
-     * @param {FetchOperandFunc} fnFetchOperand
      * @private */
-    TSX(fnFetchOperand) { fnFetchOperand(this.X = this.ALU(this.SP)); }
+    TSX() { this.X = this.ALU(this.SP); }
     /** Transfer X to SP
-     * @param {FetchOperandFunc} fnFetchOperand
      * @private */
-    TXS(fnFetchOperand) { fnFetchOperand(this.SP = this.X); }
+    TXS() { this.SP = this.X; }
     
     //-- Move operations ---------------------------------------------------//
     
     /** Load Accumulator
-     * @param {FetchOperandFunc} fnFetchOperand
      * @private */
-    LDA(fnFetchOperand) { this.A = this.ALU(this.read(fnFetchOperand())); }
+    LDA() { this.A = this.ALU(this.read(this.addressBus)); }
     /** Load X
-     * @param {FetchOperandFunc} fnFetchOperand
      * @private */
-    LDX(fnFetchOperand) { this.X = this.ALU(this.read(fnFetchOperand())); }
+    LDX() { this.X = this.ALU(this.read(this.addressBus)); }
     /** Load Y
-     * @param {FetchOperandFunc} fnFetchOperand
      * @private */
-    LDY(fnFetchOperand) { this.Y = this.ALU(this.read(fnFetchOperand())); }
+    LDY() { this.Y = this.ALU(this.read(this.addressBus)); }
     
     /** Store Accumulator
-     * @param {FetchOperandFunc} fnFetchOperand
      * @private */
-    STA(fnFetchOperand) { this.write(fnFetchOperand(), this.A); }
+    STA() { this.write(this.addressBus, this.A); }
     /** Store X
-     * @param {FetchOperandFunc} fnFetchOperand
      * @private */
-    STX(fnFetchOperand) { this.write(fnFetchOperand(), this.X); }
+    STX() { this.write(this.addressBus, this.X); }
     /** Store Y
-     * @param {FetchOperandFunc} fnFetchOperand
      * @private */
-    STY(fnFetchOperand) { this.write(fnFetchOperand(), this.Y); }
+    STY() { this.write(this.addressBus, this.Y); }
     
     //-- Arithmetic operations ---------------------------------------------//
     
     /** Add with Carry
-     * @param {FetchOperandFunc} fnFetchOperand
      * @private */
-    ADC(fnFetchOperand) { this.add(this.A, this.read(fnFetchOperand())); }
+    ADC() { this.add(this.A, this.read(this.addressBus)); }
     /** Subtract with Carry
-     * @param {FetchOperandFunc} fnFetchOperand
      * @private */
-    SBC(fnFetchOperand) { this.add(this.A, 0xFF-this.read(fnFetchOperand())); }
+    SBC() { this.add(this.A, 0xFF-this.read(this.addressBus)); }
     
     /**
      * @param {number} reg
@@ -637,119 +592,94 @@ export class CPU extends Powered {
     }
     
     /** Arithmetic Shift Left
-     * @param {FetchOperandFunc} fnFetchOperand
      * @private */
-    ASL(fnFetchOperand) {
-        const address = fnFetchOperand();
-        const operand = this.read(address);
-        this.write(address, this.ALU(operand * 2));
+    ASL() {
+        const operand = this.read(this.addressBus);
+        this.write(this.addressBus, this.ALU(operand * 2));
         this.Carry = (operand >= 0x80);
     }
     /** Arithmetic Shift Left (implied)
-     * @param {FetchOperandFunc} fnFetchOperand
      * @private */
-    AXL(fnFetchOperand) {
-        const operand = fnFetchOperand(this.A);
+    AXL() {
+        const operand = this.A;
         this.A = this.ALU(operand * 2);
         this.Carry = (operand >= 0x80);
     }
     
     /** Logical Shift Right
-     * @param {FetchOperandFunc} fnFetchOperand
      * @private */
-    LSR(fnFetchOperand) {
-        const address = fnFetchOperand();
-        const operand = this.read(address);
-        this.write(address, this.ALU(operand >>> 1));
+    LSR() {
+        const operand = this.read(this.addressBus);
+        this.write(this.addressBus, this.ALU(operand >>> 1));
         this.Carry = (operand & 0x01) > 0;
     }
     /** Logical Shift Right (implied)
-     * @param {FetchOperandFunc} fnFetchOperand
      * @private */
-    LXR(fnFetchOperand) {
-        const operand = fnFetchOperand(this.A);
+    LXR() {
+        const operand = this.A;
         this.A = this.ALU(operand >>> 1);
         this.Carry = (operand & 0x01) > 0;
     }
     
     /** Rotate Left
-     * @param {FetchOperandFunc} fnFetchOperand
      * @private */
-    ROL(fnFetchOperand) {
+    ROL() {
         const carry = (this.Carry ? 0x01 : 0x00);
-        const address = fnFetchOperand();
-        const operand = this.read(address);
-        this.write(address, this.ALU((operand * 2) + carry));
+        const operand = this.read(this.addressBus);
+        this.write(this.addressBus, this.ALU((operand * 2) + carry));
         this.Carry = (operand >= 0x80);
     }
     /** Rotate Left (implied)
-     * @param {FetchOperandFunc} fnFetchOperand
      * @private */
-    RXL(fnFetchOperand) {
+    RXL() {
         const carry = (this.Carry ? 0x01 : 0x00);
-        const operand = fnFetchOperand(this.A);
+        const operand = this.A;
         this.A = this.ALU((operand * 2) + carry);
         this.Carry = (operand >= 0x80);
     }
     
     /** Rotate Right
-     * @param {FetchOperandFunc} fnFetchOperand
      * @private */
-    ROR(fnFetchOperand) {
+    ROR() {
         const carry = (this.Carry ? 0x80 : 0x00);
-        const address = fnFetchOperand();
-        const operand = this.read(address);
-        this.write(address, this.ALU((operand >>> 1) + carry));
+        const operand = this.read(this.addressBus);
+        this.write(this.addressBus, this.ALU((operand >>> 1) + carry));
         this.Carry = (operand & 0x01) > 0;
     }
     /** Rotate Right (implied)
-     * @param {FetchOperandFunc} fnFetchOperand
      * @private */
-    RXR(fnFetchOperand) {
+    RXR() {
         const carry = (this.Carry ? 0x80 : 0x00);
-        const operand = fnFetchOperand(this.A);
+        const operand = this.A;
         this.A = this.ALU((operand >>> 1) + carry);
         this.Carry = (operand & 0x01) > 0;
     }
     
     /** Increment memory
-     * @param {FetchOperandFunc} fnFetchOperand
      * @private */
-    INC(fnFetchOperand) {
-        const address = fnFetchOperand();
-        this.write(address, this.ALU(this.read(address) + 1));
-    }
+    INC() { this.write(this.addressBus, this.ALU(this.read(this.addressBus) + 1)); }
     /** Decrement memory
-     * @param {FetchOperandFunc} fnFetchOperand
      * @private */
-    DEC(fnFetchOperand) {
-        const address = fnFetchOperand();
-        this.write(address, this.ALU(this.read(address) - 1));
-    }
+    DEC() { this.write(this.addressBus, this.ALU(this.read(this.addressBus) - 1)); }
     /** Increment X
-     * @param {FetchOperandFunc} fnFetchOperand
      * @private */
-    INX(fnFetchOperand) { this.X = this.ALU(fnFetchOperand(this.X) + 1); }
+    INX() { this.X = this.ALU(this.X + 1); }
     /** Decrement X
-     * @param {FetchOperandFunc} fnFetchOperand
      * @private */
-    DEX(fnFetchOperand) { this.X = this.ALU(fnFetchOperand(this.X) - 1); }
+    DEX() { this.X = this.ALU(this.X - 1); }
     /** Increment Y
-     * @param {FetchOperandFunc} fnFetchOperand
      * @private */
-    INY(fnFetchOperand) { this.Y = this.ALU(fnFetchOperand(this.Y) + 1); }
+    INY() { this.Y = this.ALU(this.Y + 1); }
     /** Decrement Y
-     * @param {FetchOperandFunc} fnFetchOperand
      * @private */
-    DEY(fnFetchOperand) { this.Y = this.ALU(fnFetchOperand(this.Y) - 1); }
+    DEY() { this.Y = this.ALU(this.Y - 1); }
     
     //-- Test operations ---------------------------------------------------//
     
     /** Bit test
-     * @param {FetchOperandFunc} fnFetchOperand
      * @private */
-    BIT(fnFetchOperand) {
-        const operand = this.read(fnFetchOperand());
+    BIT() {
+        const operand = this.read(this.addressBus);
         if (operand >= 0x80) {
             this.Negative = true;
             this.Overflow = (operand >= 0xC0);
@@ -761,17 +691,14 @@ export class CPU extends Powered {
     }
     
     /** Compare with Accumulator
-     * @param {FetchOperandFunc} fnFetchOperand
      * @private */
-    CMP(fnFetchOperand) { this.compare(this.A, this.read(fnFetchOperand())); }
+    CMP() { this.compare(this.A, this.read(this.addressBus)); }
     /** Compare with X
-     * @param {FetchOperandFunc} fnFetchOperand
      * @private */
-    CPX(fnFetchOperand) { this.compare(this.X, this.read(fnFetchOperand())); }
+    CPX() { this.compare(this.X, this.read(this.addressBus)); }
     /** Compare with Y
-     * @param {FetchOperandFunc} fnFetchOperand
      * @private */
-    CPY(fnFetchOperand) { this.compare(this.Y, this.read(fnFetchOperand())); }
+    CPY() { this.compare(this.Y, this.read(this.addressBus)); }
     
     /**
      * @param {number} reg
@@ -785,28 +712,23 @@ export class CPU extends Powered {
     //-- Logical operations ------------------------------------------------//
     
     /** Logical OR
-     * @param {FetchOperandFunc} fnFetchOperand
      * @private */
-    ORA(fnFetchOperand) { this.A = this.ALU(this.A | this.read(fnFetchOperand())); }
+    ORA() { this.A = this.ALU(this.A | this.read(this.addressBus)); }
     /** Logical AND
-     * @param {FetchOperandFunc} fnFetchOperand
      * @private */
-    AND(fnFetchOperand) { this.A = this.ALU(this.A & this.read(fnFetchOperand())); }
+    AND() { this.A = this.ALU(this.A & this.read(this.addressBus)); }
     /** Exclusive OR
-     * @param {FetchOperandFunc} fnFetchOperand
      * @private */
-    EOR(fnFetchOperand) { this.A = this.ALU(this.A ^ this.read(fnFetchOperand())); }
+    EOR() { this.A = this.ALU(this.A ^ this.read(this.addressBus)); }
     
     //-- Misc --------------------------------------------------------------//
     
     /** No-Op
-     * @param {FetchOperandFunc} fnFetchOperand
      * @private */
-    NOP(fnFetchOperand) { fnFetchOperand(); }
+    NOP() { return; }
     /** Fault
-     * @param {FetchOperandFunc} fnFetchOperand
      * @private */
-    KIL(fnFetchOperand) { fnFetchOperand(); this.doReset(); }
+    KIL() { this.doReset(); }
 }
 
 /**

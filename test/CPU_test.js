@@ -34,7 +34,7 @@ describe("Cpu", function() {
     its('SP', () => is.expected.to.equal(0x00));
     its('PC', () => is.expected.to.equal(0x0000));
     
-    its('addressLookup',     () => is.expected.to.be.an('array').with.a.lengthOf(256));
+    its('addressingLookup',  () => is.expected.to.be.an('array').with.a.lengthOf(256));
     its('instructionLookup', () => is.expected.to.be.an('array').with.a.lengthOf(256));
     
     its('cycle', () => is.expected.to.equal(0));
@@ -517,8 +517,6 @@ describe("Cpu", function() {
     //-------------------------------------------------------------------------------//
     
     context("Addressing modes", function() {
-        //(They return the address of the next read)
-        
         def('PC', () => 0x0010); /*global $PC */
         
         beforeEach(function() {
@@ -526,42 +524,42 @@ describe("Cpu", function() {
         });
         
         describe(".imp(implied)", function() {
-            it("returns the given implied value", function() {
-                expect($subject.imp(0xAA)).to.equal(0xAA); });
-            it("decrements PC", function() {
-                expect(() => $subject.imp(0x00)).to.decrease($subject, 'PC').by(1); });
+            it("does not increment PC", function() {
+                expect(() => $subject.imp()).not.to.change($subject, 'PC'); });
         });
         describe(".imm()", function() {
-            it("returns operand's address (PC-1)", function() {
-                expect($subject.imm()).to.equal($PC-1); });
-            it("does not actually decrement PC", function() {
-                expect(() => $subject.imm()).not.to.change($subject, 'PC'); });
+            it("increments PC", function() {
+                expect(() => $subject.imm()).to.increase($subject, 'PC').by(1); });
+            it("returns operand's address", function() {
+                expect($subject.imm()).to.equal($PC); });
         });
         
         describe(".rel()", function() {
-            it("returns the signed operand", function() {
-                $subject.operand = +1;
-                expect($subject.rel()).to.equal(+1);
+            it("increments PC", function() {
+                expect(() => $subject.rel()).to.increase($subject, 'PC').by(1); });
+            it("returns PC plus the signed operand", function() {
                 $subject.operand = 0x01;
-                expect($subject.rel()).to.equal(+1);
-                $subject.operand = -1;
-                expect($subject.rel()).to.equal(-1);
+                expect($subject.rel()).to.equal($subject.PC +1);
                 $subject.operand = 0xFF;
-                expect($subject.rel()).to.equal(-1);
+                expect($subject.rel()).to.equal($subject.PC -1);
             });
         });
         
         context("Zero Page", function() {
             beforeEach(function() {
                 $subject.ram[$PC] = 0x80;
-                $subject.operand = $subject.read($subject.PC++);
+                $subject.operand = $subject.read($subject.PC);
             });
             
             describe(".zero()", function() {
+                it("increments PC", function() {
+                    expect(() => $subject.zero()).to.increase($subject, 'PC').by(1); });
                 it("returns the operand", function() {
                     expect($subject.zero()).to.equal(0x0080); });
             });
             describe(".zeroX()", function() {
+                it("increments PC", function() {
+                    expect(() => $subject.zeroX()).to.increase($subject, 'PC').by(1); });
                 it("returns the operand + X", function() {
                     $subject.X = 0x18;
                     expect($subject.zeroX()).to.equal(0x0098); });
@@ -570,6 +568,8 @@ describe("Cpu", function() {
                     expect($subject.zeroX()).to.equal(0x0008); });
             });
             describe(".zeroY()", function() {
+                it("increments PC", function() {
+                    expect(() => $subject.zeroY()).to.increase($subject, 'PC').by(1); });
                 it("returns the operand + Y", function() {
                     $subject.Y = 0x18;
                     expect($subject.zeroY()).to.equal(0x0098); });
@@ -582,14 +582,18 @@ describe("Cpu", function() {
         context("Absolute", function() {
             beforeEach(function() {
                 $subject.ram.set([0x34,0x12], $PC);
-                $subject.operand = $subject.read($subject.PC++);
+                $subject.operand = $subject.read($subject.PC);
             });
             
             describe(".abs()", function() {
+                it("increments PC twice", function() {
+                    expect(() => $subject.abs()).to.increase($subject, 'PC').by(2); });
                 it("returns the operand(word)", function() {
                     expect($subject.abs()).to.equal(0x1234); });
             });
             describe(".absX()", function() {
+                it("increments PC twice", function() {
+                    expect(() => $subject.absX()).to.increase($subject, 'PC').by(2); });
                 it("returns the operand(word) + X", function() {
                     $subject.X = 0x11;
                     expect($subject.absX()).to.equal(0x1245); });
@@ -599,6 +603,8 @@ describe("Cpu", function() {
                     expect($subject.absX()).to.equal(0x1311); });
             });
             describe(".absY()", function() {
+                it("increments PC twice", function() {
+                    expect(() => $subject.absY()).to.increase($subject, 'PC').by(2); });
                 it("returns the operand(word) + Y", function() {
                     $subject.Y = 0x22;
                     expect($subject.absY()).to.equal(0x1256); });
@@ -612,19 +618,25 @@ describe("Cpu", function() {
         context("Indirect", function() {
             beforeEach(function() {
                 $subject.ram.set([$PC+2,0x00,0xDC,0xFE,0x98,0xBA], $PC);
-                $subject.operand = $subject.read($subject.PC++);
+                $subject.operand = $subject.read($subject.PC);
             });
             
             describe(".ind()", function() {
+                it("increments PC twice", function() {
+                    expect(() => $subject.ind()).to.increase($subject, 'PC').by(2); });
                 it("returns the address read at [operand(word)]", function() {
                     expect($subject.ind()).to.equal(0xFEDC); });
             });
             describe(".indX()", function() {
+                it("increments PC", function() {
+                    expect(() => $subject.indX()).to.increase($subject, 'PC').by(1); });
                 it("returns the address read at [operand(byte + X)]", function() {
                     $subject.X = 0x02;
                     expect($subject.indX()).to.equal(0xBA98); });
             });
             describe(".indY()", function() {
+                it("increments PC", function() {
+                    expect(() => $subject.indY()).to.increase($subject, 'PC').by(1); });
                 it("returns (the address read at [operand(byte)]) + Y", function() {
                     $subject.Y = 0x02;
                     expect($subject.indY()).to.equal(0xFEDE); });
@@ -635,7 +647,6 @@ describe("Cpu", function() {
     //-------------------------------------------------------------------------------//
     
     context("Instructions", function() {
-        def('RAMData', () => 0x00);
         def('action', () => $subject.doInstruction());
         
         it("never throws an error", function() {
@@ -644,7 +655,7 @@ describe("Cpu", function() {
             
             for (let i=0x0200; i<0x0300; i++) {
                 $subject.PC = i;
-                expect(() => $action).to.not.throw();
+                expect(() => $subject.doInstruction()).not.to.throw();
             }
         });
         
@@ -2251,6 +2262,32 @@ describe("Cpu", function() {
                 expect($subject.PC).to.equal(0x0001); });
             it("takes 2 cycles", function() {
                 expect($subject.cycle).to.equal(2); });
+        });
+        
+        describe(".doInstruction()", function() {
+            beforeEach(function() {
+                $subject.ram[0x000] = 0x6C; // JMP indirect
+                $subject.ram.set([0x23, 0x01], 0x001);
+                $subject.ram.set([0x67, 0x45], 0x123);
+                $subject.PC = 0x0000;
+            });
+            def('action', () => $subject.doInstruction());
+            
+            it("sets #opcode", function() {
+                expect(() => $action).to.change($subject, 'opcode');
+                expect($subject.opcode).to.equal(0x6C);
+            });
+            it("sets #operand", function() {
+                expect(() => $action).to.change($subject, 'operand');
+                expect($subject.operand).to.equal(0x0123);
+            });
+            it("sets #addressBus", function() {
+                expect(() => $action).to.change($subject, 'addressBus');
+                expect($subject.addressBus).to.equal(0x4567);
+            });
+            it("increases #cycle", function() {
+                expect(() => $action).to.increase($subject, 'cycle');
+            });
         });
     });
 });
