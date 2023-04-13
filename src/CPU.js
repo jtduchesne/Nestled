@@ -355,9 +355,10 @@ export class CPU extends Powered {
     /** Immediate - `#00`
      * @private */
     imm() { return this.PC-1; }
+    
     /** Relative - `±#00`
      * @private */
-    rel() { this.cycle++; return signByte(this.operand); }
+    rel() { return this.operand = signByte(this.operand); }
     
     /** Zero Page - `$00`
      * @private */
@@ -450,57 +451,60 @@ export class CPU extends Powered {
      * @param {FetchOperandFunc} fnFetchOperand
      * @private */
     BPL(fnFetchOperand) {
-        if (!this.Negative)
-            this.PC += fnFetchOperand();
+        this.branch(!this.Negative, fnFetchOperand());
     }
     /** Branch if Negative
      * @param {FetchOperandFunc} fnFetchOperand
      * @private */
     BMI(fnFetchOperand) {
-        if (this.Negative)
-            this.PC += fnFetchOperand();
+        this.branch(this.Negative, fnFetchOperand());
     }
     /** Branch if oVerflow Clear
      * @param {FetchOperandFunc} fnFetchOperand
      * @private */
     BVC(fnFetchOperand) {
-        if (!this.Overflow)
-            this.PC += fnFetchOperand();
+        this.branch(!this.Overflow, fnFetchOperand());
     }
     /** Branch if oVerflow Set
      * @param {FetchOperandFunc} fnFetchOperand
      * @private */
     BVS(fnFetchOperand) {
-        if (this.Overflow)
-            this.PC += fnFetchOperand();
+        this.branch(this.Overflow, fnFetchOperand());
     }
     /** Branch if Carry Clear
      * @param {FetchOperandFunc} fnFetchOperand
      * @private */
     BCC(fnFetchOperand) {
-        if (!this.Carry)
-            this.PC += fnFetchOperand();
+        this.branch(!this.Carry, fnFetchOperand());
     }
     /** Branch if Carry Set
      * @param {FetchOperandFunc} fnFetchOperand
      * @private */
     BCS(fnFetchOperand) {
-        if (this.Carry)
-            this.PC += fnFetchOperand();
+        this.branch(this.Carry, fnFetchOperand());
     }
     /** Branch if Not Equal
      * @param {FetchOperandFunc} fnFetchOperand
      * @private */
     BNE(fnFetchOperand) {
-        if (!this.Zero)
-            this.PC += fnFetchOperand();
+        this.branch(!this.Zero, fnFetchOperand());
     }
     /** Branch if Equal
      * @param {FetchOperandFunc} fnFetchOperand
      * @private */
     BEQ(fnFetchOperand) {
-        if (this.Zero)
-            this.PC += fnFetchOperand();
+        this.branch(this.Zero, fnFetchOperand());
+    }
+    
+    /**
+     * @param {boolean} condition
+     * @param {number} operand
+     * @private */
+    branch(condition, operand) {
+        if (condition) {
+            this.PC += operand;
+            this.cycle++;
+        }
     }
     
     //-- Stack -------------------------------------------------------------//

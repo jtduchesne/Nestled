@@ -227,6 +227,11 @@ export class CPU extends Powered {
      * @param {FetchOperandFunc} fnFetchOperand
      * @private */
     private BEQ;
+    /**
+     * @param {boolean} condition
+     * @param {number} operand
+     * @private */
+    private branch;
     /** Push Accumulator
      * @param {FetchOperandFunc} fnFetchOperand
      * @private */

@@ -549,9 +549,6 @@ describe("Cpu", function() {
                 $subject.operand = 0xFF;
                 expect($subject.rel()).to.equal(-1);
             });
-            it("takes 1 cycle", function() {
-                expect(() => $subject.rel()).to.increase($subject, 'cycle').by(1);
-            });
         });
         
         context("Zero Page", function() {
